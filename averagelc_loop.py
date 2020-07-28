@@ -25,7 +25,10 @@ class averagelcloopclass(SNloopclass):
 		SNloopclass.__init__(self)
 
 	def calcaveragelc(self, SNindex, MJDbinsize=None, offsetindex=None):
-		self.load_lc(SNindex, filt=self.filt, offsetindex=offsetindex, MJDbinsize=None)
+		filt=self.cfg.params['filter']
+		if not(args.filt is None):
+			filt=args.filt
+		self.load_lc(SNindex, filt=filt, offsetindex=offsetindex, MJDbinsize=None)
 		self.averagelctable.formattable(formatMapping={'OffsetID':'3d','MJD':'.5f','uJy':'.2f','duJy':'.2f','stdev':'.2f','X2norm':'.3f'})
 		print('Length of self.lc.t: ',len(self.lc.t))
 		if len(self.lc.t) == 0:
@@ -90,21 +93,7 @@ if __name__ == '__main__':
 	parser = averagelc.define_options()
 	args = parser.parse_args()
 
-	averagelc.loadcfgfiles(args.cfgfile,
-						filt=args.filt,
-						extracfgfiles=args.extracfgfile,
-						params=args.params,
-						params4all=args.pall,
-						params4sections=args.pp,
-						verbose=args.verbose)
-
-	averagelc.setoutdir(outrootdir=args.outrootdir, outsubdir=args.outsubdir)
-	averagelc.verbose = args.verbose
-	averagelc.debug = args.debug
-
-	averagelc.load_spacesep(args.snlistfilename)
-	print(args.SNlist)
-	indexlist = averagelc.getSNlist(args.SNlist)
+	indexlist = averagelc.initialize(args)
 
 	MJDbinsize = averagelc.cfg.params['output']['MJDbinsize']
 	if not(args.MJDbinsize is None):

@@ -32,17 +32,18 @@ class SNloopclass(astrotableclass):
 		# options for config file
 		if 'ATLASLC_SOURCEDIR' in os.environ and os.environ['ATLASLC_SOURCEDIR'] != '':
 			cfgfile = '%s/precursor.cfg' % os.environ['ATLASLC_SOURCEDIR']
-			snlistfilename = '%s/atlastest.txt' % os.environ['ATLASLC_DATA']
+			#snlistfilename = '%s/snlist.txt' % os.environ['ATLASLC_DATA']
 			outrootdir = os.environ['ATLASLC_DATA']
 		else:
 			cfgfile = None
-			snlistfilename = None
+			#snlistfilename = None
 			outrootdir = None
 
 		parser.add_argument('SNlist', nargs='+')
 		parser.add_argument('--verbose', '-v', default=0, action='count')
 		parser.add_argument('-d', '--debug', help="debug", action='count')
-		parser.add_argument('--snlistfilename', default=snlistfilename, help=('filename of SN list''(default=%(default)s)'))
+	#	parser.add_argument('--snlistfilename', default=snlistfilename, help=('filename of SN list''(default=%(default)s)'))
+		parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
 		parser.add_argument('-s','--savelc', help=("save lc"), action="store_true", default=False)
 		parser.add_argument('--outrootdir', default=outrootdir, help=('output root directory.''(default=%(default)s)'))
 		parser.add_argument('--outsubdir', default=None,
@@ -86,15 +87,17 @@ class SNloopclass(astrotableclass):
 		basename = '%s/%s/%s' % (self.outrootdir,SNID,SNID)
 		if not(offsetindex is None):
 			basename += '_i%03d' % self.RADECtable.t['OffsetID'][offsetindex]
+
+		self.filt = self.cfg.params['filter']
 		if not(filt is None):
+			self.filt=filt
 			basename += '.%s' % filt
+
 		if not(MJDbinsize is None):
 			basename += '.%ddays' % int(MJDbinsize)
 		basename += '.lc'
 
-
 		print(basename)
-
 		return(basename)
 
 	def lcbasename(self, SNindex, offsetindex=None, filt=None, MJDbinsize=None):
@@ -138,36 +141,27 @@ class SNloopclass(astrotableclass):
 		self.RADECtable.load_generic(RADEClistfilename)
 		print(self.RADECtable.t)
 		return(0)
-			
-if __name__ == '__main__':
 
-	SNloop = SNloopclass()
-	parser = SNloop.download_atlas_lc.define_optional_args()
-	parser = SNloop.define_options(parser=parser)
-	args = parser.parse_args()
-
-	# load config files
-	SNloop.loadcfgfiles(args.cfgfile,
+	def initialize(self,args):
+		# load config files
+		self.loadcfgfiles(args.cfgfile,
 							extracfgfiles=args.extracfgfile,
 							params=args.params,
 							params4all=args.pall,
 							params4sections=args.pp,
 							verbose=args.verbose)
 
-	SNloop.setoutdir(outrootdir=args.outrootdir, outsubdir=args.outsubdir)
-	SNloop.verbose = args.verbose
-	SNloop.debug = args.debug
-	
-	SNloop.download_atlas_lc.connect(args.atlasmachine,'arest','Sofilena50%')
+		snlistfilename = self.cfg.params['snlistfilename']
+		if not(args.snlistfilename is None):
+			snlistfilename=args.snlistfilename
 
-	SNloop.load(args.snlistfilename)
-	print(SNloop.t)
-	print(args.SNlist)
-	indexlist = SNloop.getSNlist(args.SNlist)
+		self.setoutdir(outrootdir=args.outrootdir, outsubdir=args.outsubdir)
+		self.verbose = args.verbose
+		self.debug = args.debug
 
-	for i in indexlist:
-		SNloop.downloadlc4SN(i,
-						lookbacktime_days=args.lookbacktime_days,
-						savelc=args.savelc,
-						overwrite=args.overwrite,
-						fileformat=args.fileformat)
+		self.load_spacesep(snlistfilename)
+		print(self.t)
+		print(args.SNlist)
+		indexlist = self.getSNlist(args.SNlist)
+
+		return(indexlist)

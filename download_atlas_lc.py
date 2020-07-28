@@ -37,9 +37,9 @@ class download_atlas_lc_class:
 		parser.add_argument('-l','--lookbacktime_days', type=int, default=None, help=("lookback time in days"))
 		parser.add_argument('--atlasmachine', default='atlas-base-sc01.ifa.hawaii.edu',
 							help=('address for atlas machine (default=%(default)s)'))
-		parser.add_argument('--user', default='sofia',
+		parser.add_argument('--user', default=None,
 							help=('user name for atlas machine (default=%(default)s)'))
-		parser.add_argument('--passwd', 
+		parser.add_argument('--passwd', default=None,
 							help=('password for atlas machine'))
 		parser.add_argument('-s','--savelc', help=("save lc with this name"))
 		parser.add_argument('-f','--fileformat', default='fixed_width_two_line', choices=['basic','csv','rdb','tab','fixed_width','fixed_width_two_line'],
@@ -49,7 +49,7 @@ class download_atlas_lc_class:
 		
 		return(parser)
 	   
-	def connect(self, address, username, passwd):
+	def connect(self, address, username=None, passwd=None):
 		if self.verbose:
 			print('Connecting session...')
 
@@ -72,7 +72,7 @@ class download_atlas_lc_class:
 
 		return(True)
 		
-	def build_cmd(self,ra, dec, dodb=1, parallel=20, lookbacktime_days=None):
+	def build_cmd(self, ra, dec, dodb=1, parallel=20, lookbacktime_days=None):
 		print(RaInDeg(ra),DecInDeg(dec),ra,dec)
 		cmd = 'force.sh %f %f' % (RaInDeg(ra), DecInDeg(dec))
 		

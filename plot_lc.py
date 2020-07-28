@@ -51,7 +51,7 @@ class plotlcclass(SNloopclass):
 	def __init__(self):
 		SNloopclass.__init__(self)
 
-	def plot_lc(self,SNindex,sp=None,plotoffsetlcflag=False):
+	def plot_lc(self,SNindex,filt=None,sp=None,plotoffsetlcflag=False):
 		print('Plotting SN lc and offsets...')
 
 		MJD_offsetlc = []
@@ -65,6 +65,9 @@ class plotlcclass(SNloopclass):
 
 		for i in range(len(self.RADECtable.t)):
 			filt=self.cfg.params['filter']
+			if not(args.filt is None):
+				filt=args.filt
+
 			self.load_lc(SNindex, filt=filt, offsetindex=self.RADECtable.t['OffsetID'][i])
 			print('Offset index: ',i)
 			if i==0:
@@ -94,21 +97,7 @@ if __name__ == '__main__':
 	parser = plot_lc.define_options()
 	args = parser.parse_args()
 
-	plot_lc.loadcfgfiles(args.cfgfile,
-						filt=args.filt,
-						extracfgfiles=args.extracfgfile,
-						params=args.params,
-						params4all=args.pall,
-						params4sections=args.pp,
-						verbose=args.verbose)
-
-	plot_lc.setoutdir(outrootdir=args.outrootdir, outsubdir=args.outsubdir)
-	plot_lc.verbose = args.verbose
-	plot_lc.debug = args.debug
-
-	plot_lc.load_spacesep(args.snlistfilename)
-	print(args.SNlist)
-	indexlist = plot_lc.getSNlist(args.SNlist)
+	indexlist = plot_lc.initialize(args)
 
 	for i in indexlist:
 		plot_lc.plot_lc(i)

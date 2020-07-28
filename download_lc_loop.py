@@ -136,6 +136,7 @@ class downloadlcloopclass(SNloopclass):
 	def downloadoffsetlc4SN(self, SNindex,forcedphot_offset=False,lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None,pattern=None):
 		print('Offset status: ',forcedphot_offset)
 		if forcedphot_offset=='True':
+			# add SN data in new row
 			RA = self.t[SNindex]['ra']
 			Dec = self.t[SNindex]['dec']
 			if pattern is None: pattern=self.cfg.params['forcedphotpatterns'][pattern]
@@ -143,6 +144,7 @@ class downloadlcloopclass(SNloopclass):
 			print(self.RADECtable.t)
 			self.RADECtable.formattable(formatMapping={'OffsetID':'3d','Ra':'.8f','Dec':'.8f','RaNew':'.8f','DecNew':'.8f','RaDistance':'.2f','DecOffset':'.2f','Ndet':'4d','Ndet_o':'4d','Ndet_c':'4d'})
 
+			# add new row for each offset using data from RADECtable
 			for i in range(len(self.RADECtable.t)):
 				print(self.RADECtable.t['OffsetID', 'Ra', 'Dec'][i])
 				self.downloadlc4SN(SNindex,
@@ -169,7 +171,7 @@ class downloadlcloopclass(SNloopclass):
 				self.saveRADEClist(SNindex,filt='o')
 		else:
 			print('Skipping forcedphot offsets lc...')
-			# FIX SO THAT i000 DATA GOTTEN
+			# only add SN data in new row without offsets
 			RA = self.t[SNindex]['ra']
 			Dec = self.t[SNindex]['dec']
 			self.defineRADEClist(RA,Dec,pattern=None)
@@ -215,11 +217,16 @@ class downloadlcloopclass(SNloopclass):
 
 		for i in range(len(self.RADECtable.t)):
 			filt=self.cfg.params['filter']
+			if not(args.filt is None):
+				filt=args.filt
+
 			self.load_lc(SNindex, filt=filt, offsetindex=self.RADECtable.t['OffsetID'][i])
 			print('Offset index: ',i)
+			# plot SN lc
 			if i==0:
 				(sp, plotSN, dplotSN)=dataPlot(self.lc.t['MJD'], self.lc.t['uJy'], dy=self.lc.t['duJy'],sp=sp)
 				matlib.setp(plotSN,ms=5,color='r')
+			# then plot offset lcs
 			else:
 				MJD_offsetlc.extend(self.lc.t['MJD'])
 				uJy_offsetlc.extend(self.lc.t['uJy'])
@@ -268,7 +275,7 @@ class downloadlcloopclass(SNloopclass):
 			lcaverageindex = len(self.averagelctable.t)
 			self.averagelctable.t.add_row({'OffsetID':self.RADECtable.t['OffsetID'][offsetindex],'uJy':calcaverage.mean,'duJy':calcaverage.mean_err, 'stdev':calcaverage.stdev, 'X2norm':calcaverage.X2norm, 'Nused':calcaverage.Nused, 'Nclipped':calcaverage.Nskipped})
 			
-			print(';bbbbbb',lcaverageindex,calcaverage.use)
+			print('lcaverageindex and calcaverage: ',lcaverageindex,calcaverage.use)
 			mask=np.logical_not(calcaverage.use)
 			calcaverage.calcaverage_sigmacutloop(MJD_windowdata,noise=duJy_windowdata,mask=mask,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
 			self.averagelctable.t['MJD'][lcaverageindex] = calcaverage.mean
@@ -306,6 +313,29 @@ class downloadlcloopclass(SNloopclass):
 		parser.add_argument('--averagelc',default=False,help=('average lcs'))
 		return(parser)
 
+	def indexlistloop(self,args,indexlist):
+		indexlist = self.initialize(args)
+		for i in indexlist:
+			self.downloadoffsetlc4SN(i,
+										   lookbacktime_days=args.lookbacktime_days,
+										   savelc=args.savelc,
+										   overwrite=args.overwrite,
+										   fileformat=args.fileformat,
+										   pattern=args.pattern,
+										   forcedphot_offset=args.forcedphot_offset)
+
+		if args.plot:
+			self.plot_lc(i)
+			plotfilename = self.lcbasename(i)+'.png'
+			print('Plot file name: ',plotfilename)
+			plt.savefig(plotfilename)
+
+		if args.averagelc:
+			MJDbinsize = self.cfg.params['output']['MJDbinsize']
+			if not(args.MJDbinsize is None): MJDbinsize = args.MJDbinsize
+			self.loadRADEClist(i)
+			self.averagelcs(i, MJDbinsize=MJDbinsize)
+
 if __name__ == '__main__':
 
 	downloadlc = downloadlcloopclass()
@@ -313,42 +343,24 @@ if __name__ == '__main__':
 	parser = downloadlc.define_options(parser=parser)
 	args = parser.parse_args()
 
-	# load config files
-	downloadlc.loadcfgfiles(args.cfgfile,
-									extracfgfiles=args.extracfgfile,
-									params=args.params,
-									params4all=args.pall,
-									params4sections=args.pp,
-									verbose=args.verbose)
+	indexlist = downloadlc.initialize(args)
 
-	downloadlc.setoutdir(outrootdir=args.outrootdir, outsubdir=args.outsubdir)
-	downloadlc.verbose = args.verbose
-	downloadlc.debug = args.debug
+	# get username from config file
+	username = downloadlc.cfg.params['username']
+	print('params user: ',username)
+	# if config file username is false, overwrite with environment username
+	if username is False:
+		username = os.environ['USER']
+		print('environ user: ',username)
+	# if args.user in command, overwrite
+	if not(args.user is None):
+		username = args.user
+		print('args user: ',username)
+	print('ATLAS username: ', username)
 
-	downloadlc.download_atlas_lc.connect(args.atlasmachine,'sofia','Starswirl1410!@')
+	password=args.passwd
+	print('ATLAS password length: ',len(password))
 
-	downloadlc.load_spacesep(args.snlistfilename)
-	print(downloadlc.t)
-	print(args.SNlist)
-	indexlist = downloadlc.getSNlist(args.SNlist)
+	downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
 
-	for i in indexlist:
-		downloadlc.downloadoffsetlc4SN(i,
-									   lookbacktime_days=args.lookbacktime_days,
-									   savelc=args.savelc,
-									   overwrite=args.overwrite,
-									   fileformat=args.fileformat,
-									   pattern=args.pattern,
-									   forcedphot_offset=args.forcedphot_offset)
-
-		if args.plot:
-			downloadlc.plot_lc(i)
-			plotfilename = downloadlc.lcbasename(i)+'.png'
-			print('Plot file name: ',plotfilename)
-			plt.savefig(plotfilename)
-
-		if args.averagelc:
-			MJDbinsize = downloadlc.cfg.params['output']['MJDbinsize']
-			if not(args.MJDbinsize is None): MJDbinsize = args.MJDbinsize
-			downloadlc.loadRADEClist(i)
-			downloadlc.averagelcs(i, MJDbinsize=MJDbinsize)
+	downloadlc.indexlistloop(args,indexlist)

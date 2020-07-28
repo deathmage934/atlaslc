@@ -6,7 +6,7 @@ elif [[ $HOSTNAME =~ plhstproc1.stsci.edu ]] || [[ $HOSTNAME =~ plhstproc2.stsci
    export PIPE_BATCH_SYSTEM=Condor
 elif [[ $HOSTNAME =~ ^PHA-AREST1* ]]; then
    export ATLASLC_SOURCEDIR=/Users/AdminDelete/Desktop/Supernovae/atlaslc
-   export ATLASLC_DATA=/Users/AdminDelete/Desktop/Supernovae/atlaslc/data
+   export ATLASLC_DATA=/Users/AdminDelete/Desktop/Supernovae/data
    export PIPE_BATCH_SYSTEM=NONE
 else
    echo "Hostname $HOSTNAME is not defined yet in the sourceme file!"

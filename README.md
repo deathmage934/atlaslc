@@ -45,14 +45,19 @@ You can also use forced photometry to get offset light curves, plot each SN's li
 To get forced photometry offsets automatically:
 * Add `--forcedphot_offset True` to the command.
 * In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius.
+
 To plot each SN's light curve automatically:
 * Add `--plot True` to the command.
+
 To average the light curve data:
 * Add `--averagelc True` to the command.
 * In the `precursor.cfg` file, specify the `MJDbinsize` to be used.
+
 Additional functionality enables you to do these tasks using existing data that has already been downloaded.
+
 To plot each SN's light curve using existing data:
 * `plot_lc.py` initializes the program. Add to the command the SN name(s) you want plotted.
+
 To average the light curves using existing data:
 * `averagelc_loop.py` initializes the program. Add to the command the SN name(s) you want plotted.
 * Optional: you can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.

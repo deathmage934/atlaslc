@@ -63,13 +63,10 @@ class plotlcclass(SNloopclass):
 
 		self.loadRADEClist(SNindex)
 
-		for i in range(len(self.RADECtable.t)):
-			filt=self.cfg.params['filter']
-			if not(args.filt is None):
-				filt=args.filt
-
-			self.load_lc(SNindex, filt=filt, offsetindex=self.RADECtable.t['OffsetID'][i])
+		for i in range(len(self.RADECtable.t)-1,-1,-1):
+			self.load_lc(SNindex, filt=self.filt, offsetindex=self.RADECtable.t['OffsetID'][i])
 			print('Offset index: ',i)
+
 			if i==0:
 				(sp, plotSN, dplotSN)=dataPlot(self.lc.t['MJD'], self.lc.t['uJy'], dy=self.lc.t['duJy'],sp=sp)
 				matlib.setp(plotSN,ms=5,color='r')
@@ -77,17 +74,17 @@ class plotlcclass(SNloopclass):
 				MJD_offsetlc.extend(self.lc.t['MJD'])
 				uJy_offsetlc.extend(self.lc.t['uJy'])
 				duJy_offsetlc.extend(self.lc.t['duJy'])
-			#if not plotoffsetlcflag:
-				#break
+				(sp, plotOffset, dplotOffset)=dataPlot(self.lc.t['MJD'],self.lc.t['uJy'],dy=self.lc.t['duJy'],sp=sp)
+				matlib.setp(plotOffset,ms=5,color='b')
 
-		(sp, plotOffset, dplotOffset)=dataPlot(self.lc.t['MJD'],self.lc.t['uJy'],dy=self.lc.t['duJy'],sp=sp)
-		matlib.setp(plotOffset,ms=5,color='b')
-
-		#plt.legend(('SN', '%s %s" Offset and %s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][0],self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][1])))
-		plt.legend(('SN', '%s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][0])))
+		if len(self.cfg.params['forcedphotpatterns']['circular']['radii'])==1:
+			plt.legend(('SN', '%s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][0])))
+		else:
+			plt.legend(('SN', '%s %s" Offset and %s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][0],self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][1])))
+		
 		plt.axhline(linewidth=1,color='k')
-		#plt.xlim(58800,59050)
-		#plt.ylim(-20000,20000)
+		#plt.xlim(59000,59050)
+		#plt.ylim(-5000,5000)
 		plt.xlabel('MJD')
 		plt.ylabel('uJy')
 

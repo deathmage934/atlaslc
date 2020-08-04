@@ -42,21 +42,15 @@ class SNloopclass(astrotableclass):
 		parser.add_argument('SNlist', nargs='+')
 		parser.add_argument('--verbose', '-v', default=0, action='count')
 		parser.add_argument('-d', '--debug', help="debug", action='count')
-	#	parser.add_argument('--snlistfilename', default=snlistfilename, help=('filename of SN list''(default=%(default)s)'))
 		parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
 		parser.add_argument('-s','--savelc', help=("save lc"), action="store_true", default=False)
 		parser.add_argument('--outrootdir', default=outrootdir, help=('output root directory.''(default=%(default)s)'))
-		parser.add_argument('--outsubdir', default=None,
-							help=('subdir added to the output root directory (and filename) ''(default=%(default)s)'))
+		parser.add_argument('--outsubdir', default=None, help=('subdir added to the output root directory (and filename) ''(default=%(default)s)'))
 		parser.add_argument('-c', '--cfgfile', default=cfgfile, help='main config file. (default=%(default)s)')
-		parser.add_argument('-e', '--extracfgfile', action='append', default=None,
-							help=('additional config file. These cfg files do not need to have all ''parameters. They overwrite the parameters in the main cfg file.'))
-		parser.add_argument('-p', '--params', action='append', default=None, nargs=2,
-							help=('"param val": change parameter in config file (not in section, only ''main part) (default=%(default)s)'))
-		parser.add_argument('--pall', action='append', default=None, nargs=2,
-							help=('"param val". change parameter in all sections of config file ''(section independent) (default=%(default)s)'))
-		parser.add_argument('--pp', action='append', default=None, nargs=3,
-							help=('"section param val". change parameters in given section of ''config file (default=%(default)s)'))
+		parser.add_argument('-e', '--extracfgfile', action='append', default=None, help=('additional config file. These cfg files do not need to have all ''parameters. They overwrite the parameters in the main cfg file.'))
+		parser.add_argument('-p', '--params', action='append', default=None, nargs=2, help=('"param val": change parameter in config file (not in section, only ''main part) (default=%(default)s)'))
+		parser.add_argument('--pall', action='append', default=None, nargs=2, help=('"param val". change parameter in all sections of config file ''(section independent) (default=%(default)s)'))
+		parser.add_argument('--pp', action='append', default=None, nargs=3, help=('"section param val". change parameters in given section of ''config file (default=%(default)s)'))
 		parser.add_argument('-f','--filt', default=None, help=('specify filter'), choices=['c','o'])
 		parser.add_argument('--MJDbinsize', default=None, help=('specify MJD bin size'),type=float)
 		
@@ -145,6 +139,7 @@ class SNloopclass(astrotableclass):
 	def initialize(self,args):
 		# load config files
 		self.loadcfgfiles(args.cfgfile,
+							filt=args.filt,
 							extracfgfiles=args.extracfgfile,
 							params=args.params,
 							params4all=args.pall,

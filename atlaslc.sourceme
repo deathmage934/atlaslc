@@ -1,6 +1,6 @@
 if [[ $HOSTNAME =~ arminmac* ]]; then
    export ATLASLC_SOURCEDIR=/Users/arest/atlas/atlaslc
-   export ATLASLC_DATA=/Users/arest/atlas/atlaslc/data
+   export ATLASLC_DATA=/Users/arest/atlas/lcdata
    export PIPE_BATCH_SYSTEM=NONE
 elif [[ $HOSTNAME =~ plhstproc1.stsci.edu ]] || [[ $HOSTNAME =~ plhstproc2.stsci.edu ]]; then
    export PIPE_BATCH_SYSTEM=Condor

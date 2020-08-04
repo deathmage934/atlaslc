@@ -4,6 +4,7 @@
 * [Installation](#installation)
 * [Usage](#usage)
 * [Additional usage](#additional-usage)
+* [Example commands](#example-commands)
 
 ### Description: 
 Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and retrieves the SN light curve data. You will need a table containing your **SN names, RA and Dec for each SN, and your username and password** for the ATLAS machines.

@@ -25,16 +25,16 @@ Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and
 * Change any other values you wish (for example, the filter to be used).
 
 ## Usage:
-This code allows you to download SN light curves. There are many options to configure. You can view the list of arguments in the `<SNloop.py>` file in the source directory. To summarize:
+This code allows you to download SN light curves. There are many options to configure. You can view the list of arguments in the `SNloop.py` file in the source directory. To summarize:
 * `download_lc_loop.py` initializes the program.
 * Add the SN name(s) that you want light curves for (or use 'all' if you want to use all SNe in the `snlist.txt` file) to the command.
-* `--snlistfilename` gives you the option to read a different text file that houses a SN list instead of using the address in the `precursor.cfg` file.
+* `--passwd` specifies your password for the ATLAS machines (**required**). It is recommended to put your password in 'quotation marks' to avoid any errors with symbols.
 * `-s` will make sure all files you download are saved (**recommended; should be added to the command every time you run the code**).
+* `-o` will overwrite any files with the same name (**recommended** if you download data for the same SN multiple times).
 * `-v` specifies verbose level (**recommended**).
 * `-l` specifies the lookback time in days.
-* `-o` will overwrite any files with the same name (suggested if you download data for the same SN multiple times).
+* `--snlistfilename` gives you the option to read a different text file that houses a SN list instead of using the address in the `precursor.cfg` file.
 * `--user` specifies your username. If you use this argument, it will override the username you set in `<precursor.cfg>`.
-* `--passwd` specifies your password for the ATLAS machines (**required**). It is recommended to put your password in 'quotation marks' to avoid any errors with symbols.
 * `--outrootdir` and `--outsubdir` give you the option to specify different output directories and sub-directories instead of the ones you specified in the `atlaslc.sourceme` file.
 * `-c` lets you reference a different configuration file instead of the `precursor.cfg` file.
 * `-e` adds an additional configuration file.

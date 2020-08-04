@@ -92,7 +92,7 @@ class downloadlcloopclass(SNloopclass):
 				for i in range(n):
 					angle = Angle(i*360.0/n, u.degree)
 					if self.verbose>1:
-						print('\n### Angle: %f deg' % angle.degree)
+						print('\nAngle: %f deg' % angle.degree)
 
 					Dec_angle = Angle(Dec, u.degree)
 					cosdec = math.cos(Dec_angle.radian)
@@ -118,7 +118,7 @@ class downloadlcloopclass(SNloopclass):
 						print('Dec new: %f deg' % DECnew)
 
 					if self.verbose:
-						print('### Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew, DECnew))
+						print('Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew, DECnew))
 
 					index = self.RADECtable.t.add_row({'OffsetID':OffsetID,'Ra':RaInDeg(RA),'Dec':DecInDeg(Dec),'RaNew':RAnew,'DecNew':DECnew,'RaDistance':RAdistance.arcsec,'RaOffset':RAoffset.arcsec,'DecOffset':DECoffset.arcsec,'Radius':radius})
 					OffsetID += 1
@@ -128,7 +128,7 @@ class downloadlcloopclass(SNloopclass):
 			print("Pattern %s is not defined" % pattern)
 			self.RADECtable.t.add_row({'OffsetID':0,'Ra':RaInDeg(RA),'Dec':DecInDeg(Dec),'RaNew':RaInDeg(RA),'DecNew':DecInDeg(Dec)})
 
-		self.RADECtable.formattable(formatMapping={'OffsetID':'3d','Ra':'.8f','Dec':'.8f','RaNew':'.8f','DecNew':'.8f','RaDistance':'.2f','DecOffset':'.2f','Ndet':'4d','Ndet_o':'4d','Ndet_c':'4d'})
+		self.RADECtable.formattable(formatMapping={'OffsetID':'3d','Ra':'.8f','Dec':'.8f','RaNew':'.8f','DecNew':'.8f','RaDistance':'.2f','RaOffset':'.2f','DecOffset':'.2f','Ndet':'4d','Ndet_o':'4d','Ndet_c':'4d'})
 
 		if self.verbose:
 			print(self.RADECtable.t)
@@ -141,7 +141,7 @@ class downloadlcloopclass(SNloopclass):
 			Dec = self.t[SNindex]['dec']
 			if pattern is None: pattern=self.cfg.params['forcedphotpatterns'][pattern]
 			self.defineRADEClist(RA,Dec,pattern)
-			print(self.RADECtable.t)
+			# print(self.RADECtable.t)
 			self.RADECtable.formattable(formatMapping={'OffsetID':'3d','Ra':'.8f','Dec':'.8f','RaNew':'.8f','DecNew':'.8f','RaDistance':'.2f','DecOffset':'.2f','Ndet':'4d','Ndet_o':'4d','Ndet_c':'4d'})
 
 			# add new row for each offset using data from RADECtable
@@ -163,7 +163,7 @@ class downloadlcloopclass(SNloopclass):
 				cfilt = np.where(self.lc.t['F']=='c')
 				self.RADECtable.t['Ndet_c'][i]=len(cfilt[0])
 
-			if self.verbose: 
+			if self.verbose>1: 
 				print(self.RADECtable.t)
 			if savelc:
 				self.saveRADEClist(SNindex)
@@ -175,7 +175,7 @@ class downloadlcloopclass(SNloopclass):
 			RA = self.t[SNindex]['ra']
 			Dec = self.t[SNindex]['dec']
 			self.defineRADEClist(RA,Dec,pattern=None)
-			print(self.RADECtable.t)
+			#print(self.RADECtable.t)
 			self.RADECtable.formattable(formatMapping={'OffsetID':'3d','Ra':'.8f','Dec':'.8f','RaNew':'.8f','DecNew':'.8f','RaDistance':'.2f','DecOffset':'.2f','Ndet':'4d','Ndet_o':'4d','Ndet_c':'4d'})
 
 			for i in range(len(self.RADECtable.t)):
@@ -215,31 +215,27 @@ class downloadlcloopclass(SNloopclass):
 
 		self.loadRADEClist(SNindex)
 
-		for i in range(len(self.RADECtable.t)):
-			filt=self.cfg.params['filter']
-			if not(args.filt is None):
-				filt=args.filt
-
-			self.load_lc(SNindex, filt=filt, offsetindex=self.RADECtable.t['OffsetID'][i])
+		for i in range(len(self.RADECtable.t)-1,-1,-1):
+			self.load_lc(SNindex, filt=self.filt, offsetindex=self.RADECtable.t['OffsetID'][i])
 			print('Offset index: ',i)
-			# plot SN lc
+
 			if i==0:
 				(sp, plotSN, dplotSN)=dataPlot(self.lc.t['MJD'], self.lc.t['uJy'], dy=self.lc.t['duJy'],sp=sp)
 				matlib.setp(plotSN,ms=5,color='r')
-			# then plot offset lcs
 			else:
 				MJD_offsetlc.extend(self.lc.t['MJD'])
 				uJy_offsetlc.extend(self.lc.t['uJy'])
 				duJy_offsetlc.extend(self.lc.t['duJy'])
-			#if not plotoffsetlcflag:
-				#break
+				(sp, plotOffset, dplotOffset)=dataPlot(self.lc.t['MJD'],self.lc.t['uJy'],dy=self.lc.t['duJy'],sp=sp)
+				matlib.setp(plotOffset,ms=5,color='b')
 
-		(sp, plotOffset, dplotOffset)=dataPlot(MJD_offsetlc,uJy_offsetlc,dy=duJy_offsetlc,sp=sp)
-		matlib.setp(plotOffset,ms=5,color='b')
-
-		#plt.legend(('SN', '%s %s" Offset and %s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][0],self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][1])))
-		plt.legend(('SN', '%s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][0])))
+		if len(self.cfg.params['forcedphotpatterns']['circular']['radii'])==1:
+			plt.legend(('SN', '%s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][0])))
+		else:
+			plt.legend(('SN', '%s %s" Offset and %s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][0],self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][1])))
 		plt.axhline(linewidth=1,color='k')
+		#plt.xlim(59000,59050)
+		#plt.ylim(-5000,5000)
 		plt.xlabel('MJD')
 		plt.ylabel('uJy')
 
@@ -317,24 +313,24 @@ class downloadlcloopclass(SNloopclass):
 		indexlist = self.initialize(args)
 		for i in indexlist:
 			self.downloadoffsetlc4SN(i,
-										   lookbacktime_days=args.lookbacktime_days,
-										   savelc=args.savelc,
-										   overwrite=args.overwrite,
-										   fileformat=args.fileformat,
-										   pattern=args.pattern,
-										   forcedphot_offset=args.forcedphot_offset)
+									lookbacktime_days=args.lookbacktime_days,
+									savelc=args.savelc,
+									overwrite=args.overwrite,
+									fileformat=args.fileformat,
+									pattern=args.pattern,
+									forcedphot_offset=args.forcedphot_offset)
 
-		if args.plot:
-			self.plot_lc(i)
-			plotfilename = self.lcbasename(i)+'.png'
-			print('Plot file name: ',plotfilename)
-			plt.savefig(plotfilename)
+			if args.plot:
+				self.plot_lc(i)
+				plotfilename = self.lcbasename(i)+'.png'
+				print('Plot file name: ',plotfilename)
+				plt.savefig(plotfilename)
 
-		if args.averagelc:
-			MJDbinsize = self.cfg.params['output']['MJDbinsize']
-			if not(args.MJDbinsize is None): MJDbinsize = args.MJDbinsize
-			self.loadRADEClist(i)
-			self.averagelcs(i, MJDbinsize=MJDbinsize)
+			if args.averagelc:
+				MJDbinsize = self.cfg.params['output']['MJDbinsize']
+				if not(args.MJDbinsize is None): MJDbinsize = args.MJDbinsize
+				self.loadRADEClist(i)
+				self.averagelcs(i, MJDbinsize=MJDbinsize)
 
 if __name__ == '__main__':
 
@@ -362,5 +358,4 @@ if __name__ == '__main__':
 	print('ATLAS password length: ',len(password))
 
 	downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
-
 	downloadlc.indexlistloop(args,indexlist)

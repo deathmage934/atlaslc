@@ -48,19 +48,13 @@ This code allows you to download SN light curves. There are many options to conf
 
 #### Additional usage:
 You can also use forced photometry to get offset light curves, plot each SN's light curve, and average the light curve data. To do any of these, follow the following instructions.
-* To get forced photometry offsets automatically:
-	* Add `--forcedphot_offset True` to the command.
-	* In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius.
+* To get forced photometry offsets automatically, add `--forcedphot_offset True` to the command. In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius.
 * To plot each SN's light curve automatically, add `--plot True` to the command.
-* To average the light curve data:
-	* Add `--averagelc True` to the command.
-	* In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
+* To average the light curve data automatically, add `--averagelc True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
 
 Additional functionality enables you to do these tasks using existing data that has already been downloaded.
 * To plot each SN's light curve using existing data, initialize the program using `plot_lc.py`, then add to the command the SN name(s) you want plotted.
-* To average the light curves using existing data:
-	* `averagelc_loop.py` initializes the program. Add to the command the SN name(s) you want plotted.
-	* Optional: you can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
+* To average the light curves using existing data, initialize the program using `averagelc_loop.py`, then add to the command the SN name(s) you want plotted. You can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
 
 #### Example commands:
 * `download_lc_loop.py 2020lse -v -o -s -l 70 --forcedphot_offset True --plot True --averagelc True --MJDbinsize 20 --passwd 'XXX'` gets the data for SN 2020lse with verbose level 1, overwrites files with the same name, saves the files, and uses a lookback time of 70. Then the offset data is downloaded, plots are saved, and the SN light curve data is averaged with an MJDbinsize of 20.

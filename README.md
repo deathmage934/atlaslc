@@ -4,6 +4,7 @@
 * [Installation](#installation)
 * [Usage](#usage)
 * [Additional usage](#additional-usage)
+* [Using the TNS name to get RA and Dec](#using-the-tns-name-to-get-ra-and-dec)
 * [Example commands](#example-commands)
 
 ### Description: 
@@ -56,7 +57,7 @@ Additional functionality enables you to do these tasks using existing data that 
 * **To plot each SN's light curve using existing data**, initialize the program using `plot_lc.py`, then add to the command the SN name(s) you want plotted.
 * **To average the light curves using existing data**, initialize the program using `averagelc_loop.py`, then add to the command the SN name(s) you want plotted. You can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
 
-#### Using the TNS name to add RA and Dec to `snlist.txt`:
+#### Using the TNS name to get RA and Dec:
 Given a TNS name, `autoadd.py` can automatically retrieve the RA and Dec coordinates from the TNS and add the TNS name, RA, and Dec to the table in `snlist.txt`. To run the script, follow the following instructions:
 * If you have only the TNS name of your SN, use the following command and add the TNS name at the end of the command: `autoadd.py`.
 * If you have the SN name (could be TNS name or other designation) AND the RA and Dec coordinates, initialize the program (`autoadd.py`) and add the SN name at the end of the command. Then, use the arguments `--ra` and `--dec` to specify the RA and Dec, and run the program.

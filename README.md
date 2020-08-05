@@ -25,7 +25,7 @@ Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and
 * Copy and paste the address of the **source directory** after the text `export ATLASLC_SOURCEDIR=`.
 * Copy and paste the address of the **data directory** after the text `export ATLASLC_DATA==`.
 * Save the `atlaslc.sourceme` file.
-* In the **data directory**, create a text file called `snlist.txt` that will house your SN list. Another option is to download the example file that is already set up with data and move it to the data directory.
+* In the **data directory**, create a text file called `snlist.txt` that will house your SN list. Create a table with the required column names "tnsname," "ra," and "dec." Another option is to download the example file that is already set up with data and move it to the data directory.
 * In the **source directory**, open `precursor.cfg`. This is the configuration file.
 * Optional: You can change the `outsubdir` name in this file if you want to create different sub-directories for different SNe.
 * After `username`, add your ATLAS machine username.

@@ -1,26 +1,8 @@
 #!/usr/bin/env python
 
-import numpy as np
-import math
-import sys,socket,os,re
-import astropy.table as at
-from astropy.io import ascii
-from astropy import units as u
-from astropy.coordinates import Angle
-import matplotlib.pyplot as plt
-import pylab as matlib
-from datetime import datetime as dt
-import argparse
-from tools import yamlcfgclass
-from tools import rmfile
-from tools import RaInDeg
-from tools import DecInDeg
-import astrotable
-from astrotable import astrotableclass
-from download_atlas_lc import download_atlas_lc_class
 from SNloop import SNloopclass
-from download_atlas_lc_loop import downloadloopclass
-import sigmacut
+import pylab as matlib
+import matplotlib.pyplot as plt
 
 def dataPlot(x, y, dx=None, dy=None, sp=None, fmt='bo', ecolor='k', elinewidth=None, barsabove = False, capsize=1, logx=False, logy=False):
 	if sp == None:
@@ -51,7 +33,7 @@ class plotlcclass(SNloopclass):
 	def __init__(self):
 		SNloopclass.__init__(self)
 
-	def plot_lc(self,SNindex,filt=None,sp=None,plotoffsetlcflag=False):
+	def plot_lc(self,SNindex,sp=None,plotoffsetlcflag=False):
 		print('Plotting SN lc and offsets...')
 
 		MJD_offsetlc = []
@@ -81,12 +63,17 @@ class plotlcclass(SNloopclass):
 			plt.legend(('SN', '%s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][0])))
 		else:
 			plt.legend(('SN', '%s %s" Offset and %s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][0],self.cfg.params['forcedphotpatterns']['circular']['n'], self.cfg.params['forcedphotpatterns']['circular']['radii'][1])))
-		
 		plt.axhline(linewidth=1,color='k')
 		#plt.xlim(59000,59050)
 		#plt.ylim(-5000,5000)
 		plt.xlabel('MJD')
 		plt.ylabel('uJy')
+
+	def plotlcloop(self,args,SNindex):
+		self.plot_lc(SNindex)
+		plotfilename = self.lcbasename(SNindex)+'.png'
+		print('Plot file name: ',plotfilename)
+		plt.savefig(plotfilename)
 
 if __name__ == '__main__':
 
@@ -94,10 +81,7 @@ if __name__ == '__main__':
 	parser = plot_lc.define_options()
 	args = parser.parse_args()
 
-	indexlist = plot_lc.initialize(args)
+	SNindexlist = plot_lc.initialize(args)
 
-	for i in indexlist:
-		plot_lc.plot_lc(i)
-		plotfilename = plot_lc.lcbasename(i)+'.png'
-		print('Plot file name: ',plotfilename)
-		plt.savefig(plotfilename)
+	for SNindex in SNindexlist:
+		plot_lc.plotlcloop(args,SNindex)

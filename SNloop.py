@@ -66,6 +66,7 @@ class SNloopclass(astrotableclass):
 		parser.add_argument('--averagelc',default=False,help=('average lcs'))
 		parser.add_argument('--skip_uncert',default=False,help=('skip cleanup lcs using uncertainties'))
 		parser.add_argument('--skip_chi',default=False,help=('skip cleanup lcs using chi/N'))
+		parser.add_argument('--skip_makecuts',default=False,help=('skip cutting measurements using mask column'))
 
 		return parser
 

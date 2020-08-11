@@ -109,7 +109,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 
 		self.RADECtable.formattable(formatMapping={'OffsetID':'3d','Ra':'.8f','Dec':'.8f','RaNew':'.8f','DecNew':'.8f','RaDistance':'.2f','RaOffset':'.2f','DecOffset':'.2f','Ndet':'4d','Ndet_o':'4d','Ndet_c':'4d'})
 
-		if self.verbose:
+		if self.verbose>1:
 			print(self.RADECtable.t)
 
 	def downloadoffsetlc(self, SNindex, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None,pattern=None):
@@ -174,7 +174,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 				cfilt = np.where(self.lc.t['F']=='c')
 				self.RADECtable.t['Ndet_c'][i]=len(cfilt[0])
 
-			if self.verbose: 
+			if self.verbose>1: 
 				print(self.RADECtable.t)
 			if savelc:
 				self.saveRADEClist(SNindex)

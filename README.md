@@ -27,9 +27,9 @@ Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and
 * Save the `atlaslc.sourceme` file.
 * In the **data directory**, create a text file called `snlist.txt` that will house your SN list. Create a table with the required column names "tnsname," "ra," and "dec." Another option is to download the example file that is already set up with data and move it to the data directory.
 * In the **source directory**, open `precursor.cfg`. This is the configuration file.
-* Optional: You can change the `outsubdir` name in this file if you want to create different sub-directories for different SNe.
 * After `username`, add your ATLAS machine username.
-* Change any other values you wish (for example, the filter to be used).
+* You can change the `outsubdir` name in this file if you want to create different sub-directories for different SNe. Then change any other values you wish (for example, the filter to be used, the type (dynamic or static) of cleanup to be done, etc.). You can also set any `apply` value or `makecuts` value to `False` to skip a procedure.
+* To further customize the cleanlc procedure in `precursor.cfg`, you can set the `flags` value to a hexadecimal number if you want to customize which data points to use when averaging the data. If you want to skip over values flagged with big uncertainties, add `0x1` to `flags`. Similarly, add `0x2` to skip values flagged with big chi2/N values through the dynamic procedure, and add `0x4` to skip values flagged with big chi2/N values through the static procedure.
 
 ### Usage:
 This code allows you to download SN light curves. There are many options to configure. You can view the list of arguments in the `SNloop.py` file in the source directory. To summarize:
@@ -46,6 +46,9 @@ This code allows you to download SN light curves. There are many options to conf
 * `-c` lets you reference a different configuration file instead of the `precursor.cfg` file.
 * `-e` adds an additional configuration file.
 * `-f` specifies the filter (o or c) to be used when downloading the light curves. By default, the code will reference `precursor.cfg`, but adding this argument will override that.
+* `--skip_uncert True` skips flagging measurements with certain large uncertainties (uncertainties larger than the median uncertainty times the Nmedian set in `precursor.cfg`).
+* `--skip_chi True` skips flagging measurements with certain large chi2/N values (if `type` is `dynamic`, chi2/N values larger than the median chi2/N plus Nsigma set in `precursor.cfg` times the standard deviation of chi2/N are flagged; if `type` is `static`, chi2/N values larger than max_chi2norm set in `precursor.cfg`).
+* `--skip_makecuts True` skips making cuts to the data when averaging based on the uncertainty and chi2/N flags set previously.
 
 #### Additional usage:
 You can also use forced photometry to get offset light curves, plot each SN's light curve, and average the light curve data. To do any of these, follow the following instructions.
@@ -54,8 +57,9 @@ You can also use forced photometry to get offset light curves, plot each SN's li
 * **To average the light curve data automatically**, add `--averagelc True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
 
 Additional functionality enables you to do these tasks using existing data that has already been downloaded.
+* **To clean up the light curves using existing data**, initialize the program using `cleanup_lc.py`, then add to the command the SN names(s) you want cleaned up. You can skip certain procedures using `--skip_uncert True` (skips flagging measurements with certain large uncertainties), `--skip_chi True` (skips flagging measurements with certain large chi2/N values), and `--skip_makecuts True` (skips making cuts to the data when averaging based on the uncertainty and chi2/N flags set previously).
 * **To plot each SN's light curve using existing data**, initialize the program using `plot_lc.py`, then add to the command the SN name(s) you want plotted.
-* **To average the light curves using existing data**, initialize the program using `averagelc_loop.py`, then add to the command the SN name(s) you want plotted. You can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
+* **To average the light curves using existing data**, initialize the program using `average_lc.py`, then add to the command the SN name(s) you want plotted. You can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
 
 #### Using the TNS name to get RA and Dec:
 Given a TNS name, `autoadd.py` can automatically retrieve the RA and Dec coordinates from the TNS and add the TNS name, RA, and Dec to the table in `snlist.txt`. To run the script, follow the following instructions:

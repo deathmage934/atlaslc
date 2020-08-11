@@ -29,7 +29,7 @@ Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and
 * In the **source directory**, open `precursor.cfg`. This is the configuration file.
 * After `username`, add your ATLAS machine username.
 * You can change the `outsubdir` name in this file if you want to create different sub-directories for different SNe. Then change any other values you wish (for example, the filter to be used, the type (dynamic or static) of cleanup to be done, etc.). You can also set any `apply` value or `makecuts` value to `False` to skip a procedure.
-* To further customize the cleanlc procedure in `precursor.cfg`, you can set the `flags` value to a hexadecimal number if you want to customize which data points to use when averaging the data. If you want to skip over values flagged with big uncertainties, add `0x1` to `flags`. Similarly, add `0x2` to skip values flagged with big chi2/N values through the dynamic procedure, and add `0x4` to skip values flagged with big chi2/N values through the static procedure.
+* To further customize the `cleanlc` procedure in `precursor.cfg`, you can set the `flags` value to a hexadecimal number if you want to customize which data points to use when averaging the data. If you want to skip over values flagged with big uncertainties, add `0x1` to `flags`. Similarly, add `0x2` to skip values flagged with big chi2/N values through the dynamic procedure, and add `0x4` to skip values flagged with big chi2/N values through the static procedure.
 
 ### Usage:
 This code allows you to download SN light curves. There are many options to configure. You can view the list of arguments in the `SNloop.py` file in the source directory. To summarize:

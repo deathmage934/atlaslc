@@ -108,7 +108,7 @@ class cleanuplcclass(SNloopclass):
 			print('Skipping chi/N cleanup...')
 
 		# save lc with additional mask column
-		self.save_lc(SNindex,filt=cleanuplc.filt,overwrite=True,offsetindex=offsetindex)
+		self.save_lc(SNindex,filt=self.filt,overwrite=True,offsetindex=offsetindex)
 
 if __name__ == '__main__':
 

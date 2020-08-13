@@ -85,36 +85,28 @@ class SNloopclass(astrotableclass):
 		self.outrootdir = basedir
 
 	def loadcfgfiles(self, *pargs, filt=None, **kwargs):
-		result=self.cfg.loadcfgfiles(*pargs, **kwargs)
+		cfgfiles=self.cfg.loadcfgfiles(*pargs, **kwargs)
 		# set filter to filt in precursor.cfg, then check if args.filt set
 		self.filt = self.cfg.params['filter']
 		if not(filt is None):
 			self.filt=filt
-		return(result)
+		return(cfgfiles)
 
-	def lcbasenameID(self, SNID, offsetindex=None, filt=None, MJDbinsize=None):
+	def lcbasename(self, SNindex, offsetindex=None, filt=None, MJDbinsize=None):	
+		SNID = self.t[SNindex]['tnsname']
+		if filt==None:
+			filt=self.filt
 		basename = '%s/%s/%s' % (self.outrootdir,SNID,SNID)
 		if not(offsetindex is None):
 			basename += '_i%03d' % self.RADECtable.t['OffsetID'][offsetindex]
-
 		self.filt = self.cfg.params['filter']
 		if not(filt is None):
 			self.filt=filt
 			basename += '.%s' % filt
-
 		if not(MJDbinsize is None):
 			basename += '.%ddays' % int(MJDbinsize)
 		basename += '.lc'
-
-		print(basename)
 		return(basename)
-
-	def lcbasename(self, SNindex, offsetindex=None, filt=None, MJDbinsize=None):	
-		print(self.t)
-		SNID = self.t[SNindex]['tnsname']
-		if filt==None:
-			filt=self.filt
-		return(self.lcbasenameID(SNID,filt=filt,offsetindex=offsetindex,MJDbinsize=MJDbinsize))
 
 	def getSNlist(self, SNlist):
 		if len(SNlist)==1 and SNlist[0]=='all':
@@ -128,26 +120,31 @@ class SNloopclass(astrotableclass):
 
 	def load_lc(self, SNindex, filt=None, fileformat=None, offsetindex=None, MJDbinsize=None):
 		filename = self.lcbasename(SNindex,filt=filt,offsetindex=offsetindex,MJDbinsize=MJDbinsize)+'.txt'
-		if self.verbose: print('Loading lc %s' % filename)
+		if self.verbose: 
+			print('Loading lc: %s' % filename)
 		self.lc.load_generic(filename)
-		if fileformat is None: fileformat = self.cfg.params['output']['fileformat']
+		if fileformat is None: 
+			fileformat = self.cfg.params['output']['fileformat']
 		return(0)
 
 	def save_lc(self, SNindex, filt=None, overwrite=False, fileformat=None, offsetindex=None, MJDbinsize=None):
 		filename = self.lcbasename(SNindex, filt=filt, offsetindex=offsetindex, MJDbinsize=MJDbinsize)+'.txt'
-		if fileformat is None: fileformat = self.cfg.params['output']['fileformat']
+		if fileformat is None: 
+			fileformat = self.cfg.params['output']['fileformat']
 		self.lc.write(filename,format=fileformat, overwrite=overwrite,verbose=(self.verbose>0))
 		return(0)
 
 	def saveRADEClist(self, SNindex, filt=None):
 		RADEClistfilename = self.lcbasename(SNindex,filt=filt)+'.RADEClist.txt'
-		if self.verbose: print('Saving RADEClist %s' % RADEClistfilename)
+		if self.verbose: 
+			print('Saving RADEClist %s' % RADEClistfilename)
 		self.RADECtable.write(RADEClistfilename,format='fixed_width_two_line')
 		return(0)
 
 	def loadRADEClist(self, SNindex, filt=None):
 		RADEClistfilename = self.lcbasename(SNindex,filt=filt)+'.RADEClist.txt'
-		if self.verbose: print('Loading RADEClist %s' % RADEClistfilename)
+		if self.verbose: 
+			print('Loading RADEClist %s' % RADEClistfilename)
 		self.RADECtable.load_generic(RADEClistfilename)
 		print(self.RADECtable.t)
 		return(0)
@@ -172,7 +169,6 @@ class SNloopclass(astrotableclass):
 		self.setoutdir(outrootdir=args.outrootdir, outsubdir=args.outsubdir)
 		self.verbose = args.verbose
 		self.debug = args.debug
-
 		self.load_spacesep(snlistfilename)
 		print(self.t)
 		print(args.SNlist)

@@ -17,8 +17,7 @@ class averagelcclass(SNloopclass):
 		flags = self.cfg.params['averagelc']['flags']
 		print('Setting indeces using flags: %x' % flags)
 		
-		#np.bitwise_or(self.lc.t['Mask'],flags)
-		mask2 = np.bitwise_and(self.lc.t['Mask'],flags, out=self.lc.t['Mask'])
+		mask2 = np.bitwise_and(self.lc.t['Mask'], flags, out=self.lc.t['Mask'])
 		print(self.lc.t)
 
 		print('Points to cut: ',np.where(self.lc.t['Mask']>0))
@@ -28,7 +27,6 @@ class averagelcclass(SNloopclass):
 		lc_duJy = self.lc.t['duJy'][cuts_indeces]
 		lc_MJD = self.lc.t['MJD'][cuts_indeces]
 
-		#sys.exit(0)
 		return(lc_uJy, lc_duJy, lc_MJD)
 
 	def calcaveragelc(self, SNindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=None, offsetindex=None):
@@ -110,7 +108,7 @@ class averagelcclass(SNloopclass):
 			print('Skipping makecuts using mask column...')
 			lc_uJy = self.lc.t['uJy']
 			lc_duJy = self.lc.t['duJy']
-			lc_MJD = self.lc.t['MJD']
+			lc_MJD = self.lc.t['MJD'] 
 
 		self.averagelcs(SNindex, offsetindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=MJDbinsize)
 

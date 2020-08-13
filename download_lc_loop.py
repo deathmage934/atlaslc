@@ -214,4 +214,4 @@ if __name__ == '__main__':
 		if args.plot: 
 			downloadlc.plotlcloop(args,SNindex)
 		if args.averagelc: 
-			downloadlc.averagelcloop(args,SNindex)
+			downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)

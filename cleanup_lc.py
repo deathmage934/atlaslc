@@ -19,16 +19,19 @@ class cleanuplcclass(SNloopclass):
 		a = Nmedian * median(self.lc.t['duJy'])
 		print('Flagging all measurements with duJy bigger than %i...' % a)
 
-		# define indeces
-		a_indeces = np.where(self.lc.t['duJy']>a)
-		if len(self.lc.t['duJy'][a_indeces]) > 0:
-			print('duJy above %i: ' % a)
-			print(self.lc.t['duJy'][a_indeces])
+		# define indices
+		a_indices = np.where(self.lc.t['duJy']>a)
+		a_indices = list(a_indices[0])
+		print('Indices: ',a_indices,type(a_indices))
+		if len(self.lc.t.loc[a_indices,'duJy'])>0:
+			print('duJy above %i: ' % a,len(self.lc.t.loc[a_indices,'duJy']))
 		else:
 			print('No measurements flagged!')
 
-		self.lc.t['Mask'][a_indeces] |= self.flag_uncertainty
-		print(self.lc.t)
+		# update 'Mask' column
+		flag_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_uncertainty)
+		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_uncertainty) 
+		#print(self.lc.write(columns=['duJy','Mask'],index=True)) # delete me
 
 	def flag_bigchi_dynamic(self,SNindex,offsetindex):
 		# define vars
@@ -36,19 +39,22 @@ class cleanuplcclass(SNloopclass):
 		chi_median = median(self.lc.t['chi/N'])
 		chi_stddev = np.std(self.lc.t['chi/N'])
 		print('Nsigma: %.1f, chi_median: %f, chi_stddev: %f' % (Nsigma, chi_median, chi_stddev))
-		a = int(chi_median+Nsigma*chi_stddev) # !! ROUND DOWN WITH INT OR ROUND UP?
+		a = int(chi_median+Nsigma*chi_stddev) # !! CURRENTLY ROUNDS DOWN
 		print('Flagging all measurements with chi/N bigger than %i...' % a)
 
-		# define indeces
-		a_indeces = np.where(self.lc.t['chi/N']>a)
-		if len(self.lc.t['chi/N'][a_indeces]) > 0:
-			print('chi/N above %i: ' % a)
-			print(self.lc.t['chi/N'][a_indeces])
+		# define indices
+		a_indices = np.where(self.lc.t['chi/N']>a)
+		a_indices = list(a_indices[0])
+		print('Indices: ',a_indices,type(a_indices)) 
+		if len(self.lc.t.loc[a_indices,'chi/N'])>0:
+			print('chi/N above %i: ' % a,len(self.lc.t.loc[a_indices,'chi/N']))
 		else:
 			print('No measurements flagged!')
 
-		self.lc.t['Mask'][a_indeces] |= self.flag_dynamic
-		print(self.lc.t)
+		# update 'Mask' column
+		flag_dynamic = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_dynamic)
+		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_dynamic)
+		#print(self.lc.write(columns=['chi/N','Mask'],index=True)) # delete me
 
 	def flag_bigchi_static(self,SNindex,offsetindex):
 		# define vars
@@ -56,18 +62,21 @@ class cleanuplcclass(SNloopclass):
 		print('chi_max: ',chi_max)
 		print('Flagging all measurements with chi/N bigger than %i...' % chi_max)
 		
-		# define indeces
-		a_indeces = np.where(self.lc.t['chi/N']>chi_max)
-		if len(self.lc.t['chi/N'][a_indeces]) > 0:
-			print('chi/N above %i: ' % chi_max)
-			print(self.lc.t['chi/N'][a_indeces])
+		# define indices
+		a_indices = np.where(self.lc.t['chi/N']>chi_max)
+		a_indices = list(a_indices[0])
+		print('Indices: ',a_indices) # delete me
+		if len(self.lc.t.loc[a_indices,'chi/N'])>0:
+			print('chi/N above %i: ' % chi_max,len(self.lc.t.loc[a_indices,'chi/N']))
 		else:
 			print('No measurements flagged!')		
 
-		self.lc.t['Mask'][a_indeces] |= self.flag_static
-		print(self.lc.t)
+		# update 'Mask' column
+		flag_static = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_static)
+		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_static)		
+		#print(self.lc.write(columns=['chi/N','Mask'],index=True)) # delete me
 
-	def cleanuplcloop(self,args,SNindex,offsetindex):
+	def cleanuplcloop(self,args,SNindex,offsetindex,filt):
 		# load lc
 		self.load_lc(SNindex, filt=self.filt, offsetindex=offsetindex, MJDbinsize=None)
 		print('Length of self.lc.t: ',len(self.lc.t))
@@ -75,14 +84,16 @@ class cleanuplcclass(SNloopclass):
 			return(1)
 
 		# add or replace mask column
-		if 'Mask' in self.lc.t.colnames:
+		if 'Mask' in self.lc.t.columns:
 			print('Replacing existing Mask column...')
-			mask = np.zeros((len(self.lc.t)), dtype=int)
-			self.lc.t.replace_column('Mask',mask)
+			for i in range(len(self.lc.t)):
+				self.lc.t.loc[i,'Mask'] = 0
 		else: 
 			mask = np.zeros((len(self.lc.t)), dtype=int)
-			self.lc.t.add_column(mask, name='Mask')
+			self.lc.t = self.lc.t.assign(Mask=mask)
+		#print(self.lc.write(columns=['MJD','uJy','duJy','F','chi/N','Mask'],index=True)) # delete me
 
+		# determine if using uncertainty cleanup
 		uncert_apply = self.cfg.params['cleanlc']['uncertainty']['apply']
 		if args.skip_uncert: uncert_apply = False
 		if uncert_apply == True:
@@ -91,6 +102,7 @@ class cleanuplcclass(SNloopclass):
 		else:
 			print('Skipping uncertainty cleanup...')
 
+		# determine if using chi/N cleanup, and if type is dynamic or static
 		chi_apply = self.cfg.params['cleanlc']['chi/N']['apply']
 		if args.skip_chi: chi_apply = False
 		if chi_apply == True:
@@ -121,4 +133,6 @@ if __name__ == '__main__':
 	for SNindex in SNindexlist:
 		cleanuplc.loadRADEClist(SNindex=SNindex, filt=cleanuplc.filt)
 		for offsetindex in range(len(cleanuplc.RADECtable.t)):
-			cleanuplc.cleanuplcloop(args,SNindex,offsetindex=offsetindex)
+			cleanuplc.cleanuplcloop(args,SNindex,offsetindex=offsetindex,filt=cleanuplc.filt)
+
+	print('\n')

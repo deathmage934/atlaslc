@@ -2,6 +2,7 @@
 
 import sys, os, re, copy, time
 import scipy
+import pandas as pd
 
 class calcaverageclass:
     def __init__(self):
@@ -135,9 +136,9 @@ class calcaverageclass:
             else:
                 self.stdev = None 
         elif data[self.use].size==1:
-            print('BBBBB',self.use,self.use[0],data[self.use][0])
-            self.mean = data[self.use][0]
-            self.mean_err = noise[self.use][0]
+            print(self.use,self.use[0],data[self.use].iloc[0])
+            self.mean = data[self.use].iloc[0]
+            self.mean_err = noise[self.use].iloc[0]
             self.X2norm = None
             self.stdev = None            
         else:

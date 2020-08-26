@@ -69,10 +69,10 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 				radii = [self.cfg.params['forcedphotpatterns']['box']['sidelength']]
 			elif pattern=='galaxy':
 				n = self.cfg.params['forcedphotpatterns']['galaxy']['n']
-				galRA = self.t.loc[SNindex,'galRA']
-				galDec = self.t.loc[SNindex,'galDec']
-				RA = self.t.loc[SNindex,'ra']
-				Dec = self.t.loc[SNindex,'dec']
+				galRA = self.t.at[SNindex,'galRA']
+				galDec = self.t.at[SNindex,'galDec']
+				RA = self.t.at[SNindex,'ra']
+				Dec = self.t.at[SNindex,'dec']
 				rdist = 1 # !! FIX ASAP
 				radii = [rdist,rdist+5]
 			else:
@@ -123,7 +123,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 			
 			# add new row for each offset using data from RADECtable
 			for i in range(len(self.RADECtable.t)):
-				print(self.RADECtable.write(indices=i, columns=['OffsetID','Ra','Dec']))
+				if self.verbose>2:
+					print(self.RADECtable.write(indices=i, columns=['OffsetID','Ra','Dec']))
 				self.downloadlc(SNindex,
 							 lookbacktime_days=lookbacktime_days,
 							 savelc=savelc,
@@ -152,7 +153,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 			#self.RADECtable.formattable(formatMapping={'OffsetID':'3d','Ra':'.8f','Dec':'.8f','RaNew':'.8f','DecNew':'.8f','RaDistance':'.2f','DecOffset':'.2f','Ndet':'4d','Ndet_o':'4d','Ndet_c':'4d'})
 
 			for i in range(len(self.RADECtable.t)):
-				print(self.RADECtable.t.loc[i,['OffsetID', 'RaNew', 'DecNew']])
+				if self.verbose>2:
+					print(self.RADECtable.t.loc[i,['OffsetID', 'RaNew', 'DecNew']])
 				self.downloadlc(SNindex,
 							 lookbacktime_days=lookbacktime_days,
 							 savelc=savelc,
@@ -197,10 +199,16 @@ if __name__ == '__main__':
 	downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
 
 	for SNindex in SNindexlist:
-		downloadlc.downloadoffsetlc(SNindex,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=args.pattern,forcedphot_offset=args.forcedphot_offset)
+		downloadlc.downloadoffsetlc(SNindex,
+									lookbacktime_days=args.lookbacktime_days,
+									savelc=args.savelc,
+									overwrite=args.overwrite,
+									fileformat=args.fileformat,
+									pattern=args.pattern,
+									forcedphot_offset=args.forcedphot_offset)
 		for offsetindex in range(len(downloadlc.RADECtable.t)):
 			downloadlc.cleanuplcloop(args,SNindex,offsetindex=offsetindex,filt=downloadlc.filt)
+			if args.averagelc: 
+				downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)
 		if args.plot: 
 			downloadlc.plotlcloop(args,SNindex)
-		if args.averagelc: 
-			downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)

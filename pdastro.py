@@ -226,7 +226,7 @@ class pdastroclass:
         if isinstance(indices,int) or isinstance(indices,str) or isinstance(indices,float):
             return([indices])           
         
-        indices=list(indices)
+        indices=np.array(indices)
         
         #if not (isinstance(indices,list) or isinstance(indices,np.ndarray)):
         #    raise RuntimeError("Can't convert this to an indices list!",type(indices),indices)

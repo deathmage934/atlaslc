@@ -269,7 +269,7 @@ class calcaverageclass:
                 self.calcaverage_sigmacut(data,mask=mask,Nsigma=Nsigma,fixmean=fixmean,medianflag=medianflag,verbose=verbose)
             else:
                 self.calcaverage_errorcut(data,mask=mask,noise=noise,Nsigma=Nsigma,medianflag=medianflag,verbose=verbose)
-            if verbose>=2:
+            if verbose>2:
                 print(self.__str__())
             # Not converged???
             if self.stdev==None or self.stdev==0.0 or self.mean==None:

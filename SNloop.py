@@ -141,9 +141,8 @@ class SNloopclass(pdastroclass):
 
 	def load_lc(self, SNindex, filt=None, fileformat=None, offsetindex=None, MJDbinsize=None):
 		# get lc from already existing file
-		filename = self.lcbasename(SNindex,filt=filt,offsetindex=offsetindex,MJDbinsize=MJDbinsize)+'.txt'
-		if self.verbose: 
-			print('Loading lc: %s' % filename)
+		filename = self.lcbasename(SNindex,filt=filt,offsetindex=offsetindex,MJDbinsize=MJDbinsize)+'.txt' 
+		print('Loading lc: %s' % filename)
 		self.lc.load_spacesep(filename, delim_whitespace=True)
 		if fileformat is None: 
 			fileformat = self.cfg.params['output']['fileformat']
@@ -171,7 +170,8 @@ class SNloopclass(pdastroclass):
 		if self.verbose: 
 			print('Loading RADEClist %s' % RADEClistfilename)
 		self.RADECtable.load_spacesep(RADEClistfilename, delim_whitespace=True)
-		print(self.RADECtable.write())
+		if self.verbose>2:
+			print(self.RADECtable.write())
 		return(0)
 
 	def makecuts_indices(self,SNindex,offsetindex):
@@ -182,14 +182,14 @@ class SNloopclass(pdastroclass):
 		
 		mask=np.bitwise_and(self.lc.t['Mask'], flags)
 		cuts_indices = np.where(mask==0)
-		cuts_indices = list(cuts_indices[0])
+		cuts_indices = cuts_indices[0]
 		datacut = len(self.lc.t)-len(self.lc.t.loc[cuts_indices])
 		print('Length original lc: ',len(self.lc.t),', length cleaned lc: ',len(self.lc.t.loc[cuts_indices]),', data points cut: ',datacut)
 
 		lc_uJy = self.lc.t.loc[cuts_indices, 'uJy']
 		lc_duJy = self.lc.t.loc[cuts_indices, 'duJy']
 		lc_MJD = self.lc.t.loc[cuts_indices, 'MJD']
-		return(lc_uJy, lc_duJy, lc_MJD, datacut)
+		return(lc_uJy, lc_duJy, lc_MJD, datacut, cuts_indices)
 
 	def initialize(self,args):
 		# load config files

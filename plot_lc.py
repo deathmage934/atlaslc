@@ -47,7 +47,8 @@ class plotlcclass(SNloopclass):
 		# plot SN in red first, then loop through offsets to plot in blue
 		for offsetindex in range(len(self.RADECtable.t)-1,-1,-1):
 			self.load_lc(SNindex, filt=self.filt, offsetindex=self.RADECtable.t.at[offsetindex,'OffsetID'])
-			print('Offset index: ',offsetindex)
+			if self.verbose>2: # FIX
+				print('Offset index: ',offsetindex)
 
 			makecuts_apply = self.cfg.params['plotlc']['makecuts']
 			if args.skip_makecuts:
@@ -55,7 +56,7 @@ class plotlcclass(SNloopclass):
 			if makecuts_apply == True:
 				if not('Mask' in self.lc.t.columns):
 					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
-				lc_uJy, lc_duJy, lc_MJD, datacut = self.makecuts_indices(SNindex, offsetindex=offsetindex)
+				lc_uJy, lc_duJy, lc_MJD, datacut, cuts_indices = self.makecuts_indices(SNindex, offsetindex=offsetindex)
 				totalcuts += datacut
 			else:
 				print('Skipping makecuts using mask column...')
@@ -73,7 +74,9 @@ class plotlcclass(SNloopclass):
 			else: 
 				sp, plotOffset, dplotOffset = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
 				matlib.setp(plotOffset,ms=5,color='b')
-		print('Total data points cut: ',totalcuts)
+		
+		if self.verbose>2: # FIX
+			print('Total data points cut: ',totalcuts)
 
 		# determine legend
 		if len(self.RADECtable.t)>1:
@@ -89,8 +92,8 @@ class plotlcclass(SNloopclass):
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel('uJy')
-		if not(len(lc_MJD)==0):
-			plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
+		#if not(len(lc_MJD)==0):
+			#plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
 
 	def plotlcloop(self,args,SNindex):
 		self.plot_lc(args,SNindex)

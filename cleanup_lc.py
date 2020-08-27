@@ -17,64 +17,75 @@ class cleanuplcclass(SNloopclass):
 		# define vars
 		Nmedian = self.cfg.params['cleanlc']['uncertainty']['Nmedian']
 		a = Nmedian * median(self.lc.t['duJy'])
-		print('Flagging all measurements with duJy bigger than %i...' % a)
+		if self.verbose>2: # FIX
+			print('Flagging all measurements with duJy bigger than %i...' % a)
 
 		# define indices
 		a_indices = np.where(self.lc.t['duJy']>a)
 		a_indices = list(a_indices[0])
 		print('Indices: ',a_indices,type(a_indices))
 		if len(self.lc.t.loc[a_indices,'duJy'])>0:
-			print('duJy above %i: ' % a,len(self.lc.t.loc[a_indices,'duJy']))
+			if self.verbose>2: # FIX
+				print('duJy above %i: ' % a,len(self.lc.t.loc[a_indices,'duJy']))
 		else:
-			print('No measurements flagged!')
+			if self.verbose>2: # FIX
+				print('No measurements flagged!')
 
 		# update 'Mask' column
 		flag_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_uncertainty)
 		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_uncertainty) 
-		#print(self.lc.write(columns=['duJy','Mask'],index=True)) # delete me
 
 	def flag_bigchi_dynamic(self,SNindex,offsetindex):
 		# define vars
 		Nsigma = self.cfg.params['cleanlc']['chi/N']['Nsigma']
 		chi_median = median(self.lc.t['chi/N'])
 		chi_stddev = np.std(self.lc.t['chi/N'])
-		print('Nsigma: %.1f, chi_median: %f, chi_stddev: %f' % (Nsigma, chi_median, chi_stddev))
+		#print('Nsigma: %.1f, chi_median: %f, chi_stddev: %f' % (Nsigma, chi_median, chi_stddev))
 		a = int(chi_median+Nsigma*chi_stddev) # !! CURRENTLY ROUNDS DOWN
-		print('Flagging all measurements with chi/N bigger than %i...' % a)
+		#print('Flagging all measurements with chi/N bigger than %i...' % a)
 
 		# define indices
 		a_indices = np.where(self.lc.t['chi/N']>a)
 		a_indices = list(a_indices[0])
 		print('Indices: ',a_indices,type(a_indices)) 
 		if len(self.lc.t.loc[a_indices,'chi/N'])>0:
-			print('chi/N above %i: ' % a,len(self.lc.t.loc[a_indices,'chi/N']))
+			if self.verbose>2: # FIX
+				print('chi/N above %i: ' % a,len(self.lc.t.loc[a_indices,'chi/N']))
 		else:
-			print('No measurements flagged!')
+			if self.verbose>2: # FIX
+				print('No measurements flagged!')
 
 		# update 'Mask' column
 		flag_dynamic = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_dynamic)
 		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_dynamic)
-		#print(self.lc.write(columns=['chi/N','Mask'],index=True)) # delete me
+
+		if self.verbose>2: # FIX
+			print('Nsigma: %.1f, chi_median: %f, chi_stddev: %f' % (Nsigma, chi_median, chi_stddev))
+			print('Flagging all measurements with chi/N bigger than %i...' % a)
 
 	def flag_bigchi_static(self,SNindex,offsetindex):
 		# define vars
 		chi_max = self.cfg.params['cleanlc']['chi/N']['max_chi2norm']
-		print('chi_max: ',chi_max)
-		print('Flagging all measurements with chi/N bigger than %i...' % chi_max)
+		#print('chi_max: ',chi_max)
+		#print('Flagging all measurements with chi/N bigger than %i...' % chi_max)
 		
 		# define indices
 		a_indices = np.where(self.lc.t['chi/N']>chi_max)
 		a_indices = list(a_indices[0])
-		print('Indices: ',a_indices) # delete me
 		if len(self.lc.t.loc[a_indices,'chi/N'])>0:
-			print('chi/N above %i: ' % chi_max,len(self.lc.t.loc[a_indices,'chi/N']))
+			if self.verbose>2: # FIX
+				print('chi/N above %i: ' % chi_max,len(self.lc.t.loc[a_indices,'chi/N']))
 		else:
-			print('No measurements flagged!')		
+			if self.verbose>2: # FIX
+				print('No measurements flagged!')		
 
 		# update 'Mask' column
 		flag_static = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_static)
 		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_static)		
-		#print(self.lc.write(columns=['chi/N','Mask'],index=True)) # delete me
+
+		if self.verbose>2: # FIX
+			print('chi_max: ',chi_max)
+			print('Flagging all measurements with chi/N bigger than %i...' % chi_max)
 
 	def cleanuplcloop(self,args,SNindex,offsetindex,filt):
 		# load lc
@@ -85,7 +96,8 @@ class cleanuplcclass(SNloopclass):
 
 		# add or replace mask column
 		if 'Mask' in self.lc.t.columns:
-			print('Replacing existing Mask column...')
+			if self.verbose>2: # FIX
+				print('Replacing existing Mask column...')
 			for i in range(len(self.lc.t)):
 				self.lc.t.loc[i,'Mask'] = 0
 		else: 

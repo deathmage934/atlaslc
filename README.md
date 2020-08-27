@@ -65,7 +65,7 @@ Additional functionality enables you to do these tasks using existing data that 
 Given a TNS name, `autoadd.py` can automatically retrieve the RA and Dec coordinates from the TNS and add the TNS name, RA, and Dec to the table in `snlist.txt`. To run the script, follow the following instructions:
 * If you have only the TNS name of your SN, use the following command and add the TNS name at the end of the command: `autoadd.py`.
 * If you have the SN name (could be TNS name or other designation) AND the RA and Dec coordinates, initialize the program (`autoadd.py`) and add the SN name at the end of the command. Then, use the arguments `--ra` and `--dec` to specify the RA and Dec, and run the program.
-**(Note: not implemented yet.)**
+* **(Note: this feature has not been implemented yet.)**
 
 #### Example commands:
 * `autoadd.py 2020lse` adds the TNS name 2020lse, its RA, and its Dec to `snlist.txt`. Similarly, `autoadd.py 2020lse --ra 10:41:02.20 --dec -27:05:00.3` adds the TNS name 2020lse, the given RA, and the given Dec to `snlist.txt`. **(Note: not implemented yet.)**

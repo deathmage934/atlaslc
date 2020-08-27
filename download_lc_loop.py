@@ -123,7 +123,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 			
 			# add new row for each offset using data from RADECtable
 			for i in range(len(self.RADECtable.t)):
-				if self.verbose>2:
+				if self.verbose>1:
 					print(self.RADECtable.write(indices=i, columns=['OffsetID','Ra','Dec']))
 				self.downloadlc(SNindex,
 							 lookbacktime_days=lookbacktime_days,
@@ -153,7 +153,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 			#self.RADECtable.formattable(formatMapping={'OffsetID':'3d','Ra':'.8f','Dec':'.8f','RaNew':'.8f','DecNew':'.8f','RaDistance':'.2f','DecOffset':'.2f','Ndet':'4d','Ndet_o':'4d','Ndet_c':'4d'})
 
 			for i in range(len(self.RADECtable.t)):
-				if self.verbose>2:
+				if self.verbose:
 					print(self.RADECtable.t.loc[i,['OffsetID', 'RaNew', 'DecNew']])
 				self.downloadlc(SNindex,
 							 lookbacktime_days=lookbacktime_days,

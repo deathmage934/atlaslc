@@ -170,7 +170,7 @@ class SNloopclass(pdastroclass):
 		if self.verbose: 
 			print('Loading RADEClist %s' % RADEClistfilename)
 		self.RADECtable.load_spacesep(RADEClistfilename, delim_whitespace=True)
-		if self.verbose>2:
+		if self.verbose>1:
 			print(self.RADECtable.write())
 		return(0)
 

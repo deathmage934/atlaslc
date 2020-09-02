@@ -52,7 +52,7 @@ This code allows you to download SN light curves. There are many options to conf
 
 #### Additional usage:
 You can also use forced photometry to get offset light curves, plot each SN's light curve, and average the light curve data. To do any of these, follow the following instructions.
-* **To get forced photometry offsets automatically**, add `--forcedphot_offset True` to the command. In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius.
+* **To get forced photometry offsets automatically**, add `--forcedphot_offset True` to the command. In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius. `--pattern` specifies the pattern type to use (options are circular, box, or galaxy, which will get a ring of offsets around the closest bright object with a radius equal to the distance between the SN and the object).
 * **To plot each SN's light curve automatically**, add `--plot True` to the command.
 * **To average the light curve data automatically**, add `--averagelc True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
 

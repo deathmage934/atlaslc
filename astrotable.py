@@ -63,7 +63,6 @@ class astrotableclass:
 
     def load_generic(self,filename,namesMapping={},formatMapping={},**kwargs):
         #self.t = ascii.read(filename,format='commented_header',delimiter='\s',fill_values=[('-',0),('--',0)])
-        print('BBB')
         try:
             self.t = ascii.read(filename,**kwargs)
         except:

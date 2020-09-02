@@ -113,7 +113,7 @@ class download_atlas_lc_class:
 		if not self.check_connection():
 			raise(RuntimeError,"No Connection!!!")
 		
-		# build the command
+		# build the cmd
 		cmd = self.build_cmd(ra, dec, lookbacktime_days=lookbacktime_days)
 		print('Command for photometry: %s' % cmd)
 
@@ -138,7 +138,6 @@ if __name__ == "__main__":
 	download_atlas_lc.connect(args.atlasmachine,args.user,args.passwd)
 	download_atlas_lc.get_lc(args.RA,args.Dec,
 							lookbacktime_days=args.lookbacktime_days,
-							#savefile=args.savefile,
 							overwrite=args.overwrite,
 							fileformat=args.fileformat)
 	

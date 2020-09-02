@@ -5,11 +5,8 @@ A. Rest
 '''
 import sys,os,re,types
 import numpy as np
-
-#from astropy.io import ascii
 from astropy.time import Time
 import astropy.io.fits as fits
-#from astropy.table import QTable, Table, Column
 import astropy
 import pandas as pd
 
@@ -163,7 +160,6 @@ class pdastroclass:
                     open(filename,'w').writelines(' '.join(columns)+'\n')
             else:
                 if filename is None:
-                    print('NNNN')
                     print(self.t.to_string(index=index, columns=columns, formatters=formatters, **kwargs))
                 else:
                     self.t.to_string(filename, index=index, columns=columns, formatters=formatters, **kwargs)
@@ -174,6 +170,8 @@ class pdastroclass:
                 if filename is None:
                     print(' '.join(columns)+'\n')
                 else:
+                    if columns is None:
+                        columns = []
                     open(filename,'w').writelines(' '.join(columns)+'\n')
             else:
                 if filename is None:
@@ -219,7 +217,7 @@ class pdastroclass:
                 #return an empty list instead of empty tuple
                 return([])
             # teh first entry is a list, then these are the relevant indices!
-            if isinstance(indices[0],list):
+            if isinstance(indices[0],list) or isinstance(indices[0],np.ndarray):
                 return(indices[0])
             else:
                 return(list(indices))
@@ -228,7 +226,7 @@ class pdastroclass:
         if isinstance(indices,int) or isinstance(indices,str) or isinstance(indices,float):
             return([indices])           
         
-        indices=list(indices)
+        indices=np.array(indices)
         
         #if not (isinstance(indices,list) or isinstance(indices,np.ndarray)):
         #    raise RuntimeError("Can't convert this to an indices list!",type(indices),indices)
@@ -263,7 +261,7 @@ class pdastroclass:
                    exclude_lowlim=False,exclude_uplim=False):
 
         # get the indices based on input.
-        indices=self.getindices(indices)        
+        indices=self.getindices(indices)
         
         # get the column names over which to iterate
         colnames=self.getcolnames(colnames)
@@ -349,7 +347,7 @@ class pdastroclass:
                         self.t[fitskey][index]=header[fitskey]
                     else:
                         if raiseError:
-                            raise RuntimeError,"fits key %s does not exist in file %s" % (fitskey,self.t[fitsfilecolname][index])
+                            raise RuntimeError("fits key %s does not exist in file %s" % (fitskey,self.t[fitsfilecolname][index]))
                         else:
                             self.t[fitskey][index]=None
                             if skipcolname!=None:

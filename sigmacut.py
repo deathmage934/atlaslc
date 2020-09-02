@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
 import sys, os, re, copy, time
+<<<<<<< HEAD
 import numpy as np
+=======
+import scipy
+import pandas as pd
+>>>>>>> adc1586465194560205ceb5cc913847496a4e2ac
 
 class calcaverageclass:
     def __init__(self):
@@ -135,9 +140,9 @@ class calcaverageclass:
             else:
                 self.stdev = None 
         elif data[self.use].size==1:
-            print('BBBBB',self.use,self.use[0],data[self.use][0])
-            self.mean = data[self.use][0]
-            self.mean_err = noise[self.use][0]
+            print(self.use,self.use[0],data[self.use].iloc[0])
+            self.mean = data[self.use].iloc[0]
+            self.mean_err = noise[self.use].iloc[0]
             self.X2norm = None
             self.stdev = None            
         else:
@@ -268,7 +273,7 @@ class calcaverageclass:
                 self.calcaverage_sigmacut(data,mask=mask,Nsigma=Nsigma,fixmean=fixmean,medianflag=medianflag,verbose=verbose)
             else:
                 self.calcaverage_errorcut(data,mask=mask,noise=noise,Nsigma=Nsigma,medianflag=medianflag,verbose=verbose)
-            if verbose>=2:
+            if verbose>2:
                 print(self.__str__())
             # Not converged???
             if self.stdev==None or self.stdev==0.0 or self.mean==None:

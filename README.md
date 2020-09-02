@@ -46,6 +46,8 @@ This code allows you to download SN light curves. There are many options to conf
 * `-c` lets you reference a different configuration file instead of the `precursor.cfg` file.
 * `-e` adds an additional configuration file.
 * `-f` specifies the filter (o or c) to be used when downloading the light curves. By default, the code will reference `precursor.cfg`, but adding this argument will override that.
+* `--ra` lets you specify the RA coordinates for a SN, which will override the RA set in `snlist.txt`.
+* `--dec` lets you specify the Dec coordinates for a SN, which will override the Dec set in `snlist.txt`.
 * `--skip_uncert True` skips flagging measurements with certain large uncertainties (uncertainties larger than the median uncertainty times the Nmedian set in `precursor.cfg`).
 * `--skip_chi True` skips flagging measurements with certain large chi2/N values (if `type` is `dynamic`, chi2/N values larger than the median chi2/N plus Nsigma set in `precursor.cfg` times the standard deviation of chi2/N are flagged; if `type` is `static`, chi2/N values larger than max_chi2norm set in `precursor.cfg`).
 * `--skip_makecuts True` skips making cuts to the data when averaging based on the uncertainty and chi2/N flags set previously.

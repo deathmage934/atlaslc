@@ -67,10 +67,9 @@ Additional functionality enables you to do these tasks using existing data that 
 Given a TNS name, `autoadd.py` can automatically retrieve the RA and Dec coordinates from the TNS and add the TNS name, RA, and Dec to the table in `snlist.txt`. To run the script, follow the following instructions:
 * If you have only the TNS name of your SN, use the following command and add the TNS name at the end of the command: `autoadd.py`.
 * If you have the SN name (could be TNS name or other designation) AND the RA and Dec coordinates, initialize the program (`autoadd.py`) and add the SN name at the end of the command. Then, use the arguments `--ra` and `--dec` to specify the RA and Dec, and run the program.
-* **(Note: this feature has not been implemented yet.)**
 
 #### Example commands:
-* `autoadd.py 2020lse` adds the TNS name 2020lse, its RA, and its Dec to `snlist.txt`. Similarly, `autoadd.py 2020lse --ra 10:41:02.20 --dec -27:05:00.3` adds the TNS name 2020lse, the given RA, and the given Dec to `snlist.txt`. **(Note: not implemented yet.)**
+* `autoadd.py 2020lse` adds the TNS name 2020lse, its RA, and its Dec to `snlist.txt`. Similarly, `autoadd.py 2020lse --ra 10:41:02.20 --dec -27:05:00.3` adds the TNS name 2020lse, the given RA, and the given Dec to `snlist.txt`.
 * `download_lc_loop.py 2020lse -v -o -s -l 70 --forcedphot_offset True --plot True --averagelc True --MJDbinsize 20 --passwd 'XXX'` gets the data for SN 2020lse with verbose level 1, overwrites files with the same name, saves the files, and uses a lookback time of 70. Then the offset data is downloaded, plots are saved, and the SN light curve data is averaged with an MJDbinsize of 20.
 * `cleanup_lc.py 2020lse --skip_chi True` cleans up the data for SN 2020lse using only the uncertainty cut.
 * `plot_lc.py 2020lse -v -s` plots the data for SN 2020lse as long as there is already existing light curve data.

@@ -48,7 +48,7 @@ This code allows you to download SN light curves. There are many options to conf
 
 #### Additional usage:
 You can also use forced photometry to get offset light curves, plot each SN's light curve, and average the light curve data. To do any of these, follow the following instructions.
-* **To get forced photometry offsets automatically**, add `--forcedphot_offset True` to the command. In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius.
+* **To get forced photometry offsets automatically**, add `--forcedphot_offset True` to the command. In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius. Adding `--pattern` to the command will enable you to then choose between the three patterns (`circle` gets rings of offsets, `box` get offsets in the shape of a box, and `closebright` gets a ring of offsets around the closest bright object with a radius the distance from the object to the SN).
 * **To plot each SN's light curve automatically**, add `--plot True` to the command.
 * **To average the light curve data automatically**, add `--averagelc True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
 
@@ -60,9 +60,10 @@ Additional functionality enables you to do these tasks using existing data that 
 Given a TNS name, `autoadd.py` can automatically retrieve the RA and Dec coordinates from the TNS and add the TNS name, RA, and Dec to `snlist.txt`. To run the script, follow the following instructions:
 * If you have only the TNS name of your SN, use the following command and add the TNS name at the end of the command: `autoadd.py`.
 * If you have the SN name (could be TNS name or other designation) AND the RA and Dec coordinates, initialize the program (`autoadd.py`) and add the SN name at the end of the command. Then, use the arguments `--ra` and `--dec` to specify the RA and Dec, and run the program.
+* Add `--autosearch True` to the command if you want to automatically get the RA and Dec of the closest bright object for the `closebright` offset pattern.
 
 #### Example commands:
-* `autoadd.py 2020lse` adds the TNS name 2020lse, its RA, and its Dec to `snlist.txt`. Similarly, `autoadd.py 2020lse --ra 10:41:02.20 --dec -27:05:00.3` adds the TNS name 2020lse, the given RA, and the given Dec to `snlist.txt`.
+* `autoadd.py 2020lse` adds the TNS name 2020lse, its RA, and its Dec to `snlist.txt`. Similarly, `autoadd.py 2020lse --ra 10:41:02.20 --dec -27:05:00.3 --autosearch True` adds the TNS name 2020lse, the given RA, the given Dec, and the RA and Dec of the closest bright object to `snlist.txt`.
 * `download_lc_loop.py 2020lse -v -o -s -l 70 --forcedphot_offset True --plot True --averagelc True --MJDbinsize 20 --passwd 'XXX'` gets the data for SN 2020lse with verbose level 1, overwrites files with the same name, saves the files, and uses a lookback time of 70. Then the offset data is downloaded, plots are saved, and the SN light curve data is averaged with an MJDbinsize of 20.
 * `plot_lc.py 2020lse -v -s` plots the data for SN 2020lse as long as there is already existing light curve data.
 * `averagelc_loop.py 2020lse -v -s --MJDbinsize 20` averages the data for SN 2020lse as long as there is already existing light curve data.

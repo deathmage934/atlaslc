@@ -98,12 +98,12 @@ if __name__ == '__main__':
 	snlistfilename = autoadd.cfg.params['snlistfilename']
 	if os.path.exists(snlistfilename):
 		autoadd.snlist.load_spacesep(snlistfilename, delim_whitespace=True)
-	else:
-		# WRITE BLANK TABLE WITH COLUMNS
+	else: 
 		autoadd.snlist.t = pd.DataFrame({'atlasdesignation':[],'otherdesignation':[],'ra':[],'dec':[],'spectraltype':[],'earliestmjd':[],'tnsname':[],'closebrightRA':[],'closebrightDec':[]})
 
-	if args.autosearch is True:
-		results = autoadd.autosearch(ra, dec, 20)
+	if args.autosearch:
+		print('Running autosearch for nearest close bright object... \nObject will be within 20 arcsec, brighter than 18 mag, and could be a star or galaxy...')
+		results = autoadd.autosearch(ra, dec, 0.333)
 		print(results) # FIX
 		autoadd.addrow2snlist(tnsname=args.tnsname,ra=ra,dec=dec, closebrightRA=closebrightRA, closebrightDec=closebrightDec)
 	else:

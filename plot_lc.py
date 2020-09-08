@@ -56,8 +56,7 @@ class plotlcclass(SNloopclass):
 			if makecuts_apply == True:
 				if not('Mask' in self.lc.t.columns):
 					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
-				lc_uJy, lc_duJy, lc_MJD, datacut, cuts_indices = self.makecuts_indices(SNindex, offsetindex=offsetindex)
-				totalcuts += datacut
+				lc_uJy, lc_duJy, lc_MJD, cuts_indices = self.makecuts_indices(SNindex, offsetindex=offsetindex, procedure1='plotlc')
 			else:
 				print('Skipping makecuts using mask column...')
 				lc_uJy = self.lc.t['uJy']
@@ -74,9 +73,6 @@ class plotlcclass(SNloopclass):
 			else: 
 				sp, plotOffset, dplotOffset = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
 				matlib.setp(plotOffset,ms=5,color='b')
-		
-		if self.verbose>2: # FIX
-			print('Total data points cut: ',totalcuts)
 
 		# determine legend
 		if len(self.RADECtable.t)>1:

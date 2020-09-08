@@ -16,6 +16,9 @@ from astrotable import astrotableclass
 from download_atlas_lc import download_atlas_lc_class
 import sigmacut
 from pdastro import pdastroclass
+import mastcasjobs
+import pylab
+import json
 
 class SNloopclass(pdastroclass):
 	def __init__(self):
@@ -39,7 +42,7 @@ class SNloopclass(pdastroclass):
 											  'RaDistance':'{:.2f}'.format,
 											  'RaOffset':'{:.2f}'.format,
 											  'DecOffset':'{:.2f}'.format,
-											  'Radius':'{:2d}'.format,
+											  'Radius':'{:.2f}'.format,
 											  'Ndet':'{:4d}'.format,
 											  'Ndet_c':'{:4d}'.format,
 											  'Ndet_o':'{:4d}'.format}
@@ -68,25 +71,26 @@ class SNloopclass(pdastroclass):
 
 		parser.add_argument('SNlist', nargs='+')
 		parser.add_argument('-v','--verbose', default=0, action='count')
-		parser.add_argument('-d', '--debug', help="debug", action='count')
+		parser.add_argument('-d', '--debug', action='count', help="debug")
 		parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
-		parser.add_argument('-s','--savelc', help=("save lc"), action="store_true", default=False)
+		parser.add_argument('-s','--savelc', default=False, action="store_true", help=("save lc"))
 		parser.add_argument('--outrootdir', default=outrootdir, help=('output root directory.''(default=%(default)s)'))
 		parser.add_argument('--outsubdir', default=None, help=('subdir added to the output root directory (and filename) ''(default=%(default)s)'))
 		parser.add_argument('-c', '--cfgfile', default=cfgfile, help='main config file. (default=%(default)s)')
-		parser.add_argument('-e', '--extracfgfile', action='append', default=None, help=('additional config file. These cfg files do not need to have all ''parameters. They overwrite the parameters in the main cfg file.'))
-		parser.add_argument('-p', '--params', action='append', default=None, nargs=2, help=('"param val": change parameter in config file (not in section, only ''main part) (default=%(default)s)'))
+		parser.add_argument('-e', '--extracfgfile', default=None, action='append', help=('additional config file. These cfg files do not need to have all ''parameters. They overwrite the parameters in the main cfg file.'))
+		parser.add_argument('-p', '--params', default=None, action='append', nargs=2, help=('"param val": change parameter in config file (not in section, only ''main part) (default=%(default)s)'))
 		parser.add_argument('--pall', action='append', default=None, nargs=2, help=('"param val". change parameter in all sections of config file ''(section independent) (default=%(default)s)'))
 		parser.add_argument('--pp', action='append', default=None, nargs=3, help=('"section param val". change parameters in given section of ''config file (default=%(default)s)'))
-		parser.add_argument('-f','--filt', default=None, help=('specify filter'), choices=['c','o'])
-		parser.add_argument('--MJDbinsize', default=None, help=('specify MJD bin size'),type=float)
-		parser.add_argument('--forcedphot_offset', default=False)
-		parser.add_argument('--pattern', default='circular',help=('offset pattern, defined in the config file, (default=%(default)s)'))
+		parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify filter'))
+		parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float)
+		parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
+		parser.add_argument('--pattern', default='circular', help=('offset pattern, defined in the config file, (default=%(default)s)'))
 		parser.add_argument('--plot', default=False, help=('plot lcs'))
-		parser.add_argument('--averagelc',default=False,help=('average lcs'))
-		parser.add_argument('--skip_uncert',default=False,help=('skip cleanup lcs using uncertainties'))
-		parser.add_argument('--skip_chi',default=False,help=('skip cleanup lcs using chi/N'))
-		parser.add_argument('--skip_makecuts',default=False,help=('skip cutting measurements using mask column'))
+		parser.add_argument('--averagelc', default=False, help=('average lcs'))
+		parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
+		parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
+		parser.add_argument('--skip_makecuts', default=False, help=('skip cutting measurements using mask column when averaging'))
+		#parser.add_argument('--skip_makecuts_offsetstats',default=False,help=('skip cutting measurements using mask colum when '))
 		return parser
 
 	def setoutdir(self,outrootdir=None, outsubdir=None):
@@ -174,10 +178,17 @@ class SNloopclass(pdastroclass):
 			print(self.RADECtable.write())
 		return(0)
 
-	def makecuts_indices(self,SNindex,offsetindex):
+	def makecuts_indices(self,SNindex,offsetindex,procedure1):
 		# use when cleaning up data in plot_lc.py or average_lc.py; makes cuts based on mask column created in cleanup_lc.py
 		# set flags in precursor.cfg to control what data to cut based on uncertainties and/or chi/N
-		flags = self.cfg.params['averagelc']['flags']
+		if procedure1 is 'averagelc': 
+			flags = self.cfg.params['averagelc']['flags']
+		elif procedure1 is 'plotlc': 
+			flags = self.cfg.params['plotlc']['flags']
+		elif procedure1 is 'offsetstats':
+			flags = self.cfg.params['offsetstats']['flags']
+		else:
+			raise RuntimeError('Procedure %s must be averagelc or offsetstats!' % procedure1)
 		print('Setting indices using flags: %x' % flags)
 		
 		mask=np.bitwise_and(self.lc.t['Mask'], flags)
@@ -189,7 +200,18 @@ class SNloopclass(pdastroclass):
 		lc_uJy = self.lc.t.loc[cuts_indices, 'uJy']
 		lc_duJy = self.lc.t.loc[cuts_indices, 'duJy']
 		lc_MJD = self.lc.t.loc[cuts_indices, 'MJD']
-		return(lc_uJy, lc_duJy, lc_MJD, datacut, cuts_indices)
+		return(lc_uJy, lc_duJy, lc_MJD, cuts_indices)
+
+	def autosearch(self, ra, dec, search_size):
+	    query = """select o.raMean, o.decMean
+	    from fGetNearbyObjEq("""+str(ra)+','+str(dec)+","+str(search_size/2)+""") nb
+	    JOIN MeanObjectView o on o.ObjID=nb.ObjID
+	    WHERE o.nDetections > 5
+	    AND o.rmeankronmag < 18
+	    """
+	    jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
+	    results = jobs.quick(query, task_name="python cone search")
+	    return(results)
 
 	def initialize(self,args):
 		# load config files

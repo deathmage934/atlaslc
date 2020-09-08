@@ -17,8 +17,7 @@ class cleanuplcclass(SNloopclass):
 		# define vars
 		Nmedian = self.cfg.params['cleanlc']['uncertainty']['Nmedian']
 		a = Nmedian * median(self.lc.t['duJy'])
-		if self.verbose:
-			print('Flagging all measurements with duJy bigger than %i...' % a)
+		print('Flagging all measurements with duJy bigger than %i...' % a)
 
 		# define indices
 		a_indices = np.where(self.lc.t['duJy']>a)
@@ -41,6 +40,7 @@ class cleanuplcclass(SNloopclass):
 		chi_median = median(self.lc.t['chi/N'])
 		chi_stddev = np.std(self.lc.t['chi/N'])
 		a = int(chi_median+(Nsigma*chi_stddev)) # !! CURRENTLY ROUNDS DOWN
+		print('Flagging all measurements with chi/N bigger than %i...' % a)
 
 		# define indices
 		a_indices = np.where(self.lc.t['chi/N']>a)
@@ -59,11 +59,11 @@ class cleanuplcclass(SNloopclass):
 
 		if self.verbose:
 			print('Nsigma: %.1f, chi_median: %f, chi_stddev: %f' % (Nsigma, chi_median, chi_stddev))
-			print('Flagging all measurements with chi/N bigger than %i...' % a)
 
 	def flag_bigchi_static(self,SNindex,offsetindex):
 		# define vars
 		chi_max = self.cfg.params['cleanlc']['chi/N']['max_chi2norm']
+		print('Flagging all measurements with chi/N bigger than %i...' % chi_max)
 		
 		# define indices
 		a_indices = np.where(self.lc.t['chi/N']>chi_max)
@@ -81,7 +81,6 @@ class cleanuplcclass(SNloopclass):
 
 		if self.verbose:
 			print('chi_max: ',chi_max)
-			print('Flagging all measurements with chi/N bigger than %i...' % chi_max)
 
 	def cleanuplcloop(self,args,SNindex,offsetindex,filt):
 		# load lc

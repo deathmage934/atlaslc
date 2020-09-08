@@ -205,6 +205,7 @@ class SNloopclass(pdastroclass):
 
 	def autosearch(self, ra, dec, search_size):
 		os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])
+		print('Casjobs WSID set to %s in precursor.cfg...' % self.cfg.params['casjobs_wsid'])
 		os.environ['CASJOBS_PW'] = getpass.getpass('Enter Casjobs password:')
 
 		query = """select o.raMean, o.decMean

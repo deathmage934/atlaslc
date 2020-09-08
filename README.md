@@ -27,7 +27,7 @@ Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and
 * In the **data directory**, create a text file called `snlist.txt` that will house your SN list. Another option is to download the example file that is already set up with data and move it to the data directory.
 * In the **source directory**, open `precursor.cfg`. This is the configuration file.
 * After `username`, add your ATLAS machine username. (You can also set the username in the command using `--user`.)
-* If for the `closebright` forced photometry offset pattern to work, set your Casjobs WSID after `casjobs_wsid`. If/when you use this pattern, you will be prompted to enter your password.
+* For the `closebright` forced photometry offset pattern to work, set your Casjobs WSID after `casjobs_wsid`. If/when you use this pattern, you will be prompted to enter your password.
 * Change any other values you wish (for example, the filter to be used). You can also change the `outsubdir` name in this file if you want to create different sub-directories for different SNe.
 
 ### Usage:

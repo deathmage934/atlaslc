@@ -19,6 +19,7 @@ from pdastro import pdastroclass
 import mastcasjobs
 import pylab
 import json
+import getpass
 
 class SNloopclass(pdastroclass):
 	def __init__(self):
@@ -203,15 +204,18 @@ class SNloopclass(pdastroclass):
 		return(lc_uJy, lc_duJy, lc_MJD, cuts_indices)
 
 	def autosearch(self, ra, dec, search_size):
-	    query = """select o.raMean, o.decMean
-	    from fGetNearbyObjEq("""+str(ra)+','+str(dec)+","+str(search_size/2)+""") nb
-	    JOIN MeanObjectView o on o.ObjID=nb.ObjID
-	    WHERE o.nDetections > 5
-	    AND o.rmeankronmag < 18
-	    """
-	    jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
-	    results = jobs.quick(query, task_name="python cone search")
-	    return(results)
+		os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])
+		os.environ['CASJOBS_PW'] = getpass.getpass('Enter Casjobs password:')
+
+		query = """select o.raMean, o.decMean
+		from fGetNearbyObjEq("""+str(ra)+','+str(dec)+","+str(search_size/2)+""") nb
+		JOIN MeanObjectView o on o.ObjID=nb.ObjID
+		WHERE o.nDetections > 5
+		AND o.rmeankronmag < 18
+		"""
+		jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
+		results = jobs.quick(query, task_name="python cone search")
+		return(results)
 
 	def initialize(self,args):
 		# load config files

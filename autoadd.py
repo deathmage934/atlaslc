@@ -105,6 +105,7 @@ if __name__ == '__main__':
 		print('Running autosearch for nearest close bright object... \nObject will be within 20 arcsec, brighter than 18 mag, and could be a star or galaxy...')
 		results = autoadd.autosearch(ra, dec, 0.333)
 		print(results) # FIX
+		sys.exit(0)
 		autoadd.addrow2snlist(tnsname=args.tnsname,ra=ra,dec=dec, closebrightRA=closebrightRA, closebrightDec=closebrightDec)
 	else:
 		autoadd.addrow2snlist(tnsname=args.tnsname,ra=ra,dec=dec)

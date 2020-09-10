@@ -16,16 +16,16 @@ class cleanuplcclass(SNloopclass):
 	def flag_biguncertainty_duJy(self,SNindex,offsetindex):
 		# define vars
 		Nmedian = self.cfg.params['cleanlc']['uncertainty']['Nmedian']
-		a = Nmedian * median(self.lc.t['duJy'])
-		print('Flagging all measurements with duJy bigger than %i...' % a)
+		a = Nmedian * median(self.lc.t[self.dflux_colname])
+		print('Flagging all measurements with %s bigger than %i...' % (self.dflux_colname, a))
 
 		# define indices
-		a_indices = np.where(self.lc.t['duJy']>a)
+		a_indices = np.where(self.lc.t[self.dflux_colname]>a)
 		a_indices = list(a_indices[0])
 		print('Indices: ',a_indices,type(a_indices))
-		if len(self.lc.t.loc[a_indices,'duJy'])>0:
+		if len(self.lc.t.loc[a_indices,self.dflux_colname])>0:
 			if self.verbose:
-				print('duJy above %i: ' % a,len(self.lc.t.loc[a_indices,'duJy']))
+				print('%s above %i: ' % (self.dflux_colname, a), len(self.lc.t.loc[a_indices,self.dflux_colname]))
 		else:
 			if self.verbose:
 				print('No measurements flagged!')

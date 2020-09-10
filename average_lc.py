@@ -39,7 +39,7 @@ class averagelcclass(SNloopclass):
 				MJD += MJDbinsize
 				continue
 			lcaverageindex = len(self.averagelctable.t)
-			df = pd.DataFrame([[self.RADECtable.t.loc[offsetindex,'OffsetID'],calcaverage.mean,calcaverage.mean_err,calcaverage.stdev,calcaverage.X2norm,calcaverage.Nused,calcaverage.Nskipped]],columns=['OffsetID','uJy','duJy','stdev','X2norm','Nused','Nclipped'])
+			df = pd.DataFrame([[self.RADECtable.t.loc[offsetindex,'OffsetID'],calcaverage.mean,calcaverage.mean_err,calcaverage.stdev,calcaverage.X2norm,calcaverage.Nused,calcaverage.Nskipped]],columns=['OffsetID',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nused','Nclipped'])
 			self.averagelctable.t = self.averagelctable.t.append(df,ignore_index=True)
 			# delete me
 			#self.averagelctable.t.add_row({'OffsetID':self.RADECtable.t['OffsetID'][offsetindex],'uJy':calcaverage.mean,'duJy':calcaverage.mean_err, 'stdev':calcaverage.stdev, 'X2norm':calcaverage.X2norm, 'Nused':calcaverage.Nused, 'Nclipped':calcaverage.Nskipped})
@@ -101,8 +101,8 @@ class averagelcclass(SNloopclass):
 		# data set to lc table
 		else:
 			print('Skipping makecuts using mask column...')
-			lc_uJy = self.lc.t['uJy']
-			lc_duJy = self.lc.t['duJy']
+			lc_uJy = self.lc.t[self.flux_colname]
+			lc_duJy = self.lc.t[self.dflux_colname]
 			lc_MJD = self.lc.t['MJD']
 			print('Calculating average_lc table for offset index %d' % offsetindex) 
 			self.averagelcs(args, SNindex, offsetindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=MJDbinsize)

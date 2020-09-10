@@ -59,8 +59,8 @@ class plotlcclass(SNloopclass):
 				lc_uJy, lc_duJy, lc_MJD, cuts_indices = self.makecuts_indices(SNindex, offsetindex=offsetindex, procedure1='plotlc')
 			else:
 				print('Skipping makecuts using mask column...')
-				lc_uJy = self.lc.t['uJy']
-				lc_duJy = self.lc.t['duJy']
+				lc_uJy = self.lc.t[self.flux_colname]
+				lc_duJy = self.lc.t[self.dflux_colname]
 				lc_MJD = self.lc.t['MJD']
 
 			if offsetindex==0:
@@ -87,7 +87,7 @@ class plotlcclass(SNloopclass):
 
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
-		plt.ylabel('uJy')
+		plt.ylabel(self.flux_colname)
 		#if not(len(lc_MJD)==0):
 			#plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
 

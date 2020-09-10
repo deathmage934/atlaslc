@@ -30,11 +30,13 @@ class SNloopclass(pdastroclass):
 		self.verbose = 0
 		self.debug = False
 		self.outrootdir = None
-		self.filt=None
+		self.filt = None
+		self.flux_colname = None
+		self.dflux_colname = None
 
 		self.lc = pdastroclass()
 		self.RADECtable = pdastroclass(columns=['OffsetID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
-		self.averagelctable = pdastroclass(columns=['OffsetID','MJD','uJy','duJy','stdev','X2norm','Nused','Nclipped','MJDNused','MJDNskipped'])
+		self.averagelctable = pdastroclass(columns=['OffsetID','MJD',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nused','Nclipped','MJDNused','MJDNskipped'])
 		self.RADECtable.default_formatters = {'OffsetID':'{:3d}'.format,
 											  'Ra':'{:.8f}'.format,
 											  'Dec':'{:.8f}'.format,
@@ -49,8 +51,8 @@ class SNloopclass(pdastroclass):
 											  'Ndet_o':'{:4d}'.format}
 		self.averagelctable.default_formatters = {'OffsetID':'{:3d}'.format,
 												  'MJD':'{:.5f}'.format,
-												  'uJy':'{:.2f}'.format,
-												  'duJy':'{:.2f}'.format,
+												  self.flux_colname:'{:.2f}'.format,
+												  self.dflux_colname:'{:.2f}'.format,
 												  'stdev':'{:.2f}'.format,
 												  'X2norm':'{:.3f}'.format,
 												  'Nused':'{:4d}'.format,
@@ -198,8 +200,8 @@ class SNloopclass(pdastroclass):
 		datacut = len(self.lc.t)-len(self.lc.t.loc[cuts_indices])
 		print('Length original lc: ',len(self.lc.t),', length cleaned lc: ',len(self.lc.t.loc[cuts_indices]),', data points cut: ',datacut)
 
-		lc_uJy = self.lc.t.loc[cuts_indices, 'uJy']
-		lc_duJy = self.lc.t.loc[cuts_indices, 'duJy']
+		lc_uJy = self.lc.t.loc[cuts_indices, self.flux_colname]
+		lc_duJy = self.lc.t.loc[cuts_indices, self.dflux_colname]
 		lc_MJD = self.lc.t.loc[cuts_indices, 'MJD']
 		return(lc_uJy, lc_duJy, lc_MJD, cuts_indices)
 
@@ -238,6 +240,8 @@ class SNloopclass(pdastroclass):
 		self.setoutdir(outrootdir=args.outrootdir, outsubdir=args.outsubdir)
 		self.verbose = args.verbose
 		self.debug = args.debug
+		self.flux_colname = self.cfg.params['flux_colname']
+		self.dflux_colname = self.cfg.params['dflux_colname']
 		self.load_spacesep(snlistfilename)
 		print(self.t)
 		print(args.SNlist)

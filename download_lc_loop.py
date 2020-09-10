@@ -60,7 +60,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 
 				if len(detections4filt[0]) is 0:
 					print('Saving blank light curve: %s' % filename)
-					self.lc.write(filename,index=False,indices=detections4filt,overwrite=True,verbose=False,columns=['MJD','m','dm','uJy','duJy','F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','Sky','ZP','Obs','Mask'])
+					self.lc.write(filename,index=False,indices=detections4filt,overwrite=True,verbose=False,columns=['MJD','m','dm',self.flux_colname,self.dflux_colname,'F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','Sky','ZP','Obs','Mask'])
 				else: 
 					print('Saving light curve: %s' % filename)
 					self.lc.write(filename, index=False, indices=detections4filt, overwrite=True, verbose=False)

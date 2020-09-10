@@ -55,8 +55,8 @@ class offsetstatsclass(SNloopclass):
 							if MJD_SN[mjd_index] == self.lc.t['MJD'][counter]:
 								foundflag = True
 					if foundflag:
-						uJy[offsetindex-1,mjd_index] = self.lc.t['uJy'][counter]
-						duJy[offsetindex-1,mjd_index] = self.lc.t['duJy'][counter]
+						uJy[offsetindex-1,mjd_index] = self.lc.t[self.flux_colname][counter]
+						duJy[offsetindex-1,mjd_index] = self.lc.t[self.dflux_colname][counter]
 						Mask[offsetindex-1,mjd_index] = self.lc.t['Mask'][counter]
 						counter += 1
 					else:
@@ -64,12 +64,12 @@ class offsetstatsclass(SNloopclass):
 						duJy[offsetindex-1,mjd_index] = np.nan
 						Mask[offsetindex-1,mjd_index] = 0x8
 			else:
-				uJy[offsetindex-1,:] = self.lc.t['uJy']
-				duJy[offsetindex-1,:] = self.lc.t['duJy']
+				uJy[offsetindex-1,:] = self.lc.t[self.flux_colname]
+				duJy[offsetindex-1,:] = self.lc.t[self.dflux_colname]
 				Mask[offsetindex-1,:] = self.lc.t['Mask']
 		if self.verbose>1:
-			print('uJy: ',uJy)
-			print('duJy: ',duJy)
+			print('%s: ',uJy % self.flux_colname)
+			print('%s: ',duJy % self.dflux_colname)
 			print('Mask: ',Mask)
 
 		self.load_lc(SNindex,offsetindex=0,filt=self.filt)

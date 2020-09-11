@@ -210,11 +210,11 @@ class SNloopclass(pdastroclass):
 		print('Casjobs WSID set to %s in precursor.cfg...' % self.cfg.params['casjobs_wsid'])
 		os.environ['CASJOBS_PW'] = getpass.getpass('Enter Casjobs password:')
 
-		query = """select o.raMean, o.decMean
+		query = """select o.ObjID, o.raMean, o.decMean, o.nDetections
 		from fGetNearbyObjEq("""+str(ra)+','+str(dec)+","+str(search_size/2)+""") nb
-		JOIN MeanObjectView o on o.ObjID=nb.ObjID
-		WHERE o.nDetections > 5
-		AND o.rmeankronmag < 18
+		join MeanObjectView o on o.ObjID=nb.ObjID
+		where o.nDetections > 5
+		and o.rmeankronmag < 18
 		"""
 		jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
 		results = jobs.quick(query, task_name="python cone search")

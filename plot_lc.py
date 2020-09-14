@@ -76,10 +76,14 @@ class plotlcclass(SNloopclass):
 
 		# determine legend
 		if len(self.RADECtable.t)>1:
-			if len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1:
-				offsetlabel = '%s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
+			if max(self.RADECtable.t['PatternID']) == 1:
+				if len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1:
+					offsetlabel = '%s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
+				else:
+					offsetlabel = '%s %s" Offset and %s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0],self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
 			else:
-				offsetlabel = '%s %s" Offset and %s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0],self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
+				offsettotal = len(self.RADECtable.t)-1
+				offsetlabel = '%d Total Offsets' % offsettotal
 			plt.legend((plotSN,plotOffset),('SN %s' % self.t.at[SNindex,'tnsname'],offsetlabel))
 			plt.title('SN %s' % self.t.at[SNindex,'tnsname'])
 		else:

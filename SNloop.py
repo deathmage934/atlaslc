@@ -35,9 +35,10 @@ class SNloopclass(pdastroclass):
 		self.dflux_colname = None
 
 		self.lc = pdastroclass()
-		self.RADECtable = pdastroclass(columns=['OffsetID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
+		self.RADECtable = pdastroclass(columns=['OffsetID','PatternID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 		self.averagelctable = pdastroclass(columns=['OffsetID','MJD',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nused','Nclipped','MJDNused','MJDNskipped'])
 		self.RADECtable.default_formatters = {'OffsetID':'{:3d}'.format,
+											  'PatternID':'{:2d}'.format,
 											  'Ra':'{:.8f}'.format,
 											  'Dec':'{:.8f}'.format,
 											  'RaNew':'{:.8f}'.format,
@@ -73,6 +74,15 @@ class SNloopclass(pdastroclass):
 			outrootdir = None
 
 		parser.add_argument('SNlist', nargs='+')
+		parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify default filter'))
+		parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float)
+		parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
+		parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
+		parser.add_argument('--plot', default=False, help=('plot lcs'))
+		parser.add_argument('--averagelc', default=False, help=('average lcs'))
+		parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
+		parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
+		parser.add_argument('--skip_makecuts', default=False, help=('skip cutting measurements using mask column when averaging'))
 		parser.add_argument('-v','--verbose', default=0, action='count')
 		parser.add_argument('-d', '--debug', action='count', help="debug")
 		parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
@@ -84,15 +94,6 @@ class SNloopclass(pdastroclass):
 		parser.add_argument('-p', '--params', default=None, action='append', nargs=2, help=('"param val": change parameter in config file (not in section, only ''main part) (default=%(default)s)'))
 		parser.add_argument('--pall', action='append', default=None, nargs=2, help=('"param val". change parameter in all sections of config file ''(section independent) (default=%(default)s)'))
 		parser.add_argument('--pp', action='append', default=None, nargs=3, help=('"section param val". change parameters in given section of ''config file (default=%(default)s)'))
-		parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify filter'))
-		parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float)
-		parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
-		parser.add_argument('--pattern', default='circular', help=('offset pattern, defined in the config file, (default=%(default)s)'))
-		parser.add_argument('--plot', default=False, help=('plot lcs'))
-		parser.add_argument('--averagelc', default=False, help=('average lcs'))
-		parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
-		parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
-		parser.add_argument('--skip_makecuts', default=False, help=('skip cutting measurements using mask column when averaging'))
 		#parser.add_argument('--skip_makecuts_offsetstats',default=False,help=('skip cutting measurements using mask colum when '))
 		return parser
 
@@ -206,6 +207,19 @@ class SNloopclass(pdastroclass):
 		return(lc_uJy, lc_duJy, lc_MJD, cuts_indices)
 
 	def autosearch(self, ra, dec, search_size):
+
+		try: # Python 3.x
+			from urllib.parse import quote as urlencode
+			from urllib.request import urlretrieve
+		except ImportError:  # Python 2.x
+			from urllib import pathname2url as urlencode
+			from urllib import urlretrieve
+
+		try: # Python 3.x
+			import http.client as httplib 
+		except ImportError:  # Python 2.x
+			import httplib
+
 		os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])
 		print('Casjobs WSID set to %s in precursor.cfg...' % self.cfg.params['casjobs_wsid'])
 		os.environ['CASJOBS_PW'] = getpass.getpass('Enter Casjobs password:')
@@ -219,6 +233,42 @@ class SNloopclass(pdastroclass):
 		jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
 		results = jobs.quick(query, task_name="python cone search")
 		return(results)
+
+	def PS1_mean_detections(self,objids):
+		os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])
+		print('Casjobs WSID set to %s in precursor.cfg...' % self.cfg.params['casjobs_wsid'])
+		os.environ['CASJOBS_PW'] = getpass.getpass('Enter Casjobs password:')
+		jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
+		j = 0
+		if type(objids) == int:
+			objids = [objids]
+		for obj in objids:
+
+			queryMean = """select 
+			objID, raMean, decMean, gMeanPSFMag, gMeanPSFMagErr, 
+			rMeanPSFMag, rMeanPSFMagErr, 
+			iMeanPSFMag, iMeanPSFMagErr, 
+			zMeanPSFMag, zMeanPSFMagErr
+			from (
+			select * from MeanObjectView where objID={}
+			) d
+			""".format(obj)
+			jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
+			meanResults = jobs.quick(queryMean, task_name="python mean table search")
+			
+			data = [list(i) for i in meanResults]
+			columns = list(meanResults.columns)
+
+			df = pd.DataFrame(data=data,columns=columns)
+			df = df.replace(-999,np.nan)
+			if j == 0:
+				all_df = df
+				j += 1
+			else:
+				all_df = all_df.append(df)
+
+		return all_df
+
 
 	def initialize(self,args):
 		# load config files

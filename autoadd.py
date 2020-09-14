@@ -4,6 +4,8 @@ import argparse
 from pdastro import pdastroclass
 from SNloop import SNloopclass
 from tools import yamlcfgclass
+from tools import RaInDeg
+from tools import DecInDeg
 import pandas as pd
 from lxml import html
 import requests
@@ -55,6 +57,7 @@ class autoaddclass(SNloopclass):
 		ra = datasplit[0]
 		dec = datasplit[1]
 		print('RA: %s, Dec: %s' % (ra, dec))
+		print('RA in degrees: %s, Dec in degrees: %s' % (RaInDeg(ra),DecInDeg(dec)))
 		return(ra, dec)
 
 	def addrow2snlist(self, tnsname, ra, dec, closebrightRA=None, closebrightDec=None):
@@ -103,7 +106,8 @@ if __name__ == '__main__':
 
 	if args.autosearch:
 		print('Running autosearch for nearest close bright object... \nObject will be within 20 arcsec, brighter than 18 mag, and could be a star or galaxy...')
-		results = autoadd.autosearch(ra, dec, 0.333)
+		results = autoadd.autosearch(ra, dec, 20)
+		#results = autoadd.PS1_mean_detections(148280422016753413)
 		print(results) # FIX
 		sys.exit(0)
 		autoadd.addrow2snlist(tnsname=args.tnsname,ra=ra,dec=dec, closebrightRA=closebrightRA, closebrightDec=closebrightDec)

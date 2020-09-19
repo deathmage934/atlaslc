@@ -49,8 +49,8 @@ This code allows you to download SN light curves. There are many options to conf
 #### Additional usage:
 You can also use forced photometry to get offset light curves, plot each SN's light curve, and average the light curve data. To do any of these, follow the following instructions.
 * **To get forced photometry offsets automatically**, add `--forcedphot_offset True` to the command. In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius.
-* **To plot each SN's light curve automatically**, add `--plot True` to the command.
-* **To average the light curve data automatically**, add `--averagelc True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
+* **To plot each SN's light curve automatically**, add `--plot True` to the command. You can also specify whether or not you want to make cuts based on clean data using the `makecuts` option under `plotlc` in `precursor.cfg`.
+* **To average the light curve data automatically**, add `--averagelc True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command. You can also specify whether or not you want to make cuts based on clean data using the `makecuts` option under `averagelc` in `precursor.cfg` or setting `--avg_makecuts` to `True` or `False`.
 
 Additional functionality enables you to do these tasks using existing data that has already been downloaded.
 * **To plot each SN's light curve using existing data**, initialize the program using `plot_lc.py`, then add to the command the SN name(s) you want plotted.

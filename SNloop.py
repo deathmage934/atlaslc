@@ -31,35 +31,9 @@ class SNloopclass(pdastroclass):
 		self.debug = False
 		self.outrootdir = None
 		self.filt = None
-		self.flux_colname = None
-		self.dflux_colname = None
-
 		self.lc = pdastroclass()
-		self.RADECtable = pdastroclass(columns=['OffsetID','PatternID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
-		self.averagelctable = pdastroclass(columns=['OffsetID','MJD',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nused','Nclipped','MJDNused','MJDNskipped'])
-		self.RADECtable.default_formatters = {'OffsetID':'{:3d}'.format,
-											  'PatternID':'{:2d}'.format,
-											  'Ra':'{:.8f}'.format,
-											  'Dec':'{:.8f}'.format,
-											  'RaNew':'{:.8f}'.format,
-											  'DecNew':'{:.8f}'.format,
-											  'RaDistance':'{:.2f}'.format,
-											  'RaOffset':'{:.2f}'.format,
-											  'DecOffset':'{:.2f}'.format,
-											  'Radius':'{:.2f}'.format,
-											  'Ndet':'{:4d}'.format,
-											  'Ndet_c':'{:4d}'.format,
-											  'Ndet_o':'{:4d}'.format}
-		self.averagelctable.default_formatters = {'OffsetID':'{:3d}'.format,
-												  'MJD':'{:.5f}'.format,
-												  self.flux_colname:'{:.2f}'.format,
-												  self.dflux_colname:'{:.2f}'.format,
-												  'stdev':'{:.2f}'.format,
-												  'X2norm':'{:.3f}'.format,
-												  'Nused':'{:4d}'.format,
-												  'Nclipped':'{:4d}'.format,
-												  'MJDNused':'{:4d}'.format,
-												  'MJDNskipped':'{:4d}'.format}
+		self.RADECtable = pdastroclass()
+		self.averagelctable = pdastroclass()
 
 	def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
 		if parser is None:
@@ -73,16 +47,39 @@ class SNloopclass(pdastroclass):
 			cfgfile = None
 			outrootdir = None
 
+		# can be a sn name from snlist.txt or 'all' (loops through all sn names in snlist.txt)
 		parser.add_argument('SNlist', nargs='+')
+
+		# set default filter
 		parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify default filter'))
+		
+		# set MJD bin size for averagelc.py
 		parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float)
+		
+		# intialize forced photometry offsets
 		parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
+		
+		# set forced photometry offset pattern
 		parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
+		
+		# initialize plotlc.py
 		parser.add_argument('--plot', default=False, help=('plot lcs'))
+		
+		# initialize averagelc.py
 		parser.add_argument('--averagelc', default=False, help=('average lcs'))
+		
+		# skip uncertainty cleanup when cleaning lcs
 		parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
+		
+		# skip chi square cleanup when cleaning lcs
 		parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
-		parser.add_argument('--skip_makecuts', default=False, help=('skip cutting measurements using mask column when averaging'))
+		
+		# specify whether or not to make cuts using cleaned data when averaging data
+		parser.add_argument('--avg_makecuts', default=None, choices=['True','False'], help=('skip cutting measurements using mask column when averaging'))
+		
+		# specify procedure used in offsetstats.py
+		parser.add_argument('--procedure', default='mask1', choices=['mask1','mask2'],help=('define offsetstats.py procedure type. can be mask1 or mask2'))
+		
 		parser.add_argument('-v','--verbose', default=0, action='count')
 		parser.add_argument('-d', '--debug', action='count', help="debug")
 		parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
@@ -156,12 +153,12 @@ class SNloopclass(pdastroclass):
 			fileformat = self.cfg.params['output']['fileformat']
 		return(0)
 
-	def save_lc(self, SNindex, filt=None, overwrite=False, fileformat=None, offsetindex=None, MJDbinsize=None):
+	def save_lc(self, SNindex, indices=None, filt=None, overwrite=False, fileformat=None, offsetindex=None, MJDbinsize=None):
 		# write table and save lc as file
 		filename = self.lcbasename(SNindex, filt=filt, offsetindex=offsetindex, MJDbinsize=MJDbinsize)+'.txt'
 		if fileformat is None: 
 			fileformat = self.cfg.params['output']['fileformat']
-		self.lc.write(filename,overwrite=True,verbose=True)
+		self.lc.write(filename,indices=indices,overwrite=True,verbose=True)
 		#self.lc.write(filename,format=fileformat, overwrite=overwrite,verbose=(self.verbose>0))
 		return(0)
 
@@ -207,25 +204,12 @@ class SNloopclass(pdastroclass):
 		return(lc_uJy, lc_duJy, lc_MJD, cuts_indices)
 
 	def autosearch(self, ra, dec, search_size):
-
-		try: # Python 3.x
-			from urllib.parse import quote as urlencode
-			from urllib.request import urlretrieve
-		except ImportError:  # Python 2.x
-			from urllib import pathname2url as urlencode
-			from urllib import urlretrieve
-
-		try: # Python 3.x
-			import http.client as httplib 
-		except ImportError:  # Python 2.x
-			import httplib
-
 		os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])
 		print('Casjobs WSID set to %s in precursor.cfg...' % self.cfg.params['casjobs_wsid'])
 		os.environ['CASJOBS_PW'] = getpass.getpass('Enter Casjobs password:')
 
 		query = """select o.ObjID, o.raMean, o.decMean, o.nDetections
-		from fGetNearbyObjEq("""+str(ra)+','+str(dec)+","+str(search_size/2)+""") nb
+		from fGetNearbyObjEq("""+str(ra)+','+str(dec)+","+str(search_size/60)+""") nb
 		join MeanObjectView o on o.ObjID=nb.ObjID
 		where o.nDetections > 5
 		and o.rmeankronmag < 18
@@ -233,42 +217,6 @@ class SNloopclass(pdastroclass):
 		jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
 		results = jobs.quick(query, task_name="python cone search")
 		return(results)
-
-	def PS1_mean_detections(self,objids):
-		os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])
-		print('Casjobs WSID set to %s in precursor.cfg...' % self.cfg.params['casjobs_wsid'])
-		os.environ['CASJOBS_PW'] = getpass.getpass('Enter Casjobs password:')
-		jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
-		j = 0
-		if type(objids) == int:
-			objids = [objids]
-		for obj in objids:
-
-			queryMean = """select 
-			objID, raMean, decMean, gMeanPSFMag, gMeanPSFMagErr, 
-			rMeanPSFMag, rMeanPSFMagErr, 
-			iMeanPSFMag, iMeanPSFMagErr, 
-			zMeanPSFMag, zMeanPSFMagErr
-			from (
-			select * from MeanObjectView where objID={}
-			) d
-			""".format(obj)
-			jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
-			meanResults = jobs.quick(queryMean, task_name="python mean table search")
-			
-			data = [list(i) for i in meanResults]
-			columns = list(meanResults.columns)
-
-			df = pd.DataFrame(data=data,columns=columns)
-			df = df.replace(-999,np.nan)
-			if j == 0:
-				all_df = df
-				j += 1
-			else:
-				all_df = all_df.append(df)
-
-		return all_df
-
 
 	def initialize(self,args):
 		# load config files
@@ -292,6 +240,33 @@ class SNloopclass(pdastroclass):
 		self.debug = args.debug
 		self.flux_colname = self.cfg.params['flux_colname']
 		self.dflux_colname = self.cfg.params['dflux_colname']
+
+		self.RADECtable = pdastroclass(columns=['OffsetID','PatternID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
+		self.averagelctable = pdastroclass(columns=['OffsetID','MJD',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nused','Nclipped','MJDNused','MJDNskipped'])
+		self.RADECtable.default_formatters = {'OffsetID':'{:3d}'.format,
+											  'PatternID':'{:2d}'.format,
+											  'Ra':'{:.8f}'.format,
+											  'Dec':'{:.8f}'.format,
+											  'RaNew':'{:.8f}'.format,
+											  'DecNew':'{:.8f}'.format,
+											  'RaDistance':'{:.2f}'.format,
+											  'RaOffset':'{:.2f}'.format,
+											  'DecOffset':'{:.2f}'.format,
+											  'Radius':'{:.2f}'.format,
+											  'Ndet':'{:4d}'.format,
+											  'Ndet_c':'{:4d}'.format,
+											  'Ndet_o':'{:4d}'.format}
+		self.averagelctable.default_formatters = {'OffsetID':'{:3d}'.format,
+												  'MJD':'{:.5f}'.format,
+												  self.flux_colname:'{:.2f}'.format,
+												  self.dflux_colname:'{:.2f}'.format,
+												  'stdev':'{:.2f}'.format,
+												  'X2norm':'{:.3f}'.format,
+												  'Nused':'{:4d}'.format,
+												  'Nclipped':'{:4d}'.format,
+												  'MJDNused':'{:4d}'.format,
+												  'MJDNskipped':'{:4d}'.format}
+
 		self.load_spacesep(snlistfilename)
 		print(self.t)
 		print(args.SNlist)

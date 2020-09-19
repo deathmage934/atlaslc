@@ -25,9 +25,9 @@ class offsetstatsclass(SNloopclass):
 		#MJD_SN.append(pd.Series(59096.351849))	
 		N_MJD = len(self.lc.t['MJD'])
 
-		uJy = np.full((N_lc,N_MJD),None)
-		duJy = np.full((N_lc,N_MJD),None)
-		Mask = np.full((N_lc,N_MJD),None)
+		uJy = np.full((N_lc,N_MJD),np.nan,dtype=np.int64)
+		duJy = np.full((N_lc,N_MJD),np.nan,dtype=np.int64)
+		Mask = np.full((N_lc,N_MJD),np.nan,dtype=np.int32)
 
 		for offsetindex in range(1,len(self.RADECtable.t)):
 			self.load_lc(SNindex,offsetindex=offsetindex,filt=self.filt)
@@ -60,8 +60,8 @@ class offsetstatsclass(SNloopclass):
 						Mask[offsetindex-1,mjd_index] = self.lc.t['Mask'][counter]
 						counter += 1
 					else:
-						uJy[offsetindex-1,mjd_index] = np.nan
-						duJy[offsetindex-1,mjd_index] = np.nan
+						uJy[offsetindex-1,mjd_index] = 0
+						duJy[offsetindex-1,mjd_index] = 0
 						Mask[offsetindex-1,mjd_index] = 0x8
 			else:
 				uJy[offsetindex-1,:] = self.lc.t[self.flux_colname]
@@ -83,9 +83,9 @@ class offsetstatsclass(SNloopclass):
 		else:
 			print('Procedure mask2') # FIX
 		for index in range(N_MJD):
-			uJy4MJD = uJy[:,index].astype(int)
-			duJy4MJD = duJy[:,index].astype(int)
-			Mask4MJD = Mask[:,index].astype(int)
+			uJy4MJD = uJy[:,index]
+			duJy4MJD = duJy[:,index]
+			Mask4MJD = Mask[:,index]
 
 			calcaverage=sigmacut.calcaverageclass()
 			if self.cfg.params['offsetstats']['procedure'] == 'mask1':
@@ -117,10 +117,8 @@ class offsetstatsclass(SNloopclass):
 		#self.lc.t = self.lc.formattable(roundingMapping={'o1_mean':3,'o1_mean_err':3,'o1_stddev':3,'o1_chi/N':4})#,dtypeMapping={'o1_mean':np.float64,'o1_mean_err':np.float64,'o1_stddev':np.float64,'o1_chi/N':np.float64,'o1_Nused':np.int64,'o1_Nskipped':np.int64})
 		if 'o1_mean' in self.lc.t.columns:
 			self.lc.t = self.lc.t.round({'o1_mean':3,'o1_mean_err':3,'o1_stddev':3,'o1_chi/N':4})
-		elif 'o2_mean' in self.lc.t.columns:
+		if 'o2_mean' in self.lc.t.columns:
 			self.lc.t = self.lc.t.round({'o2_mean':3,'o2_mean_err':3,'o2_stddev':3,'o2_chi/N':4})
-		else:
-			raise RuntimeError('Could not round o1 or o2 columns!')
 		self.save_lc(SNindex,offsetindex=0,filt=self.filt,overwrite=True)
 
 if __name__ == '__main__':

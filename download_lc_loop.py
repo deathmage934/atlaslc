@@ -21,6 +21,7 @@ from plot_lc import plotlcclass, dataPlot
 from average_lc import averagelcclass
 import sigmacut
 import io
+from pdastro import pdastroclass, AandB
 
 class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 	def __init__(self):
@@ -49,25 +50,31 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 		# sort data by mjd
 		self.lc.t = self.lc.t.sort_values(by=['MJD'],ignore_index=True)
 
+		indices = self.lc.ix_remove_null(colnames='uJy')
+
 		# save the lc file with the output filename
 		if savelc:
-			self.save_lc(SNindex,overwrite=overwrite,fileformat=fileformat,offsetindex=offsetindex)
+			self.save_lc(SNindex,indices=indices,overwrite=overwrite,fileformat=fileformat,offsetindex=offsetindex)
 			for filt in ['c','o']:
 				filename = self.lcbasename(SNindex,filt=filt, offsetindex=offsetindex)+'.txt'
 				if fileformat is None: 
 					fileformat = self.cfg.params['output']['fileformat']
 				detections4filt=np.where(self.lc.t['F']==filt)
 
+				print(indices,detections4filt)
+				newindices = AandB(indices,detections4filt)
+
 				if len(detections4filt[0]) is 0:
 					print('Saving blank light curve: %s' % filename)
-					self.lc.write(filename,index=False,indices=detections4filt,overwrite=True,verbose=False,columns=['MJD','m','dm',self.flux_colname,self.dflux_colname,'F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','Sky','ZP','Obs','Mask'])
+					self.lc.write(filename,index=False,indices=newindices,overwrite=True,verbose=False,columns=['MJD','m','dm',self.flux_colname,self.dflux_colname,'F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','Sky','ZP','Obs','Mask'])
 				else: 
 					print('Saving light curve: %s' % filename)
-					self.lc.write(filename, index=False, indices=detections4filt, overwrite=True, verbose=False)
+					self.lc.write(filename, index=False, indices=newindices, overwrite=True, verbose=False)
 
 	def defineRADEClist(self,RA,Dec,SNindex,pattern=None):
 		if not(pattern is None):
 			pattern_list = pattern
+			print('Pattern set to ',pattern_list)
 			OffsetID = 1
 			foundflag = False
 			for pattern in pattern_list: 
@@ -92,8 +99,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 					if self.cfg.params['forcedphotpatterns']['closebright']['autosearch'] is True:
 						RA_deg = RaInDeg(RA)
 						Dec_deg = DecInDeg(Dec)
-						results = self.autosearch(RA_deg, Dec_deg, 20) # FIX
-						print(results) # FIX
+						results = self.autosearch(RA_deg, Dec_deg, 20)
+						print('Close bright objects found: \n',results)
 						sys.exit(0)
 						cbRA = '?' # FIX
 						cbDec = '?' # FIX
@@ -119,7 +126,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 					raise RuntimeError("Pattern %s is not defined" % pattern)
 
 				# sets up RADECtable, fills in OffsetID, Ra, Dec, RaNew, DecNew for (n*len(radii)) offsets
-				if not (foundflag is True):
+				if foundflag is False:
 					foundflag = True
 					df = pd.DataFrame([[0,0,RaInDeg(RA),DecInDeg(Dec),RaInDeg(RA),DecInDeg(Dec),0,0,0,0,0,0,0]], columns=['OffsetID','PatternID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 					self.RADECtable.t = self.RADECtable.t.append(df, ignore_index=True)

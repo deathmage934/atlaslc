@@ -105,10 +105,13 @@ if __name__ == '__main__':
 		autoadd.snlist.t = pd.DataFrame({'atlasdesignation':[],'otherdesignation':[],'ra':[],'dec':[],'spectraltype':[],'earliestmjd':[],'tnsname':[],'closebrightRA':[],'closebrightDec':[]})
 
 	if args.autosearch:
-		print('Running autosearch for nearest close bright object... \nObject will be within 20 arcsec, brighter than 18 mag, and could be a star or galaxy...')
-		results = autoadd.autosearch(ra, dec, 20)
-		#results = autoadd.PS1_mean_detections(148280422016753413)
-		print(results) # FIX
+		print('Running autosearch for nearest close bright object\nObject will be within 20 arcsec, brighter than 18 mag, and could be a star or galaxy')
+		results = autoadd.autosearch(RaInDeg(ra), DecInDeg(dec), 20)
+		print('Close bright objects found: \n',results)
+		print(RaInDeg('19:58:26.6356'),DecInDeg('+62:08:05.497')) # delete me
+		closebrightRA = results['182562996106752735']['raMean']
+		closebrightDec = results['182562996106752735']['decMean']
+		print(closebrightRA,closebrightDec)
 		sys.exit(0)
 		autoadd.addrow2snlist(tnsname=args.tnsname,ra=ra,dec=dec, closebrightRA=closebrightRA, closebrightDec=closebrightDec)
 	else:

@@ -122,7 +122,7 @@ class pdastroclass:
                     errorstring='ERROR: could not make directory for %s' % filename
                     if raiseError:
                         raise RuntimeError(errorstring)
-                    print(errorstring)
+                    #print(errorstring)
                     return(1)
 
             # if overwrite, then remove the old file first
@@ -133,7 +133,7 @@ class pdastroclass:
                         errorstring='ERROR: could not clobber %s' % filename
                         if raiseError:
                             raise RuntimeError(errorstring)
-                        print(errorstring)
+                        #print(errorstring)
                         return(2)
                 else:
                     print('Warning: file exists, not deleting it, skipping! if you want to overwrite, use overwrite option!')
@@ -160,6 +160,7 @@ class pdastroclass:
                     open(filename,'w').writelines(' '.join(columns)+'\n')
             else:
                 if filename is None:
+                    pass
                     print(self.t.to_string(index=index, columns=columns, formatters=formatters, **kwargs))
                 else:
                     self.t.to_string(filename, index=index, columns=columns, formatters=formatters, **kwargs)
@@ -185,7 +186,7 @@ class pdastroclass:
                 errorstring='ERROR: could not save %s' % filename
                 if raiseError:
                     raise RuntimeError(errorstring)
-                print(errorstring)
+                #print(errorstring)
                 return(3)
                 
         return(0)

@@ -121,7 +121,7 @@ class calcaverageclass:
                 #self.mean_err = None
                 self.stdev =  scipy.sqrt(1.0/(data[self.use].size-1.0)*scipy.sum(scipy.square(data[self.use] - self.mean)))/self.c4(data[self.use].size)
                 self.mean_err = self.stdev/scipy.sqrt(data[self.use].size-1)
-                self.X2norm = None
+                self.X2norm = 1.0/(data[self.use].size-1.0)*scipy.sum(scipy.square((data[self.use] - self.mean)/noise[self.use]))
             else:
                 c1 = scipy.sum(1.0*data[self.use]/scipy.square(noise[self.use]))
                 c2 = scipy.sum(1.0/scipy.square(noise[self.use]))

@@ -15,12 +15,12 @@ class averagelcclass(SNloopclass):
 		self.flag_static = 0x4
 
 	def calcaveragelc(self, args, SNindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=None, offsetindex=None, cuts_indices=None):
-		#self.averagelctable.formattable(formatMapping={'OffsetID':'3d','MJD':'.5f','uJy':'.2f','duJy':'.2f','stdev':'.2f','X2norm':'.3f'})
-		if args.skip_makecuts is True:
-			mjdindices = list(self.lc.ix_remove_null())
-		else:
+		if not(cuts_indices is None):
 			mjdindices = self.lc.ix_remove_null(indices=cuts_indices)
-			print(mjdindices)
+			#print(mjdindices)
+		else:
+			mjdindices = list(self.lc.ix_remove_null())
+
 		MJD = np.amin(self.lc.t.loc[mjdindices,'MJD'])
 		MJDmax = np.amax(self.lc.t.loc[mjdindices,'MJD'])
 
@@ -39,11 +39,9 @@ class averagelcclass(SNloopclass):
 				MJD += MJDbinsize
 				continue
 			lcaverageindex = len(self.averagelctable.t)
-			df = pd.DataFrame([[self.RADECtable.t.loc[offsetindex,'OffsetID'],calcaverage.mean,calcaverage.mean_err,calcaverage.stdev,calcaverage.X2norm,calcaverage.Nused,calcaverage.Nskipped]],columns=['OffsetID',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nused','Nclipped'])
+			df = pd.DataFrame([[self.RADECtable.t.loc[offsetindex,'OffsetID'],0,calcaverage.mean,calcaverage.mean_err,calcaverage.stdev,calcaverage.X2norm,calcaverage.Nused,calcaverage.Nskipped,0,0]],columns=['OffsetID','MJD',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nused','Nclipped','MJDNused','MJDNskipped'])
 			self.averagelctable.t = self.averagelctable.t.append(df,ignore_index=True)
-			# delete me
-			#self.averagelctable.t.add_row({'OffsetID':self.RADECtable.t['OffsetID'][offsetindex],'uJy':calcaverage.mean,'duJy':calcaverage.mean_err, 'stdev':calcaverage.stdev, 'X2norm':calcaverage.X2norm, 'Nused':calcaverage.Nused, 'Nclipped':calcaverage.Nskipped})
-
+			
 			mask=np.logical_not(calcaverage.use)
 			calcaverage.calcaverage_sigmacutloop(MJD_windowdata,noise=duJy_windowdata,mask=mask,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
 			self.averagelctable.t.at[lcaverageindex,'MJD'] = calcaverage.mean # FIX TO INT
@@ -57,7 +55,7 @@ class averagelcclass(SNloopclass):
 
 			MJD += MJDbinsize
 
-		print(self.averagelctable.write())
+		#print(self.averagelctable.write())
 		return(0)
 	
 	def averagelcs(self, args, SNindex, offsetindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=None,fileformat=None,overwrite=True,cuts_indices=None):
@@ -82,14 +80,17 @@ class averagelcclass(SNloopclass):
 
 		# load lc
 		self.load_lc(SNindex, filt=self.filt, offsetindex=offsetindex, MJDbinsize=None)
-		print(self.lc.t)
+		#print(self.lc.t)
 		print('Length of self.lc.t: ',len(self.lc.t))
 		if len(self.lc.t) == 0:
 			return(1)
 
 		makecuts_apply = self.cfg.params['averagelc']['makecuts']
-		if args.skip_makecuts:
-			makecuts_apply = False
+		if not(args.avg_makecuts) is None:
+			if args.avg_makecuts is True:
+				makecuts_apply = True
+			else:
+				makecuts_apply = False
 
 		# data set to lc table cuts_indices
 		if makecuts_apply == True:

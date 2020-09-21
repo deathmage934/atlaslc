@@ -37,7 +37,7 @@ class plotlcclass(SNloopclass):
 		self.flag_dynamic = 0x2
 		self.flag_static = 0x4
 
-	def plot_lc(self,args,SNindex,sp=None,plotoffsetlcflag=False):
+	def plot_lc(self,args,SNindex,sp=None):
 		print('Plotting SN lc and offsets...')
 		if sp is None:
 			sp = matlib.subplot(111)
@@ -51,8 +51,11 @@ class plotlcclass(SNloopclass):
 				print('Offset index: ',offsetindex)
 
 			makecuts_apply = self.cfg.params['plotlc']['makecuts']
-			if args.skip_makecuts:
-				makecuts_apply = False
+			if not(args.avg_makecuts) is None:
+				if args.avg_makecuts is True:
+					makecuts_apply = True
+				else:
+					makecuts_apply = False
 			if makecuts_apply == True:
 				if not('Mask' in self.lc.t.columns):
 					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
@@ -95,11 +98,85 @@ class plotlcclass(SNloopclass):
 		#if not(len(lc_MJD)==0):
 			#plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
 
+	def plot_lc_offsetstats(self,args,SNindex,sp=None,o1_flag=False,o2_flag=False):
+		if sp is None:
+			sp = matlib.subplot(111)
+		self.load_lc(SNindex, filt=self.filt, offsetindex=0)
+
+		lc_uJy = self.lc.t[self.flux_colname]
+		lc_duJy = self.lc.t[self.dflux_colname]
+		lc_MJD = self.lc.t['MJD']
+
+		# plot SN lc and o1 offsetstats
+		if o1_flag is True:
+			plt.figure(3)
+			o1_stddev1 = self.lc.t['o1_mean'].astype(float)+self.lc.t['o1_stddev'].astype(float)
+			o1_stddev2 = self.lc.t['o1_mean'].astype(float)-self.lc.t['o1_stddev'].astype(float)
+
+			sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
+			matlib.setp(plot,ms=4,color='r')
+			sp, o1_stddev1, dplot_o1_stddev1 = dataPlot(lc_MJD,o1_stddev1)
+			matlib.setp(o1_stddev1,ms=4,color='b')
+			sp, o1_stddev2, dplot_o1_stddev2 = dataPlot(lc_MJD,o1_stddev2)
+			matlib.setp(o1_stddev2,ms=4,color='b')
+
+			plt.title('%s and mask1' % self.t.at[SNindex,'tnsname'])
+			plt.xlabel('MJD')
+			plt.ylabel('uJy')
+			plt.legend((plot,o1_stddev1,o1_stddev2),(self.t.at[SNindex,'tnsname'],'o1_stddev1','o1_stddev2'))
+			plt.axhline(linewidth=1,color='k')
+
+			plotfilename = self.lcbasename(SNindex)+'.mask1.png'
+			print('Plot file name: ',plotfilename)
+			plt.savefig(plotfilename)
+
+		# plot SN lc and o2 offsetstats
+		if o2_flag is True:
+			plt.figure(4)
+			o2_stddev1 = self.lc.t['o2_mean'].astype(float)+self.lc.t['o2_stddev'].astype(float)
+			o2_stddev2 = self.lc.t['o2_mean'].astype(float)-self.lc.t['o2_stddev'].astype(float)
+
+			sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
+			matlib.setp(plot,ms=4,color='r')
+			sp, o2_stddev1, dplot_o2_stddev1 = dataPlot(lc_MJD,o2_stddev1)
+			matlib.setp(o2_stddev1,ms=4,color='b')
+			sp, o2_stddev2, dplot_o2_stddev2 = dataPlot(lc_MJD,o2_stddev2)
+			matlib.setp(o2_stddev2,ms=4,color='b')
+
+			plt.title('%s and mask2' % self.t.at[SNindex,'tnsname'])
+			plt.xlabel('MJD')
+			plt.ylabel('uJy')
+			plt.legend((plot,o2_stddev1,o2_stddev2),(self.t.at[SNindex,'tnsname'],'o2_stddev1','o2_stddev2'))
+			plt.axhline(linewidth=1,color='k')
+
+			plotfilename = self.lcbasename(SNindex)+'.mask2.png'
+			print('Plot file name: ',plotfilename)
+			plt.savefig(plotfilename)
+
 	def plotlcloop(self,args,SNindex):
 		self.plot_lc(args,SNindex)
 		plotfilename = self.lcbasename(SNindex)+'.png'
 		print('Plot file name: ',plotfilename)
 		plt.savefig(plotfilename)
+
+		o1_flag = False
+		o2_flag = False
+		if self.cfg.params['plotlc']['plot_mask1'] is True:
+			o1_flag = True
+		if self.cfg.params['plotlc']['plot_mask2'] is True:
+			o2_flag = True
+
+		if (o1_flag is True) and (o2_flag is True):
+			print('mask1 and mask2 data detected, plotting mask1 and mask2 offsetstats...')
+			self.plot_lc_offsetstats(args,SNindex,o1_flag=True,o2_flag=True)
+		elif o1_flag is True:
+			print('mask1 data detected, plotting mask1 offsetstats...')
+			self.plot_lc_offsetstats(args,SNindex,o1_flag=True)
+		elif o2_flag is True:
+			print('mask2 data detected, plotting mask2 offsetstats...')
+			self.plot_lc_offsetstats(args,SNindex,o2_flag=True)
+		else:
+			print('No offsetstats data detected!! Please run offsetstats.py first.')
 
 if __name__ == '__main__':
 

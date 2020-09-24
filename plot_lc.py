@@ -39,6 +39,7 @@ class plotlcclass(SNloopclass):
 
 	def plot_lc(self,args,SNindex,sp=None):
 		print('Plotting SN lc and offsets...')
+		plt.figure()
 		if sp is None:
 			sp = matlib.subplot(111)
 		self.loadRADEClist(SNindex)
@@ -70,12 +71,12 @@ class plotlcclass(SNloopclass):
 				#sp, plotSNog, dplotSNog = dataPlot(self.lc.t['MJD'],self.lc.t['uJy'],dy=self.lc.t['duJy'],sp=sp)
 				#matlib.setp(plotSN,ms=5,color='r')
 				sp, plotSN, dplotSN = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
-				matlib.setp(plotSN,ms=5,color='r')
+				matlib.setp(plotSN,ms=4,color='r')
 			elif len(self.RADECtable.t)==1:
 				print('No offsets, skipping plotting...')
 			else: 
 				sp, plotOffset, dplotOffset = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
-				matlib.setp(plotOffset,ms=5,color='b')
+				matlib.setp(plotOffset,ms=4,color='b')
 
 		# determine legend
 		if len(self.RADECtable.t)>1:
@@ -98,6 +99,10 @@ class plotlcclass(SNloopclass):
 		#if not(len(lc_MJD)==0):
 			#plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
 
+		plotfilename = self.lcbasename(SNindex)+'.png'
+		print('Plot file name: ',plotfilename)
+		plt.savefig(plotfilename)
+
 	def plot_lc_offsetstats(self,args,SNindex,sp=None,o1_flag=False,o2_flag=False):
 		if sp is None:
 			sp = matlib.subplot(111)
@@ -110,19 +115,21 @@ class plotlcclass(SNloopclass):
 		# plot SN lc and o1 offsetstats
 		if o1_flag is True:
 			plt.figure(3)
-			o1_stddev1 = self.lc.t['o1_mean'].astype(float)+self.lc.t['o1_stddev'].astype(float)
-			o1_stddev2 = self.lc.t['o1_mean'].astype(float)-self.lc.t['o1_stddev'].astype(float)
+			o1_stddev1 = self.lc.t['o1_mean']+self.lc.t['o1_stddev']
+			o1_stddev2 = self.lc.t['o1_mean']-self.lc.t['o1_stddev']
 
 			sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
 			matlib.setp(plot,ms=4,color='r')
+			plt.fill_between(lc_MJD,o1_stddev1,o1_stddev2)
 			sp, o1_stddev1, dplot_o1_stddev1 = dataPlot(lc_MJD,o1_stddev1)
-			matlib.setp(o1_stddev1,ms=4,color='b')
+			matlib.setp(o1_stddev1,ms=4,color='k')
 			sp, o1_stddev2, dplot_o1_stddev2 = dataPlot(lc_MJD,o1_stddev2)
-			matlib.setp(o1_stddev2,ms=4,color='b')
+			matlib.setp(o1_stddev2,ms=4,color='k')
 
 			plt.title('%s and mask1' % self.t.at[SNindex,'tnsname'])
 			plt.xlabel('MJD')
 			plt.ylabel('uJy')
+			#plt.legend((plot,o1_stddev1),(self.t.at[SNindex,'tnsname'],'mask1'))
 			plt.legend((plot,o1_stddev1,o1_stddev2),(self.t.at[SNindex,'tnsname'],'o1_stddev1','o1_stddev2'))
 			plt.axhline(linewidth=1,color='k')
 
@@ -133,19 +140,21 @@ class plotlcclass(SNloopclass):
 		# plot SN lc and o2 offsetstats
 		if o2_flag is True:
 			plt.figure(4)
-			o2_stddev1 = self.lc.t['o2_mean'].astype(float)+self.lc.t['o2_stddev'].astype(float)
-			o2_stddev2 = self.lc.t['o2_mean'].astype(float)-self.lc.t['o2_stddev'].astype(float)
+			o2_stddev1 = self.lc.t['o2_mean']+self.lc.t['o2_stddev']
+			o2_stddev2 = self.lc.t['o2_mean']-self.lc.t['o2_stddev']
 
 			sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
 			matlib.setp(plot,ms=4,color='r')
+			plt.fill_between(lc_MJD,o2_stddev1,o2_stddev2)
 			sp, o2_stddev1, dplot_o2_stddev1 = dataPlot(lc_MJD,o2_stddev1)
-			matlib.setp(o2_stddev1,ms=4,color='b')
+			matlib.setp(o2_stddev1,ms=4,color='k')
 			sp, o2_stddev2, dplot_o2_stddev2 = dataPlot(lc_MJD,o2_stddev2)
-			matlib.setp(o2_stddev2,ms=4,color='b')
+			matlib.setp(o2_stddev2,ms=4,color='k')
 
 			plt.title('%s and mask2' % self.t.at[SNindex,'tnsname'])
 			plt.xlabel('MJD')
 			plt.ylabel('uJy')
+			#plt.legend((plot,o2_stddev1),(self.t.at[SNindex,'tnsname'],'mask2'))
 			plt.legend((plot,o2_stddev1,o2_stddev2),(self.t.at[SNindex,'tnsname'],'o2_stddev1','o2_stddev2'))
 			plt.axhline(linewidth=1,color='k')
 
@@ -155,10 +164,7 @@ class plotlcclass(SNloopclass):
 
 	def plotlcloop(self,args,SNindex):
 		self.plot_lc(args,SNindex)
-		plotfilename = self.lcbasename(SNindex)+'.png'
-		print('Plot file name: ',plotfilename)
-		plt.savefig(plotfilename)
-
+		
 		o1_flag = False
 		o2_flag = False
 		if self.cfg.params['plotlc']['plot_mask1'] is True:
@@ -187,6 +193,8 @@ if __name__ == '__main__':
 	SNindexlist = plotlc.initialize(args)
 
 	for SNindex in SNindexlist:
+		SNindex_counter = 0
+		print(SNindex,plotlc.t.at[SNindex,'tnsname']) # delete me
 		plotlc.plotlcloop(args,SNindex)
 
 	print('\n')

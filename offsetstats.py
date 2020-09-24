@@ -78,17 +78,28 @@ class offsetstatsclass(SNloopclass):
 		if len(self.lc.t) == 0:
 			return(1)
 
+		apply_mask1 = False
+		apply_mask2 = False
 		if self.cfg.params['offsetstats']['procedure'] == 'mask1':
-			print('Procedure mask1') # FIX
+			print('Procedure set to mask1')
+			apply_mask1 = True
+		elif self.cfg.params['offsetstats']['procedure'] == 'mask2':
+			print('Procedure set to mask2')
+			apply_mask2 = True
+		elif self.cfg.params['offsetstats']['procedure'] == 'both':
+			print('Procedures set to mask1 and mask2')
+			apply_mask1 = True
+			apply_mask2 = True
 		else:
-			print('Procedure mask2') # FIX
+			raise RuntimeError("Mask procedure must be 'mask1', 'mask2', or 'both' in precursor.cfg!")
+		
 		for index in range(N_MJD):
 			uJy4MJD = uJy[:,index]
 			duJy4MJD = duJy[:,index]
 			Mask4MJD = Mask[:,index]
 
 			calcaverage=sigmacut.calcaverageclass()
-			if self.cfg.params['offsetstats']['procedure'] == 'mask1':
+			if apply_mask1 is True:
 				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=Mask4MJD,verbose=2,Nsigma=3.0,median_firstiteration=True,saveused=True)
 				# add columns to self.lc.t
 				self.lc.t.at[index,'o1_mean'] = calcaverage.mean
@@ -97,7 +108,7 @@ class offsetstatsclass(SNloopclass):
 				self.lc.t.at[index,'o1_chi/N'] = calcaverage.X2norm
 				self.lc.t.at[index,'o1_Nused'] = calcaverage.Nused
 				self.lc.t.at[index,'o1_Nskipped'] = calcaverage.Nskipped
-			elif self.cfg.params['offsetstats']['procedure'] == 'mask2':
+			if apply_mask2:
 				mask = np.bitwise_and(Mask4MJD, 0x8)
 				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=mask,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
 				# add columns to self.lc.t
@@ -107,8 +118,6 @@ class offsetstatsclass(SNloopclass):
 				self.lc.t.at[index,'o2_chi/N'] = calcaverage.X2norm
 				self.lc.t.at[index,'o2_Nused'] = calcaverage.Nused
 				self.lc.t.at[index,'o2_Nskipped'] = calcaverage.Nskipped
-			else:
-				raise RuntimeError("Mask procedure must be mask1 or mask2 in config file!")
 			if calcaverage.Nused<=0:
 				if self.verbose>2:
 					print('No data values...')

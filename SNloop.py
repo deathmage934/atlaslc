@@ -139,9 +139,9 @@ class SNloopclass(pdastroclass):
 			SNindexlist = range(len(self.t))
 		else:
 			SNindexlist = []
-			for i in range(len(self.t)):
-				if self.t.at[i,'tnsname'] in SNlist:
-					SNindexlist.append(i)
+			for index in range(0,len(self.t)):
+				if self.t.at[index,'tnsname'] in SNlist:
+					SNindexlist.append(index)
 		return(SNindexlist)
 
 	def load_lc(self, SNindex, filt=None, fileformat=None, offsetindex=None, MJDbinsize=None):
@@ -180,6 +180,7 @@ class SNloopclass(pdastroclass):
 		return(0)
 
 	def makecuts_indices(self,SNindex,offsetindex,procedure1):
+
 		# use when cleaning up data in plot_lc.py or average_lc.py; makes cuts based on mask column created in cleanup_lc.py
 		# set flags in precursor.cfg to control what data to cut based on uncertainties and/or chi/N
 		if procedure1 is 'averagelc': 

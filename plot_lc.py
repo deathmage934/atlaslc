@@ -60,7 +60,7 @@ class plotlcclass(SNloopclass):
 			if makecuts_apply == True:
 				if not('Mask' in self.lc.t.columns):
 					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
-				lc_uJy, lc_duJy, lc_MJD, cuts_indices = self.makecuts_indices(SNindex, offsetindex=offsetindex, procedure1='plotlc')
+				lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, offsetindex=offsetindex, procedure1='plotlc')
 			else:
 				print('Skipping makecuts using mask column...')
 				lc_uJy = self.lc.t[self.flux_colname]
@@ -108,9 +108,24 @@ class plotlcclass(SNloopclass):
 			sp = matlib.subplot(111)
 		self.load_lc(SNindex, filt=self.filt, offsetindex=0)
 
-		lc_uJy = self.lc.t[self.flux_colname]
-		lc_duJy = self.lc.t[self.dflux_colname]
-		lc_MJD = self.lc.t['MJD']
+		makecuts_apply = self.cfg.params['plotlc']['makecuts']
+		if not(args.avg_makecuts) is None:
+			if args.avg_makecuts is True:
+				makecuts_apply = True
+			else:
+				makecuts_apply = False
+		if makecuts_apply is True:
+			if not('Mask' in self.lc.t.columns):
+				raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
+			lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, offsetindex=0, procedure1='plotlc')
+			lc_uJy_bad = self.lc.t.loc[bad_data, self.flux_colname]
+			lc_duJy_bad = self.lc.t.loc[bad_data, self.dflux_colname]
+			lc_MJD_bad = self.lc.t.loc[bad_data, 'MJD']
+		else:
+			print('Skipping makecuts using mask column...')
+			lc_uJy = self.lc.t[self.flux_colname]
+			lc_duJy = self.lc.t[self.dflux_colname]
+			lc_MJD = self.lc.t['MJD']
 
 		# plot SN lc and o1 offsetstats
 		if o1_flag is True:
@@ -118,9 +133,15 @@ class plotlcclass(SNloopclass):
 			o1_stddev1 = self.lc.t['o1_mean']+self.lc.t['o1_stddev']
 			o1_stddev2 = self.lc.t['o1_mean']-self.lc.t['o1_stddev']
 
-			sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
-			matlib.setp(plot,ms=4,color='r')
-			plt.fill_between(lc_MJD,o1_stddev1,o1_stddev2)
+			if makecuts_apply is True:
+				sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
+				matlib.setp(plot,ms=4,color='r')
+				sp, plot2, dplot2 = dataPlot(lc_MJD_bad, lc_uJy_bad)
+				matlib.setp(plot2,mfc='white',ms=4,color='r')
+			else:
+				sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
+				matlib.setp(plot,ms=4,color='r')
+			plt.fill_between(self.lc.t['MJD'],o1_stddev1,o1_stddev2)
 			'''
 			sp, o1_stddev1, dplot_o1_stddev1 = dataPlot(lc_MJD,o1_stddev1)
 			matlib.setp(o1_stddev1,ms=4,color='k')
@@ -128,11 +149,15 @@ class plotlcclass(SNloopclass):
 			matlib.setp(o1_stddev2,ms=4,color='k')
 			'''
 
-			plt.title('%s and mask1' % self.t.at[SNindex,'tnsname'])
+			plt.title('%s with cleaned offset data' % self.t.at[SNindex,'tnsname'])
 			plt.xlabel('MJD')
 			plt.ylabel('uJy')
-			#plt.legend((plot,o1_stddev1),(self.t.at[SNindex,'tnsname'],'mask1'))
-			plt.legend((plot,o1_stddev1,o1_stddev2),(self.t.at[SNindex,'tnsname'],'o1_stddev1','o1_stddev2'))
+			if makecuts_apply is True:
+				plot_legend = self.t.at[SNindex,'tnsname']+' cleaned'
+				plot2_legend = self.t.at[SNindex,'tnsname']+' cut data'
+				plt.legend((plot,plot2,o1_stddev1,o1_stddev2),(plot_legend,plot2_legend,'o1_stddev1','o1_stddev2'))
+			else:
+				plt.legend((plot,o1_stddev1,o1_stddev2),(self.t.at[SNindex,'tnsname'],'o1_stddev1','o1_stddev2'))
 			plt.axhline(linewidth=1,color='k')
 
 			plotfilename = self.lcbasename(SNindex)+'.mask1.png'
@@ -145,9 +170,15 @@ class plotlcclass(SNloopclass):
 			o2_stddev1 = self.lc.t['o2_mean']+self.lc.t['o2_stddev']
 			o2_stddev2 = self.lc.t['o2_mean']-self.lc.t['o2_stddev']
 
-			sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
-			matlib.setp(plot,ms=4,color='r')
-			plt.fill_between(lc_MJD,o2_stddev1,o2_stddev2)
+			if makecuts_apply is True:
+				sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
+				matlib.setp(plot,ms=4,color='r')
+				sp, plot2, dplot2 = dataPlot(lc_MJD_bad, lc_uJy_bad)
+				matlib.setp(plot2,mfc='white',ms=4,color='r')
+			else:
+				sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
+				matlib.setp(plot,ms=4,color='r')
+			plt.fill_between(self.lc.t['MJD'],o2_stddev1,o2_stddev2)
 			'''
 			sp, o2_stddev1, dplot_o2_stddev1 = dataPlot(lc_MJD,o2_stddev1)
 			matlib.setp(o2_stddev1,ms=4,color='k')
@@ -155,11 +186,15 @@ class plotlcclass(SNloopclass):
 			matlib.setp(o2_stddev2,ms=4,color='k')
 			'''
 
-			plt.title('%s and mask2' % self.t.at[SNindex,'tnsname'])
+			plt.title('%s with offset nans cut' % self.t.at[SNindex,'tnsname'])
 			plt.xlabel('MJD')
 			plt.ylabel('uJy')
-			#plt.legend((plot,o2_stddev1),(self.t.at[SNindex,'tnsname'],'mask2'))
-			plt.legend((plot,o2_stddev1,o2_stddev2),(self.t.at[SNindex,'tnsname'],'o2_stddev1','o2_stddev2'))
+			if makecuts_apply is True:
+				plot_legend = self.t.at[SNindex,'tnsname']+' cleaned'
+				plot2_legend = self.t.at[SNindex,'tnsname']+' cut data'
+				plt.legend((plot,plot2,o2_stddev1,o2_stddev2),(plot_legend,plot2_legend,'o2_stddev1','o2_stddev2'))
+			else:
+				plt.legend((plot,o2_stddev1,o2_stddev2),(self.t.at[SNindex,'tnsname'],'o2_stddev1','o2_stddev2'))
 			plt.axhline(linewidth=1,color='k')
 
 			plotfilename = self.lcbasename(SNindex)+'.mask2.png'

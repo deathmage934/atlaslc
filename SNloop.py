@@ -196,13 +196,15 @@ class SNloopclass(pdastroclass):
 		mask=np.bitwise_and(self.lc.t['Mask'], flags)
 		cuts_indices = np.where(mask==0)
 		cuts_indices = cuts_indices[0]
+		bad_data = np.where(mask!=0)
+		bad_data = bad_data[0]
 		datacut = len(self.lc.t)-len(self.lc.t.loc[cuts_indices])
 		print('Length original lc: ',len(self.lc.t),', length cleaned lc: ',len(self.lc.t.loc[cuts_indices]),', data points cut: ',datacut)
 
 		lc_uJy = self.lc.t.loc[cuts_indices, self.flux_colname]
 		lc_duJy = self.lc.t.loc[cuts_indices, self.dflux_colname]
 		lc_MJD = self.lc.t.loc[cuts_indices, 'MJD']
-		return(lc_uJy, lc_duJy, lc_MJD, cuts_indices)
+		return(lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data)
 
 	def autosearch(self, ra, dec, search_size):
 		os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])

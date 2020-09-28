@@ -96,7 +96,7 @@ class averagelcclass(SNloopclass):
 		if makecuts_apply == True:
 			if not('Mask' in self.lc.t.columns):
 				raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
-			lc_uJy, lc_duJy, lc_MJD, cuts_indices = self.makecuts_indices(SNindex, offsetindex, 'averagelc')
+			lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, offsetindex, 'averagelc')
 			print('Calculating average_lc table for offset index %d' % offsetindex)
 			self.averagelcs(args, SNindex, offsetindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=MJDbinsize, cuts_indices=cuts_indices)
 		# data set to lc table

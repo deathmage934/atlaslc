@@ -134,12 +134,14 @@ class plotlcclass(SNloopclass):
 			o1_stddev2 = self.lc.t['o1_mean']-self.lc.t['o1_stddev']
 
 			if makecuts_apply is True:
-				sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
+				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 				matlib.setp(plot,ms=4,color='r')
-				sp, plot2, dplot2 = dataPlot(lc_MJD_bad, lc_uJy_bad)
+				sp, plot2, dplot2 = dataPlot(lc_MJD_bad, lc_uJy_bad, dy=lc_duJy_bad)
 				matlib.setp(plot2,mfc='white',ms=4,color='r')
+				plt.xlim(58950,58975)
+				plt.ylim(-300,300)
 			else:
-				sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
+				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 				matlib.setp(plot,ms=4,color='r')
 			plt.fill_between(self.lc.t['MJD'],o1_stddev1,o1_stddev2)
 			'''
@@ -160,7 +162,7 @@ class plotlcclass(SNloopclass):
 				plt.legend((plot,o1_stddev1,o1_stddev2),(self.t.at[SNindex,'tnsname'],'o1_stddev1','o1_stddev2'))
 			plt.axhline(linewidth=1,color='k')
 
-			plotfilename = self.lcbasename(SNindex)+'.mask1.png'
+			plotfilename = self.lcbasename(SNindex)+'.mask4mjd.png'
 			print('Plot file name: ',plotfilename)
 			plt.savefig(plotfilename)
 
@@ -171,12 +173,12 @@ class plotlcclass(SNloopclass):
 			o2_stddev2 = self.lc.t['o2_mean']-self.lc.t['o2_stddev']
 
 			if makecuts_apply is True:
-				sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
+				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 				matlib.setp(plot,ms=4,color='r')
-				sp, plot2, dplot2 = dataPlot(lc_MJD_bad, lc_uJy_bad)
+				sp, plot2, dplot2 = dataPlot(lc_MJD_bad, lc_uJy_bad, dy=lc_duJy_bad)
 				matlib.setp(plot2,mfc='white',ms=4,color='r')
 			else:
-				sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
+				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 				matlib.setp(plot,ms=4,color='r')
 			plt.fill_between(self.lc.t['MJD'],o2_stddev1,o2_stddev2)
 			'''
@@ -197,7 +199,7 @@ class plotlcclass(SNloopclass):
 				plt.legend((plot,o2_stddev1,o2_stddev2),(self.t.at[SNindex,'tnsname'],'o2_stddev1','o2_stddev2'))
 			plt.axhline(linewidth=1,color='k')
 
-			plotfilename = self.lcbasename(SNindex)+'.mask2.png'
+			plotfilename = self.lcbasename(SNindex)+'.mask_nan.png'
 			print('Plot file name: ',plotfilename)
 			plt.savefig(plotfilename)
 
@@ -206,19 +208,19 @@ class plotlcclass(SNloopclass):
 		
 		o1_flag = False
 		o2_flag = False
-		if self.cfg.params['plotlc']['plot_mask1'] is True:
+		if self.cfg.params['plotlc']['plot_mask4mjd'] is True:
 			o1_flag = True
-		if self.cfg.params['plotlc']['plot_mask2'] is True:
+		if self.cfg.params['plotlc']['plot_mask_nan'] is True:
 			o2_flag = True
 
 		if (o1_flag is True) and (o2_flag is True):
-			print('mask1 and mask2 data detected, plotting mask1 and mask2 offsetstats...')
+			print('mask4mjd and mask_nan data detected, plotting mask4mjd and mask_nan offsetstats...')
 			self.plot_lc_offsetstats(args,SNindex,o1_flag=True,o2_flag=True)
 		elif o1_flag is True:
-			print('mask1 data detected, plotting mask1 offsetstats...')
+			print('mask4mjd data detected, plotting mask4mjd offsetstats...')
 			self.plot_lc_offsetstats(args,SNindex,o1_flag=True)
 		elif o2_flag is True:
-			print('mask2 data detected, plotting mask2 offsetstats...')
+			print('mask_nan data detected, plotting mask_nan offsetstats...')
 			self.plot_lc_offsetstats(args,SNindex,o2_flag=True)
 		else:
 			print('No offsetstats data detected!! Please run offsetstats.py first.')

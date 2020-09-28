@@ -78,20 +78,20 @@ class offsetstatsclass(SNloopclass):
 		if len(self.lc.t) == 0:
 			return(1)
 
-		apply_mask1 = False
-		apply_mask2 = False
-		if self.cfg.params['offsetstats']['procedure'] == 'mask1':
-			print('Procedure set to mask1')
-			apply_mask1 = True
-		elif self.cfg.params['offsetstats']['procedure'] == 'mask2':
-			print('Procedure set to mask2')
-			apply_mask2 = True
+		apply_mask4mjd = False
+		apply_mask_nan = False
+		if self.cfg.params['offsetstats']['procedure'] == 'mask4mjd':
+			print('Procedure set to mask4mjd')
+			apply_mask4mjd = True
+		elif self.cfg.params['offsetstats']['procedure'] == 'mask_nan':
+			print('Procedure set to mask_nan')
+			apply_mask_nan = True
 		elif self.cfg.params['offsetstats']['procedure'] == 'both':
-			print('Procedures set to mask1 and mask2')
-			apply_mask1 = True
-			apply_mask2 = True
+			print('Procedures set to mask4mjd and mask_nan')
+			apply_mask4mjd = True
+			apply_mask_nan = True
 		else:
-			raise RuntimeError("Mask procedure must be 'mask1', 'mask2', or 'both' in precursor.cfg!")
+			raise RuntimeError("Mask procedure must be 'mask4mjd', 'mask_nan', or 'both' in precursor.cfg!")
 		
 		for index in range(N_MJD):
 			uJy4MJD = uJy[:,index]
@@ -99,23 +99,23 @@ class offsetstatsclass(SNloopclass):
 			Mask4MJD = Mask[:,index]
 
 			calcaverage=sigmacut.calcaverageclass()
-			if apply_mask1 is True:
+			if apply_mask4mjd is True:
 				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=Mask4MJD,verbose=2,Nsigma=3.0,median_firstiteration=True,saveused=True)
 				# add columns to self.lc.t
 				self.lc.t.at[index,'o1_mean'] = calcaverage.mean
 				self.lc.t.at[index,'o1_mean_err'] = calcaverage.mean_err
 				self.lc.t.at[index,'o1_stddev'] = calcaverage.stdev
-				self.lc.t.at[index,'o1_chi/N'] = calcaverage.X2norm
+				self.lc.t.at[index,'o1_X2norm'] = calcaverage.X2norm
 				self.lc.t.at[index,'o1_Nused'] = calcaverage.Nused
 				self.lc.t.at[index,'o1_Nskipped'] = calcaverage.Nskipped
-			if apply_mask2:
+			if apply_mask_nan:
 				mask = np.bitwise_and(Mask4MJD, 0x8)
 				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=mask,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
 				# add columns to self.lc.t
 				self.lc.t.at[index,'o2_mean'] = calcaverage.mean
 				self.lc.t.at[index,'o2_mean_err'] = calcaverage.mean_err
 				self.lc.t.at[index,'o2_stddev'] = calcaverage.stdev
-				self.lc.t.at[index,'o2_chi/N'] = calcaverage.X2norm
+				self.lc.t.at[index,'o2_X2norm'] = calcaverage.X2norm
 				self.lc.t.at[index,'o2_Nused'] = calcaverage.Nused
 				self.lc.t.at[index,'o2_Nskipped'] = calcaverage.Nskipped
 			if calcaverage.Nused<=0:
@@ -123,11 +123,10 @@ class offsetstatsclass(SNloopclass):
 					print('No data values...')
 
 		# round o1 or o2 data
-		#self.lc.t = self.lc.formattable(roundingMapping={'o1_mean':3,'o1_mean_err':3,'o1_stddev':3,'o1_chi/N':4})#,dtypeMapping={'o1_mean':np.float64,'o1_mean_err':np.float64,'o1_stddev':np.float64,'o1_chi/N':np.float64,'o1_Nused':np.int64,'o1_Nskipped':np.int64})
 		if 'o1_mean' in self.lc.t.columns:
-			self.lc.t = self.lc.t.round({'o1_mean':3,'o1_mean_err':3,'o1_stddev':3,'o1_chi/N':4})
+			self.lc.t = self.lc.t.round({'o1_mean':3,'o1_mean_err':3,'o1_stddev':3,'o1_X2norm':4})
 		if 'o2_mean' in self.lc.t.columns:
-			self.lc.t = self.lc.t.round({'o2_mean':3,'o2_mean_err':3,'o2_stddev':3,'o2_chi/N':4})
+			self.lc.t = self.lc.t.round({'o2_mean':3,'o2_mean_err':3,'o2_stddev':3,'o2_X2norm':4})
 		self.save_lc(SNindex,offsetindex=0,filt=self.filt,overwrite=True)
 
 if __name__ == '__main__':

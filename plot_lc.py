@@ -121,10 +121,12 @@ class plotlcclass(SNloopclass):
 			sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
 			matlib.setp(plot,ms=4,color='r')
 			plt.fill_between(lc_MJD,o1_stddev1,o1_stddev2)
+			'''
 			sp, o1_stddev1, dplot_o1_stddev1 = dataPlot(lc_MJD,o1_stddev1)
 			matlib.setp(o1_stddev1,ms=4,color='k')
 			sp, o1_stddev2, dplot_o1_stddev2 = dataPlot(lc_MJD,o1_stddev2)
 			matlib.setp(o1_stddev2,ms=4,color='k')
+			'''
 
 			plt.title('%s and mask1' % self.t.at[SNindex,'tnsname'])
 			plt.xlabel('MJD')
@@ -146,10 +148,12 @@ class plotlcclass(SNloopclass):
 			sp, plot, dplot = dataPlot(lc_MJD,lc_uJy)
 			matlib.setp(plot,ms=4,color='r')
 			plt.fill_between(lc_MJD,o2_stddev1,o2_stddev2)
+			'''
 			sp, o2_stddev1, dplot_o2_stddev1 = dataPlot(lc_MJD,o2_stddev1)
 			matlib.setp(o2_stddev1,ms=4,color='k')
 			sp, o2_stddev2, dplot_o2_stddev2 = dataPlot(lc_MJD,o2_stddev2)
 			matlib.setp(o2_stddev2,ms=4,color='k')
+			'''
 
 			plt.title('%s and mask2' % self.t.at[SNindex,'tnsname'])
 			plt.xlabel('MJD')

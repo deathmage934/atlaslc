@@ -19,6 +19,7 @@ from SNloop import SNloopclass
 from cleanup_lc import cleanuplcclass
 from plot_lc import plotlcclass, dataPlot
 from average_lc import averagelcclass
+from offsetstats import offsetstatsclass
 import sigmacut
 import io
 from pdastro import pdastroclass, AandB

@@ -61,6 +61,9 @@ class plotlcclass(SNloopclass):
 				if not('Mask' in self.lc.t.columns):
 					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
 				lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, offsetindex=offsetindex, procedure1='plotlc')
+				lc_uJy_bad = self.lc.t.loc[bad_data, self.flux_colname]
+				lc_duJy_bad = self.lc.t.loc[bad_data, self.dflux_colname]
+				lc_MJD_bad = self.lc.t.loc[bad_data, 'MJD']
 			else:
 				print('Skipping makecuts using mask column...')
 				lc_uJy = self.lc.t[self.flux_colname]
@@ -70,8 +73,18 @@ class plotlcclass(SNloopclass):
 			if offsetindex==0:
 				#sp, plotSNog, dplotSNog = dataPlot(self.lc.t['MJD'],self.lc.t['uJy'],dy=self.lc.t['duJy'],sp=sp)
 				#matlib.setp(plotSN,ms=5,color='r')
-				sp, plotSN, dplotSN = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
-				matlib.setp(plotSN,ms=4,color='r')
+				#sp, plotSN, dplotSN = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
+				#matlib.setp(plotSN,ms=4,color='r')
+
+				if makecuts_apply is True:
+					sp, plotSN, dplotSN = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
+					matlib.setp(plotSN,ms=4,color='r')
+					sp, plotbad, dplotbad = dataPlot(lc_MJD_bad, lc_uJy_bad, dy=lc_duJy_bad)
+					matlib.setp(plotbad,mfc='white',ms=4,color='r')
+				else:
+					sp, plotSN, dplotSN = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
+					matlib.setp(plotSN,ms=4,color='r')
+
 			elif len(self.RADECtable.t)==1:
 				print('No offsets, skipping plotting...')
 			else: 
@@ -138,8 +151,6 @@ class plotlcclass(SNloopclass):
 				matlib.setp(plot,ms=4,color='r')
 				sp, plot2, dplot2 = dataPlot(lc_MJD_bad, lc_uJy_bad, dy=lc_duJy_bad)
 				matlib.setp(plot2,mfc='white',ms=4,color='r')
-				#plt.xlim(58950,58975)
-				#plt.ylim(-300,300)
 			else:
 				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 				matlib.setp(plot,ms=4,color='r')

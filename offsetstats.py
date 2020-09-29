@@ -135,14 +135,14 @@ class offsetstatsclass(SNloopclass):
 			X2norm_max = 3 # check
 			if use_o2 is True:
 				if abs(self.lc.t.at[index,'o2_mean'] / self.lc.t.at[index,'o2_mean_err']) > Nsigma:
-					np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_meannorm)
+					self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_meannorm)
 				if self.lc.t.at[index,'o2_X2norm'] > X2norm_max:
-					np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_X2norm)
+					self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_X2norm)
 			else:
 				if abs(self.lc.t.at[index,'o1_mean'] / self.lc.t.at[index,'o1_mean_err']) > Nsigma:
-					np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_meannorm)
+					self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_meannorm)
 				if self.lc.t.at[index,'o1_X2norm'] > X2norm_max:
-					np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_X2norm)
+					self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_X2norm)
 
 			if calcaverage.Nused<=0:
 				if self.verbose>2:

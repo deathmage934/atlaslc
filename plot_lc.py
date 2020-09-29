@@ -71,16 +71,12 @@ class plotlcclass(SNloopclass):
 				lc_MJD = self.lc.t['MJD']
 
 			if offsetindex==0:
-				#sp, plotSNog, dplotSNog = dataPlot(self.lc.t['MJD'],self.lc.t['uJy'],dy=self.lc.t['duJy'],sp=sp)
-				#matlib.setp(plotSN,ms=5,color='r')
-				#sp, plotSN, dplotSN = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
-				#matlib.setp(plotSN,ms=4,color='r')
-
-				if makecuts_apply is True:
-					sp, plotSN, dplotSN = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
-					matlib.setp(plotSN,ms=4,color='r')
+				if self.cfg.params['plotlc']['plot_bad_data'] is True:
+					# plot bad data with open red circles
 					sp, plotbad, dplotbad = dataPlot(lc_MJD_bad, lc_uJy_bad, dy=lc_duJy_bad)
 					matlib.setp(plotbad,mfc='white',ms=4,color='r')
+					sp, plotSN, dplotSN = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
+					matlib.setp(plotSN,ms=4,color='r')
 				else:
 					sp, plotSN, dplotSN = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 					matlib.setp(plotSN,ms=4,color='r')
@@ -147,14 +143,15 @@ class plotlcclass(SNloopclass):
 			o1_stddev2 = self.lc.t['o1_mean']-self.lc.t['o1_stddev']
 
 			if makecuts_apply is True:
-				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
-				matlib.setp(plot,ms=4,color='r')
 				sp, plot2, dplot2 = dataPlot(lc_MJD_bad, lc_uJy_bad, dy=lc_duJy_bad)
 				matlib.setp(plot2,mfc='white',ms=4,color='r')
+				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
+				matlib.setp(plot,ms=4,color='r')
 			else:
 				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 				matlib.setp(plot,ms=4,color='r')
 			plt.fill_between(self.lc.t['MJD'],o1_stddev1,o1_stddev2)
+			# plot data points in addition to fill_between
 			'''
 			sp, o1_stddev1, dplot_o1_stddev1 = dataPlot(lc_MJD,o1_stddev1)
 			matlib.setp(o1_stddev1,ms=4,color='k')
@@ -184,14 +181,15 @@ class plotlcclass(SNloopclass):
 			o2_stddev2 = self.lc.t['o2_mean']-self.lc.t['o2_stddev']
 
 			if makecuts_apply is True:
-				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
-				matlib.setp(plot,ms=4,color='r')
 				sp, plot2, dplot2 = dataPlot(lc_MJD_bad, lc_uJy_bad, dy=lc_duJy_bad)
 				matlib.setp(plot2,mfc='white',ms=4,color='r')
+				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
+				matlib.setp(plot,ms=4,color='r')
 			else:
 				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 				matlib.setp(plot,ms=4,color='r')
 			plt.fill_between(self.lc.t['MJD'],o2_stddev1,o2_stddev2)
+			# plot data points in addition to fill_between
 			'''
 			sp, o2_stddev1, dplot_o2_stddev1 = dataPlot(lc_MJD,o2_stddev1)
 			matlib.setp(o2_stddev1,ms=4,color='k')

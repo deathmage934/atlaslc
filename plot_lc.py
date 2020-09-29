@@ -138,8 +138,8 @@ class plotlcclass(SNloopclass):
 				matlib.setp(plot,ms=4,color='r')
 				sp, plot2, dplot2 = dataPlot(lc_MJD_bad, lc_uJy_bad, dy=lc_duJy_bad)
 				matlib.setp(plot2,mfc='white',ms=4,color='r')
-				plt.xlim(58950,58975)
-				plt.ylim(-300,300)
+				#plt.xlim(58950,58975)
+				#plt.ylim(-300,300)
 			else:
 				sp, plot, dplot = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 				matlib.setp(plot,ms=4,color='r')

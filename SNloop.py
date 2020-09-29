@@ -35,6 +35,14 @@ class SNloopclass(pdastroclass):
 		self.RADECtable = pdastroclass()
 		self.averagelctable = pdastroclass()
 
+		self.flag_cut0_uncertainty = 0x1
+		self.flag_cut0_X2norm_dynamic = 0x2
+		self.flag_cut0_X2norm_static = 0x4
+		self.flag_o1_X2norm = 0x20
+		self.flag_o2_X2norm = 0x200
+		self.flag_o1_meannorm = 0x40
+		self.flag_o2_meannorm = 0x400
+
 	def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
 		if parser is None:
 			parser = argparse.ArgumentParser(usage=usage, conflict_handler=conflict_handler)

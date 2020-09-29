@@ -9,10 +9,6 @@ class cleanuplcclass(SNloopclass):
 	def __init__(self):
 		SNloopclass.__init__(self)
 
-		self.flag_uncertainty = 0x1
-		self.flag_dynamic = 0x2
-		self.flag_static = 0x4
-
 	def flag_biguncertainty_duJy(self,SNindex,offsetindex):
 		# define vars
 		Nmedian = self.cfg.params['cleanlc']['uncertainty']['Nmedian']
@@ -31,8 +27,8 @@ class cleanuplcclass(SNloopclass):
 				print('No measurements flagged!')
 
 		# update 'Mask' column
-		flag_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_uncertainty)
-		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_uncertainty) 
+		flag_cut0_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_cut0_uncertainty)
+		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_cut0_uncertainty) 
 
 	def flag_bigchi_dynamic(self,SNindex,offsetindex):
 		# define vars
@@ -54,8 +50,8 @@ class cleanuplcclass(SNloopclass):
 				print('No measurements flagged!')
 
 		# update 'Mask' column
-		flag_dynamic = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_dynamic)
-		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_dynamic)
+		flag_cut0_X2norm_dynamic = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_cut0_X2norm_dynamic)
+		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_cut0_X2norm_dynamic)
 
 		if self.verbose:
 			print('Nsigma: %.1f, chi_median: %f, chi_stddev: %f' % (Nsigma, chi_median, chi_stddev))
@@ -76,8 +72,8 @@ class cleanuplcclass(SNloopclass):
 				print('No measurements flagged!')		
 
 		# update 'Mask' column
-		flag_static = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_static)
-		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_static)		
+		flag_cut0_X2norm_static = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_cut0_X2norm_static)
+		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_cut0_X2norm_static)		
 
 		if self.verbose:
 			print('chi_max: ',chi_max)

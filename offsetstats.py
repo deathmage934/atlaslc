@@ -99,18 +99,20 @@ class offsetstatsclass(SNloopclass):
 			Mask4MJD = Mask[:,index]
 
 			calcaverage=sigmacut.calcaverageclass()
-			if apply_mask4mjd is True:
-				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=Mask4MJD,verbose=2,Nsigma=3.0,median_firstiteration=True,saveused=True)
+			self.lc.t.at[index,'o0_Nmasked'] = len(Mask4MJD)-np.count_nonzero(Mask4MJD)
+			if apply_mask_nan:
+				mask = np.bitwise_and(Mask4MJD, 0x8)
+				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=mask,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
 				# add columns to self.lc.t
 				self.lc.t.at[index,'o1_mean'] = calcaverage.mean
 				self.lc.t.at[index,'o1_mean_err'] = calcaverage.mean_err
 				self.lc.t.at[index,'o1_stddev'] = calcaverage.stdev
 				self.lc.t.at[index,'o1_X2norm'] = calcaverage.X2norm
-				self.lc.t.at[index,'o1_Nused'] = calcaverage.Nused
-				self.lc.t.at[index,'o1_Nskipped'] = calcaverage.Nskipped
-			if apply_mask_nan:
-				mask = np.bitwise_and(Mask4MJD, 0x8)
-				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=mask,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
+				self.lc.t.at[index,'o1_Nvalid'] = calcaverage.Nused
+				self.lc.t.at[index,'o1_Nnan'] = calcaverage.Nskipped
+				self.lc.t.at[index,'Noffsetlc'] = self.lc.t.at[index,'o1_Nvalid'] + self.lc.t.at[index,'o1_Nnan']
+			if apply_mask4mjd is True:
+				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=Mask4MJD,verbose=2,Nsigma=3.0,median_firstiteration=True,saveused=True)
 				# add columns to self.lc.t
 				self.lc.t.at[index,'o2_mean'] = calcaverage.mean
 				self.lc.t.at[index,'o2_mean_err'] = calcaverage.mean_err
@@ -118,6 +120,30 @@ class offsetstatsclass(SNloopclass):
 				self.lc.t.at[index,'o2_X2norm'] = calcaverage.X2norm
 				self.lc.t.at[index,'o2_Nused'] = calcaverage.Nused
 				self.lc.t.at[index,'o2_Nskipped'] = calcaverage.Nskipped
+				self.lc.t.at[index,'o2_Nin'] = self.lc.t.at[index,'Noffsetlc'] - self.lc.t.at[index,'o0_Nmasked']
+			
+			use_o1 = False
+			use_o2 = False
+			# if just one measurement got cut, either poisson noise, cosmic ray hit, or some other issue that only affects 1 measurement
+			# if more than 1 measurement are cut, then something is probably not right
+			if self.lc.t.at[index,'o2_Nin'] - self.lc.t.at[index,'o2_Nused'] <= 1:
+				use_o2 = True
+			else:
+				use_o1 = True
+
+			Nsigma = 3 # should be from 3-5? check
+			X2norm_max = 3 # check
+			if use_o2 is True:
+				if abs(self.lc.t.at[index,'o2_mean'] / self.lc.t.at[index,'o2_mean_err']) > Nsigma:
+					np.bitwise_or(self.lc.t.at[index,'Mask'],flag_o2_meannorm)
+				if self.lc.t.at[index,'o2_X2norm'] > X2norm_max:
+					np.bitwise_or(self.lc.t.at[index,'Mask'],flag_o2_X2norm)
+			else:
+				if abs(self.lc.t.at[index,'o1_mean'] / self.lc.t.at[index,'o1_mean_err']) > Nsigma:
+					np.bitwise_or(self.lc.t.at[index,'Mask'],flag_o1_meannorm)
+				if self.lc.t.at[index,'o1_X2norm'] > X2norm_max:
+					np.bitwise_or(self.lc.t.at[index,'Mask'],flag_o1_X2norm)
+
 			if calcaverage.Nused<=0:
 				if self.verbose>2:
 					print('No data values...')

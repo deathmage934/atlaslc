@@ -99,7 +99,7 @@ class offsetstatsclass(SNloopclass):
 			Mask4MJD = Mask[:,index]
 
 			calcaverage=sigmacut.calcaverageclass()
-			self.lc.t.at[index,'o0_Nmasked'] = len(Mask4MJD)-np.count_nonzero(Mask4MJD)
+			self.lc.t.at[index,'o0_Nmasked'] = np.count_nonzero(Mask4MJD)
 			if apply_mask_nan:
 				mask = np.bitwise_and(Mask4MJD, 0x8)
 				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=mask,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
@@ -135,14 +135,14 @@ class offsetstatsclass(SNloopclass):
 			X2norm_max = 3 # check
 			if use_o2 is True:
 				if abs(self.lc.t.at[index,'o2_mean'] / self.lc.t.at[index,'o2_mean_err']) > Nsigma:
-					np.bitwise_or(self.lc.t.at[index,'Mask'],flag_o2_meannorm)
+					np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_meannorm)
 				if self.lc.t.at[index,'o2_X2norm'] > X2norm_max:
-					np.bitwise_or(self.lc.t.at[index,'Mask'],flag_o2_X2norm)
+					np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_X2norm)
 			else:
 				if abs(self.lc.t.at[index,'o1_mean'] / self.lc.t.at[index,'o1_mean_err']) > Nsigma:
-					np.bitwise_or(self.lc.t.at[index,'Mask'],flag_o1_meannorm)
+					np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_meannorm)
 				if self.lc.t.at[index,'o1_X2norm'] > X2norm_max:
-					np.bitwise_or(self.lc.t.at[index,'Mask'],flag_o1_X2norm)
+					np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_X2norm)
 
 			if calcaverage.Nused<=0:
 				if self.verbose>2:

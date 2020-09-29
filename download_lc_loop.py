@@ -60,8 +60,6 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 				if fileformat is None: 
 					fileformat = self.cfg.params['output']['fileformat']
 				detections4filt=np.where(self.lc.t['F']==filt)
-
-				print(indices,detections4filt)
 				newindices = AandB(indices,detections4filt)
 
 				if len(detections4filt[0]) is 0:
@@ -279,5 +277,7 @@ if __name__ == '__main__':
 			downloadlc.cleanuplcloop(args,SNindex,offsetindex=offsetindex,filt=downloadlc.filt)
 			if args.averagelc: 
 				downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)
+		downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+		downloadlc.offsetstatsloop(SNindex,filt=downloadlc.filt)
 		if args.plot: 
 			downloadlc.plotlcloop(args,SNindex)

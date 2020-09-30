@@ -24,7 +24,7 @@ import sigmacut
 import io
 from pdastro import pdastroclass, AandB
 
-class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
+class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsclass):
 	def __init__(self):
 		cleanuplcclass.__init__(self)
 		plotlcclass.__init__(self)
@@ -32,12 +32,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 		self.download_atlas_lc = download_atlas_lc_class()
 
 	def downloadlc(self, SNindex, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, offsetindex=None):
-		if offsetindex is None:
-			RA = self.t.loc[SNindex,'ra']
-			Dec = self.t.loc[SNindex,'dec']
-		else:
-			RA = self.RADECtable.t.loc[offsetindex,'RaNew']
-			Dec = self.RADECtable.t.loc[offsetindex,'DecNew']
+		RA = self.RADECtable.t.at[offsetindex,'Ra']
+		Dec = self.RADECtable.t.at[offsetindex,'Dec']
 
 		self.download_atlas_lc.verbose = self.verbose
 		self.download_atlas_lc.debug = self.debug
@@ -73,9 +69,12 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 	def defineRADEClist(self,RA,Dec,SNindex,pattern=None):
 		if not(pattern is None):
 			pattern_list = pattern
-			print('Pattern set to ',pattern_list)
+			print('Pattern(s) set to ',pattern_list)
 			OffsetID = 1
 			foundflag = False
+			RA = Angle(self.t.at[SNindex,'ra'],u.degree)
+			Dec = Angle(self.t.at[SNindex,'dec'],u.degree)
+
 			for pattern in pattern_list: 
 				# number of offsets and radii depends on pattern specified in precursor.cfg or in args
 				if pattern=='circle':
@@ -91,30 +90,23 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 					mindist = self.cfg.params['forcedphotpatterns']['closebright']['mindist']
 					n = self.cfg.params['forcedphotpatterns']['closebright']['n']
 
-					RA = self.t.at[SNindex,'ra']
-					Dec = self.t.at[SNindex,'dec']
-
 					# query panstarrs for closest bright object and add to snlist.txt
 					if self.cfg.params['forcedphotpatterns']['closebright']['autosearch'] is True:
-						RA_deg = RaInDeg(RA)
-						Dec_deg = DecInDeg(Dec)
-						results = self.autosearch(RA_deg, Dec_deg, 20)
+						results = self.autosearch(RA.degree, Dec.degree, 20)
 						print('Close bright objects found: \n',results)
 						sys.exit(0)
-						cbRA = '?' # FIX
-						cbDec = '?' # FIX
+						cbRA = '_' # FIX
+						cbDec = '_' # FIX
 						self.t.at[SNindex,'closebrightRA'] = cbRA
 						self.t.at[SNindex,'closebrightDec'] = cbDec
 					# use coordinates listed in snlist.txt
 					else:
-						cbRA = self.t.at[SNindex,'closebrightRA']
-						cbDec = self.t.at[SNindex,'closebrightDec']
-					RA_angle1 = Angle(RA, u.degree)
-					Dec_angle1 = Angle(Dec, u.degree)
-					cbRA_angle1 = Angle(cbRA, u.degree)
-					cbDec_angle1 = Angle(cbDec, u.degree)
-					c1 = SkyCoord(RA_angle1, Dec_angle1, frame='fk5')
-					c2 = SkyCoord(cbRA_angle1, cbDec_angle1, frame='fk5')
+						cbRA = Angle(self.t.at[SNindex,'closebrightRA'],u.degree)
+						cbDec = Angle(self.t.at[SNindex,'closebrightDec'],u.degree)
+
+					# radius is distance between SN and bright object
+					c1 = SkyCoord(RA, Dec, frame='fk5')
+					c2 = SkyCoord(cbRA, cbDec, frame='fk5')
 					sep = c1.separation(c2)
 					r1 = sep.arcsecond
 					radii = [r1]
@@ -127,73 +119,72 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass):
 				# sets up RADECtable, fills in OffsetID, Ra, Dec, RaNew, DecNew for (n*len(radii)) offsets
 				if foundflag is False:
 					foundflag = True
-					df = pd.DataFrame([[0,0,RaInDeg(RA),DecInDeg(Dec),RaInDeg(RA),DecInDeg(Dec),0,0,0,0,0,0,0]], columns=['OffsetID','PatternID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
+					df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 					self.RADECtable.t = self.RADECtable.t.append(df, ignore_index=True)
-				#OffsetID = 1
 				for radius in radii:
 					R = Angle(radius,u.arcsec)
+
+					# define center coordinates
+					if pattern=='closebright':
+						RAcenter = Angle(cbRA.degree,u.degree)
+						Deccenter = Angle(cbDec.degree,u.degree)
+					elif (pattern=='circle') or (pattern=='box'):	
+						RAcenter = Angle(RA.degree,u.degree)
+						Deccenter = Angle(Dec.degree,u.degree)
+					else:
+						raise RuntimeError('Pattern must be circle, box, or closebright!')
 					print('R = %f arcsec or %f deg or %f rad' % (R.arcsec,R.degree,R.radian))
+
 					for i in range(n):
 						angle = Angle(i*360.0/n, u.degree)
-						Dec_angle = Angle(Dec, u.degree)
-						cosdec = math.cos(Dec_angle.radian)
 						RAdistance = Angle(R.degree*math.cos(angle.radian),u.degree)
-						RAoffset = RAdistance*(1.0/cosdec)
-						RAnew = RaInDeg(RA) + RAoffset.degree
+						RAoffset = Angle(RAdistance.degree*(1.0/math.cos(Deccenter.radian)),u.degree)
+						RAnew = Angle(RAcenter.degree+RAoffset.degree,u.degree)
 						DECoffset = Angle(R.degree*math.sin(angle.radian),u.degree)
-						DECnew = DecInDeg(Dec) + DECoffset.degree
+						DECnew = Angle(Deccenter.degree+DECoffset.degree,u.degree)
 
-						if self.verbose>1:
-							print('#\nAngle: %f deg' % angle.degree)
-							print('#Dec: %f deg' % Dec_angle.degree)
-							print('#RA distance: %f arcsec' % RAdistance.arcsec)
-							print('#RA offset to be added to RA: %f arcsec' % RAoffset.arcsec)
-							print('#RA new: %f deg' % RAnew)
-							print('#Dec offset: %f arcsec' % DECoffset.arcsec)
-							print('#Dec new: %f deg' % DECnew)
-
-						if self.verbose:
-							print('#Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew, DECnew))
-						
+						# check to see if offset location is within mindist arcsec from SN
 						if pattern=='closebright':
-							# if an offset is within 3 arcsec of the SN, skip adding that offset
-							RA_angle1 = Angle(RA, u.degree)
-							Dec_angle1 = Angle(Dec, u.degree)
-							RAnew_angle1 = Angle(RAnew, u.degree)
-							DECnew_angle1 = Angle(DECnew, u.degree)
-							c1 = SkyCoord(RA_angle1, Dec_angle1, frame='fk5')
-							c2 = SkyCoord(RAnew_angle1, DECnew_angle1, frame='fk5')
+							c1 = SkyCoord(Angle(RA,u.degree), Angle(Dec,u.degree), frame='fk5')
+							c2 = SkyCoord(RAnew, DECnew, frame='fk5')
 							offset_sep = c1.separation(c2)
 							offset_sep = offset_sep.arcsecond
 							if offset_sep < mindist:
 								print('Offset with OffsetID %d too close to SN with distance of %f arcsec, skipping...' % (OffsetID, offset_sep))
-								#df = pd.DataFrame([[OffsetID,RaInDeg(RA),DecInDeg(Dec),RAnew, DECnew,RAdistance.arcsec,RAoffset.arcsec,DECoffset.arcsec,radius,0,0,0]],columns=['OffsetID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
-								#self.RADECtable.t = self.RADECtable.t.append(df,ignore_index=True)
-							else:
-								df = pd.DataFrame([[OffsetID,PatternID,RaInDeg(RA),DecInDeg(Dec),RAnew, DECnew,RAdistance.arcsec,RAoffset.arcsec,DECoffset.arcsec,radius,0,0,0]],columns=['OffsetID','PatternID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
-								self.RADECtable.t = self.RADECtable.t.append(df,ignore_index=True)
-						else:
-							df = pd.DataFrame([[OffsetID,PatternID,RaInDeg(RA),DecInDeg(Dec),RAnew, DECnew,RAdistance.arcsec,RAoffset.arcsec,DECoffset.arcsec,radius,0,0,0]],columns=['OffsetID','PatternID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
-							self.RADECtable.t = self.RADECtable.t.append(df,ignore_index=True)
+								continue
+						df = pd.DataFrame([[OffsetID,PatternID,RAnew.degree,DECnew.degree,RAdistance.arcsec,DECoffset.arcsec,radius,0,0,0]],columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
+						self.RADECtable.t = self.RADECtable.t.append(df,ignore_index=True)
+
+						if self.verbose>1:
+							print('#\nAngle: %f deg' % angle.degree)
+							print('#RA center: %f deg' % RAcenter.degree)
+							print('#Dec center: %f deg' % Deccenter.degree)
+							print('#RA distance: %f arcsec' % RAdistance.arcsec)
+							print('#RA offset to be added to RA: %f arcsec' % RAoffset.arcsec)
+							print('#Dec offset: %f arcsec' % DECoffset.arcsec)
+						if self.verbose:
+							print('#Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew.degree, DECnew.degree))
 						OffsetID += 1
 		else:
-			df = pd.DataFrame([[0,0,RaInDeg(RA),DecInDeg(Dec),RaInDeg(RA),DecInDeg(Dec),0,0,0,0,0,0,0]], columns=['OffsetID','PatternID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
+			df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 			self.RADECtable.t = self.RADECtable.t.append(df, ignore_index=True)
 
 	def downloadoffsetlc(self, SNindex, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None,pattern=None):
 		print('Offset status: ',forcedphot_offset)
 		if forcedphot_offset == 'True':
-			# add SN data in new row
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
-			#if pattern is None: pattern=self.cfg.params['forcedphotpatterns'][patterns_to_use]
+			
 			self.defineRADEClist(RA,Dec,SNindex,pattern=pattern)
 			print(self.RADECtable.write(index=True,overwrite=False))
 			
 			# add new row for each offset using data from RADECtable
 			for i in range(len(self.RADECtable.t)):
 				if self.verbose:
-					print(self.RADECtable.write(indices=i, columns=['OffsetID','RaNew','DecNew']))
+					print(self.RADECtable.write(indices=i, columns=['OffsetID','Ra','Dec']))
+
+				#RA = self.RADECtable.t.at[i,'Ra']
+				#Dec = self.RADECtable.t.at[i,'Dec']
 				self.downloadlc(SNindex,
 							 lookbacktime_days=lookbacktime_days,
 							 savelc=savelc,

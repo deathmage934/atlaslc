@@ -252,15 +252,12 @@ class SNloopclass(pdastroclass):
 		self.flux_colname = self.cfg.params['flux_colname']
 		self.dflux_colname = self.cfg.params['dflux_colname']
 
-		self.RADECtable = pdastroclass(columns=['OffsetID','PatternID','Ra','Dec','RaNew','DecNew','RaDistance','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
+		self.RADECtable = pdastroclass(columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 		self.averagelctable = pdastroclass(columns=['OffsetID','MJD',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nused','Nclipped','MJDNused','MJDNskipped'])
 		self.RADECtable.default_formatters = {'OffsetID':'{:3d}'.format,
 											  'PatternID':'{:2d}'.format,
 											  'Ra':'{:.8f}'.format,
 											  'Dec':'{:.8f}'.format,
-											  'RaNew':'{:.8f}'.format,
-											  'DecNew':'{:.8f}'.format,
-											  'RaDistance':'{:.2f}'.format,
 											  'RaOffset':'{:.2f}'.format,
 											  'DecOffset':'{:.2f}'.format,
 											  'Radius':'{:.2f}'.format,

@@ -72,8 +72,10 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 			print('Pattern(s) set to ',pattern_list)
 			OffsetID = 1
 			foundflag = False
-			RA = Angle(self.t.at[SNindex,'ra'],u.degree)
-			Dec = Angle(self.t.at[SNindex,'dec'],u.degree)
+
+			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree)
+			Dec = Angle(DecInDeg(self.t.at[SNindex,'dec']),u.degree)
+			#print('RA,Dec: %s %s %f %f' % (self.t.at[SNindex,'ra'],self.t.at[SNindex,'dec'],RA.degree,Dec.degree)) # delete me
 
 			for pattern in pattern_list: 
 				# number of offsets and radii depends on pattern specified in precursor.cfg or in args
@@ -97,12 +99,12 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 						sys.exit(0)
 						cbRA = '_' # FIX
 						cbDec = '_' # FIX
-						self.t.at[SNindex,'closebrightRA'] = cbRA
-						self.t.at[SNindex,'closebrightDec'] = cbDec
+						self.t.at[SNindex,'closebrightRA'] = Angle(RaInDeg(cbRA),u.degree)
+						self.t.at[SNindex,'closebrightDec'] = Angle(RaInDeg(cbDec),u.degree)
 					# use coordinates listed in snlist.txt
 					else:
-						cbRA = Angle(self.t.at[SNindex,'closebrightRA'],u.degree)
-						cbDec = Angle(self.t.at[SNindex,'closebrightDec'],u.degree)
+						cbRA = Angle(RaInDeg(self.t.at[SNindex,'closebrightRA']),u.degree)
+						cbDec = Angle(DecInDeg(self.t.at[SNindex,'closebrightDec']),u.degree)
 
 					# radius is distance between SN and bright object
 					c1 = SkyCoord(RA, Dec, frame='fk5')
@@ -133,7 +135,9 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 						Deccenter = Angle(Dec.degree,u.degree)
 					else:
 						raise RuntimeError('Pattern must be circle, box, or closebright!')
-					print('R = %f arcsec or %f deg or %f rad' % (R.arcsec,R.degree,R.radian))
+
+					#print('CENTER: ',RAcenter.degree,Deccenter.degree) # delete me
+					#print('R = %f arcsec or %f deg or %f rad' % (R.arcsec,R.degree,R.radian)) # delete me
 
 					for i in range(n):
 						angle = Angle(i*360.0/n, u.degree)
@@ -145,7 +149,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 
 						# check to see if offset location is within mindist arcsec from SN
 						if pattern=='closebright':
-							c1 = SkyCoord(Angle(RA,u.degree), Angle(Dec,u.degree), frame='fk5')
+							c1 = SkyCoord(RA, Dec, frame='fk5')
+							#print(RAnew,DECnew) # delete me
 							c2 = SkyCoord(RAnew, DECnew, frame='fk5')
 							offset_sep = c1.separation(c2)
 							offset_sep = offset_sep.arcsecond

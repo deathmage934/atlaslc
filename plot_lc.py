@@ -77,31 +77,44 @@ class plotlcclass(SNloopclass):
 					matlib.setp(plotbad,mfc='white',ms=4,color='r')
 					sp, plotSN, dplotSN = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 					matlib.setp(plotSN,ms=4,color='r')
+
+					# fix?
+					plt.ylim(min(lc_uJy_bad)*1.1,max(lc_uJy_bad)*1.1)
 				else:
 					sp, plotSN, dplotSN = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 					matlib.setp(plotSN,ms=4,color='r')
-
 			elif len(self.RADECtable.t)==1:
 				print('No offsets, skipping plotting...')
 			else: 
-				sp, plotOffset, dplotOffset = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
-				matlib.setp(plotOffset,ms=4,color='b')
+				if self.cfg.params['plotlc']['plot_offset_data'] is True:
+					sp, plotOffset, dplotOffset = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
+					matlib.setp(plotOffset,ms=4,color='b')
 
 		# determine legend
-		if len(self.RADECtable.t)>1:
+		# check if offset data plotted
+		if (len(self.RADECtable.t)>1) and (self.cfg.params['plotlc']['plot_offset_data'] is True):
+			# offset PatternID circle gets specific legend
 			if max(self.RADECtable.t['PatternID']) == 1:
 				if len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1:
 					offsetlabel = '%s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
 				else:
 					offsetlabel = '%s %s" Offset and %s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0],self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
+			# greater/multiple different offset PatternIDs get simpler legend
 			else:
 				offsettotal = len(self.RADECtable.t)-1
 				offsetlabel = '%d Total Offsets' % offsettotal
-			plt.legend((plotSN,plotOffset),('SN %s' % self.t.at[SNindex,'tnsname'],offsetlabel))
-			plt.title('SN %s' % self.t.at[SNindex,'tnsname'])
-		else:
-			plt.title('SN %s' % self.t.at[SNindex,'tnsname'])
 
+			# check if bad data plotted
+			if self.cfg.params['plotlc']['plot_bad_data'] is True:
+				plt.legend((plotSN,plotOffset,plotbad),('SN %s cleaned' % self.t.at[SNindex,'tnsname'],offsetlabel,'SN %s cut data' % self.t.at[SNindex,'tnsname']))
+			else:
+				plt.legend((plotSN,plotOffset),('SN %s' % self.t.at[SNindex,'tnsname'],offsetlabel))
+		else:
+			# check if bad data plotted
+			if self.cfg.params['plotlc']['plot_bad_data'] is True:
+				plt.legend((plotSN,plotbad),('SN %s cleaned' % self.t.at[SNindex,'tnsname'],'SN %s cut data' % self.t.at[SNindex,'tnsname']))
+
+		plt.title('SN %s' % self.t.at[SNindex,'tnsname'])
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)

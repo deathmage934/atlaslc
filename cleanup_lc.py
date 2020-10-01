@@ -9,31 +9,26 @@ class cleanuplcclass(SNloopclass):
 	def __init__(self):
 		SNloopclass.__init__(self)
 
-		self.flag_uncertainty = 0x1
-		self.flag_dynamic = 0x2
-		self.flag_static = 0x4
-
 	def flag_biguncertainty_duJy(self,SNindex,offsetindex):
 		# define vars
 		Nmedian = self.cfg.params['cleanlc']['uncertainty']['Nmedian']
-		a = Nmedian * median(self.lc.t['duJy'])
-		if self.verbose:
-			print('Flagging all measurements with duJy bigger than %i...' % a)
+		a = Nmedian * median(self.lc.t[self.dflux_colname])
+		print('Flagging all measurements with %s bigger than %i...' % (self.dflux_colname, a))
 
 		# define indices
-		a_indices = np.where(self.lc.t['duJy']>a)
+		a_indices = np.where(self.lc.t[self.dflux_colname]>a)
 		a_indices = list(a_indices[0])
 		print('Indices: ',a_indices,type(a_indices))
-		if len(self.lc.t.loc[a_indices,'duJy'])>0:
+		if len(self.lc.t.loc[a_indices,self.dflux_colname])>0:
 			if self.verbose:
-				print('duJy above %i: ' % a,len(self.lc.t.loc[a_indices,'duJy']))
+				print('%s above %i: ' % (self.dflux_colname, a), len(self.lc.t.loc[a_indices,self.dflux_colname]))
 		else:
 			if self.verbose:
 				print('No measurements flagged!')
 
 		# update 'Mask' column
-		flag_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_uncertainty)
-		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_uncertainty) 
+		flag_cut0_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_cut0_uncertainty)
+		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_cut0_uncertainty) 
 
 	def flag_bigchi_dynamic(self,SNindex,offsetindex):
 		# define vars
@@ -41,6 +36,7 @@ class cleanuplcclass(SNloopclass):
 		chi_median = median(self.lc.t['chi/N'])
 		chi_stddev = np.std(self.lc.t['chi/N'])
 		a = int(chi_median+(Nsigma*chi_stddev)) # !! CURRENTLY ROUNDS DOWN
+		print('Flagging all measurements with chi/N bigger than %i...' % a)
 
 		# define indices
 		a_indices = np.where(self.lc.t['chi/N']>a)
@@ -54,16 +50,16 @@ class cleanuplcclass(SNloopclass):
 				print('No measurements flagged!')
 
 		# update 'Mask' column
-		flag_dynamic = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_dynamic)
-		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_dynamic)
+		flag_cut0_X2norm_dynamic = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_cut0_X2norm_dynamic)
+		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_cut0_X2norm_dynamic)
 
 		if self.verbose:
 			print('Nsigma: %.1f, chi_median: %f, chi_stddev: %f' % (Nsigma, chi_median, chi_stddev))
-			print('Flagging all measurements with chi/N bigger than %i...' % a)
 
 	def flag_bigchi_static(self,SNindex,offsetindex):
 		# define vars
 		chi_max = self.cfg.params['cleanlc']['chi/N']['max_chi2norm']
+		print('Flagging all measurements with chi/N bigger than %i...' % chi_max)
 		
 		# define indices
 		a_indices = np.where(self.lc.t['chi/N']>chi_max)
@@ -76,12 +72,11 @@ class cleanuplcclass(SNloopclass):
 				print('No measurements flagged!')		
 
 		# update 'Mask' column
-		flag_static = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_static)
-		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_static)		
+		flag_cut0_X2norm_static = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_cut0_X2norm_static)
+		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_cut0_X2norm_static)		
 
 		if self.verbose:
 			print('chi_max: ',chi_max)
-			print('Flagging all measurements with chi/N bigger than %i...' % chi_max)
 
 	def cleanuplcloop(self,args,SNindex,offsetindex,filt):
 		# load lc

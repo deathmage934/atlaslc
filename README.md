@@ -4,7 +4,6 @@
 * [Installation](#installation)
 * [Usage](#usage)
 * [Additional usage](#additional-usage)
-* [Using the TNS name to get RA and Dec](#using-the-tns-name-to-get-ra-and-dec)
 * [Example commands](#example-commands)
 
 ### Description: 
@@ -16,20 +15,20 @@ Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and
 * Within that directory, create and name two additional directories. One will be your **source directory**, and the other will be your **data directory**. 
 * Move all code into your **source directory**.
 * In the **source directory**, open `atlaslc.sourceme`.
-* Add the following code to the `atlaslc.sourceme` file below the other `elif` statements: 
+* Add the following code to the `<atlaslc.sourceme>` file below the other `elif` statements: 
 	* `elif [[ $HOSTNAME =~ ADDHOSTNAMEHERE ]]; then`
 	* `export ATLASLC_SOURCEDIR=`
   * `export ATLASLC_DATA=`
   * `export PIPE_BATCH_SYSTEM=NONE`
 * Change the text `ADDHOSTNAMEHERE` in the copy-pasted code to your machine's hostname.
 * Copy and paste the address of the **source directory** after the text `export ATLASLC_SOURCEDIR=`.
-* Copy and paste the address of the **data directory** after the text `export ATLASLC_DATA=`.
+* Copy and paste the address of the **data directory** after the text `export ATLASLC_DATA==`.
 * Save the `atlaslc.sourceme` file.
-* In the **data directory**, create a text file called `snlist.txt` that will house your SN list. Create a table with the required column names "tnsname," "ra," and "dec." Another option is to download the example file that is already set up with data and move it to the data directory.
+* In the **data directory**, create a text file called `snlist.txt` that will house your SN list. Another option is to download the example file that is already set up with data and move it to the data directory.
 * In the **source directory**, open `precursor.cfg`. This is the configuration file.
+* Optional: You can change the `outsubdir` name in this file if you want to create different sub-directories for different SNe.
 * After `username`, add your ATLAS machine username.
-* You can change the `outsubdir` name in this file if you want to create different sub-directories for different SNe. Then change any other values you wish (for example, the filter to be used, the type (dynamic or static) of cleanup to be done, etc.). You can also set any `apply` value or `makecuts` value to `False` to skip a procedure.
-* To further customize the `cleanlc` procedure in `precursor.cfg`, you can set the `flags` value to a hexadecimal number if you want to customize which data points to use when averaging the data. If you want to skip over values flagged with big uncertainties, add `0x1` to `flags`. Similarly, add `0x2` to skip values flagged with big chi2/N values through the dynamic procedure, and add `0x4` to skip values flagged with big chi2/N values through the static procedure.
+* Change any other values you wish (for example, the filter to be used).
 
 ### Usage:
 This code allows you to download SN light curves. There are many options to configure. You can view the list of arguments in the `SNloop.py` file in the source directory. To summarize:
@@ -46,32 +45,25 @@ This code allows you to download SN light curves. There are many options to conf
 * `-c` lets you reference a different configuration file instead of the `precursor.cfg` file.
 * `-e` adds an additional configuration file.
 * `-f` specifies the filter (o or c) to be used when downloading the light curves. By default, the code will reference `precursor.cfg`, but adding this argument will override that.
-* `--ra` lets you specify the RA coordinates for a SN, which will override the RA set in `snlist.txt`.
-* `--dec` lets you specify the Dec coordinates for a SN, which will override the Dec set in `snlist.txt`.
-* `--skip_uncert True` skips flagging measurements with certain large uncertainties (uncertainties larger than the median uncertainty times the Nmedian set in `precursor.cfg`).
-* `--skip_chi True` skips flagging measurements with certain large chi2/N values (if `type` is `dynamic`, chi2/N values larger than the median chi2/N plus Nsigma set in `precursor.cfg` times the standard deviation of chi2/N are flagged; if `type` is `static`, chi2/N values larger than max_chi2norm set in `precursor.cfg`).
-* `--skip_makecuts True` skips making cuts to the data when averaging based on the uncertainty and chi2/N flags set previously.
 
 #### Additional usage:
 You can also use forced photometry to get offset light curves, plot each SN's light curve, and average the light curve data. To do any of these, follow the following instructions.
-* **To get forced photometry offsets automatically**, add `--forcedphot_offset True` to the command. In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius. `--pattern` specifies the pattern type to use (options are circular, box, or galaxy, which will get a ring of offsets around the closest bright object with a radius equal to the distance between the SN and the object).
-* **To plot each SN's light curve automatically**, add `--plot True` to the command.
-* **To average the light curve data automatically**, add `--averagelc True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
+* **To get forced photometry offsets automatically**, add `--forcedphot_offset True` to the command. In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius.
+* **To plot each SN's light curve automatically**, add `--plot True` to the command. You can also specify whether or not you want to make cuts based on clean data using the `makecuts` option under `plotlc` in `precursor.cfg`.
+* **To average the light curve data automatically**, add `--averagelc True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command. You can also specify whether or not you want to make cuts based on clean data using the `makecuts` option under `averagelc` in `precursor.cfg` or setting `--avg_makecuts` to `True` or `False`.
 
 Additional functionality enables you to do these tasks using existing data that has already been downloaded.
-* **To clean up the light curves using existing data**, initialize the program using `cleanup_lc.py`, then add to the command the SN names(s) you want cleaned up. You can skip certain procedures using `--skip_uncert True` (skips flagging measurements with certain large uncertainties), `--skip_chi True` (skips flagging measurements with certain large chi2/N values), and `--skip_makecuts True` (skips making cuts to the data when averaging based on the uncertainty and chi2/N flags set previously).
 * **To plot each SN's light curve using existing data**, initialize the program using `plot_lc.py`, then add to the command the SN name(s) you want plotted.
-* **To average the light curves using existing data**, initialize the program using `average_lc.py`, then add to the command the SN name(s) you want plotted. You can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
+* **To average the light curves using existing data**, initialize the program using `averagelc_loop.py`, then add to the command the SN name(s) you want plotted. You can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
 
-#### Using the TNS name to get RA and Dec:
-Given a TNS name, `autoadd.py` can automatically retrieve the RA and Dec coordinates from the TNS and add the TNS name, RA, and Dec to the table in `snlist.txt`. To run the script, follow the following instructions:
+#### Using autoadd.py with your snlist.txt
+Given a TNS name, `autoadd.py` can automatically retrieve the RA and Dec coordinates from the TNS and add the TNS name, RA, and Dec to `snlist.txt`. To run the script, follow the following instructions:
 * If you have only the TNS name of your SN, use the following command and add the TNS name at the end of the command: `autoadd.py`.
 * If you have the SN name (could be TNS name or other designation) AND the RA and Dec coordinates, initialize the program (`autoadd.py`) and add the SN name at the end of the command. Then, use the arguments `--ra` and `--dec` to specify the RA and Dec, and run the program.
-* **(Note: this feature has not been implemented yet.)**
 
 #### Example commands:
-* `autoadd.py 2020lse` adds the TNS name 2020lse, its RA, and its Dec to `snlist.txt`. Similarly, `autoadd.py 2020lse --ra 10:41:02.20 --dec -27:05:00.3` adds the TNS name 2020lse, the given RA, and the given Dec to `snlist.txt`. **(Note: not implemented yet.)**
+* `autoadd.py 2020lse` adds the TNS name 2020lse, its RA, and its Dec to `snlist.txt`. Similarly, `autoadd.py 2020lse --ra 10:41:02.20 --dec -27:05:00.3` adds the TNS name 2020lse, the given RA, and the given Dec to `snlist.txt`.
 * `download_lc_loop.py 2020lse -v -o -s -l 70 --forcedphot_offset True --plot True --averagelc True --MJDbinsize 20 --passwd 'XXX'` gets the data for SN 2020lse with verbose level 1, overwrites files with the same name, saves the files, and uses a lookback time of 70. Then the offset data is downloaded, plots are saved, and the SN light curve data is averaged with an MJDbinsize of 20.
-* `cleanup_lc.py 2020lse --skip_chi True` cleans up the data for SN 2020lse using only the uncertainty cut.
 * `plot_lc.py 2020lse -v -s` plots the data for SN 2020lse as long as there is already existing light curve data.
 * `averagelc_loop.py 2020lse -v -s --MJDbinsize 20` averages the data for SN 2020lse as long as there is already existing light curve data.
+* `offsetstats.py 2020lse -v -s` gives you statistics about the offset data at each MJD epoch and saves it into the SN light curve. In order to run this, you must already have downloaded offsets for the SN.

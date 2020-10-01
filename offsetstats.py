@@ -131,7 +131,7 @@ class offsetstatsclass(SNloopclass):
 			else:
 				use_o1 = True
 
-			Nsigma = 3 # should be from 3-5? check
+			Nsigma = 5 # should be from 3-5? check
 			X2norm_max = 3 # check
 			if use_o2 is True:
 				if abs(self.lc.t.at[index,'o2_mean'] / self.lc.t.at[index,'o2_mean_err']) > Nsigma:

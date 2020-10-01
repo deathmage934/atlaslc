@@ -274,7 +274,8 @@ if __name__ == '__main__':
 			downloadlc.cleanuplcloop(args,SNindex,offsetindex=offsetindex,filt=downloadlc.filt)
 			if args.averagelc: 
 				downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)
-		downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
-		downloadlc.offsetstatsloop(SNindex,filt=downloadlc.filt)
+		if args.forcedphot_offset:
+			downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+			downloadlc.offsetstatsloop(SNindex,filt=downloadlc.filt)
 		if args.plot: 
 			downloadlc.plotlcloop(args,SNindex)

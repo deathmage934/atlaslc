@@ -86,7 +86,7 @@ class SNloopclass(pdastroclass):
 		parser.add_argument('--avg_makecuts', default=None, choices=['True','False'], help=('skip cutting measurements using mask column when averaging'))
 		
 		# specify procedure used in offsetstats.py
-		parser.add_argument('--procedure', default='mask1', choices=['mask1','mask2'],help=('define offsetstats.py procedure type. can be mask1 or mask2'))
+		parser.add_argument('--procedure', default='mask_nan', choices=['mask_nan','mask4mjd'],help=('define offsetstats.py procedure type. can be mask1 or mask2'))
 		
 		parser.add_argument('-v','--verbose', default=0, action='count')
 		parser.add_argument('-d', '--debug', action='count', help="debug")

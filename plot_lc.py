@@ -51,6 +51,7 @@ class plotlcclass(SNloopclass):
 			if self.verbose>2: # FIX
 				print('Offset index: ',offsetindex)
 
+			# check if make cuts on data to plot
 			makecuts_apply = self.cfg.params['plotlc']['makecuts']
 			if not(args.avg_makecuts) is None:
 				if args.avg_makecuts is True:
@@ -60,6 +61,7 @@ class plotlcclass(SNloopclass):
 			if makecuts_apply == True:
 				if not('Mask' in self.lc.t.columns):
 					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
+				# make cuts on lc, save bad data to possibly plot
 				lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, offsetindex=offsetindex, procedure1='plotlc')
 				lc_uJy_bad = self.lc.t.loc[bad_data, self.flux_colname]
 				lc_duJy_bad = self.lc.t.loc[bad_data, self.dflux_colname]
@@ -75,6 +77,7 @@ class plotlcclass(SNloopclass):
 					# plot bad data with open red circles
 					sp, plotbad, dplotbad = dataPlot(lc_MJD_bad, lc_uJy_bad, dy=lc_duJy_bad)
 					matlib.setp(plotbad,mfc='white',ms=4,color='r')
+					# plot good data in closed red circles
 					sp, plotSN, dplotSN = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 					matlib.setp(plotSN,ms=4,color='r')
 

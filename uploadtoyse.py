@@ -21,7 +21,7 @@ import argparse
 from astropy.io import ascii
 
 # for command input: uploadtoyse.py -t 2020lse --user USERNAME --passwd 'PASSWORD'
-# for TNSlistfile input: uploadtoyse.py -f tnslist.txt --user USERNAME --passwd 'PASSWORD'
+# for TNSlistfile input: uploadtoyse.py -n tnslist.txt --user USERNAME --passwd 'PASSWORD'
 # for YSE list input: uploadtoyse.py --user USERNAME --passwd 'PASSWORD'
 
 # you must specify source directory, output root directory (has tnslist.txt if you want to use it), and output subdirectory (has all the downloaded data)
@@ -43,7 +43,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		self.flux_colname = None
 		self.dflux_colname = None
 
-		self.YSEtable = None
+		self.YSEtable = pdastroclass()
 		self.TNSnamelist = None
 		self.TNSlistfilename = None
 		self.TNSlistfile = pdastroclass(columns=['TNSname','ra','dec'])
@@ -147,16 +147,29 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			if onTNSlistfile is False:
 				# get ra and dec automatically, then append to TNSlistfile
 				ra, dec = self.getradec(TNSname)
-				df = pd.DataFrame([[TNSname,ra,dec]], columns=['TNSname','ra','dec'])
+				df = pd.DataFrame([[TNSname,ra,dec]], columns=['TNSname','RA','Dec'])
 				self.TNSlistfile.t = self.TNSlistfile.t.append(df, ignore_index=True)
 			else:
 				# get ra and dec from TNSlistfile
-				ra = self.TNSlistfile.at['RA',TNSname]
-				dec = self.TNSlistfile.at['Dec',TNSname]
+				index = self.TNSlistfile.ix_equal('TNSname',val=TNSname)
+				if len(index)>0:
+					ra = self.TNSlistfile.t.at[index[0],'RA']
+					dec = self.TNSlistfile.t.at[index[0],'Dec']
+				else:
+					raise RuntimeError('Something went wrong: TNSname does not exist!')
+				#ra = self.TNSlistfile.t.at['RA',TNSname]
+				#dec = self.TNSlistfile.t.at['Dec',TNSname]
 		else:
 			# get ra and dec from yse table
-			ra = self.YSEtable.at['RA',TNSname]
-			dec = self.YSEtable.at['Dec',TNsname]
+			index = self.YSEtable.ix_equal('Name',val=TNSname)
+			if len(index)>0:
+				ra = self.YSEtable.t.at[index[0],'RA']
+				dec = self.YSEtable.t.at[index[0],'Dec']
+			else:
+				raise RuntimeError('Something went wrong: TNSname does not exist!')
+
+		ra = RaInDeg(ra)
+		dec = DecInDeg(dec)
 
 		# check if sn already has lc downloaded; if not, download
 		existflag = True
@@ -172,7 +185,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			if args.lookbacktime_days:
 				lookbacktime_days = args.lookbacktime_days
 			else:
-				lookbacktime_days = 200
+				lookbacktime_days = 60
 			self.downloadyselc(args,ra,dec,lookbacktime_days=lookbacktime_days)
 
 		for filt in ['c','o']:
@@ -187,7 +200,7 @@ if __name__ == '__main__':
 	# add arguments
 	parser = argparse.ArgumentParser(conflict_handler='resolve')
 	parser.add_argument('-t','--tnsnamelist', default=None, nargs='+', help='name of transients to download and upload')
-	parser.add_argument('-f','--tnslistfilename', default="tnslist.txt", help='address of file containing TNS names, ra, and dec')
+	parser.add_argument('-n','--tnslistfilename', default=None, help='address of file containing TNS names, ra, and dec')
 	parser.add_argument('--sourcedir', default=None, help='source code directory')
 	parser.add_argument('--outrootdir', default=None, help='output root directory')
 	parser.add_argument('--outsubdir', default=None, help='output subdirectory')
@@ -213,31 +226,31 @@ if __name__ == '__main__':
 	else: 
 		upltoyse.outsubdir = upltoyse.cfg.params['output']['yse_outsubdir']
 
-	if args.tnsnamelist:
+	if not(args.tnsnamelist is None):
 		# TNSnamelist set to objects put in command line
 		upltoyse.TNSnamelist = args.tnsnamelist
 		print("TNSnamelist from command: ",upltoyse.TNSnamelist)
-	elif args.tnslistfilename:
-		upltoyse.TNSlistfilename =  '%s/%s' % (upltoyse.outrootdir,args.tnslistfilename)
+	elif not(args.tnslistfilename is None):
+		upltoyse.TNSlistfilename = '%s/%s' % (upltoyse.outrootdir,args.tnslistfilename)
 		# check if TNSlistfilename exists; if not, make TNSlistfile
 		if os.path.exists(upltoyse.TNSlistfilename):
-			upltoyse.TNSlistfile.load_spacesep(TNSlistfilename, delim_whitespace=True)
+			upltoyse.TNSlistfile.load_spacesep(upltoyse.TNSlistfilename, delim_whitespace=True)
 		else: 
-			upltoyse.TNSlistfile.t = pd.DataFrame({'TNSname':[],'ra':[],'dec':[]})
+			raise RuntimeError("%s does not exist! Please create a file with the headers 'TNSname', 'RA', and 'Dec', then try again.")
 		# TNSnamelist set to objects in TNSlistfilename
-		upltoyse.TNSnamelist = upltoyse.TNSlistfile['TNSname'].values
+		upltoyse.TNSnamelist = upltoyse.TNSlistfile.t['TNSname'].values
 		print("TNSnamelist from TNSlistfile: ",upltoyse.TNSnamelist)
 		print("TNSlistfilename: ",upltoyse.TNSlistfilename)
 	else:
-		upltoyse.YSEtable = upltoyse.YSE_list()
+		upltoyse.YSEtable.t = upltoyse.YSE_list()
 		# TNSnamelist set to ojects in YSE list
-		upltoyse.TNSnamelist = upltoyse.YSEtable['Name'].values
-		print("TNSnamelist from YSE: ",upltoyse.TNSnamelist)
+		upltoyse.TNSnamelist = upltoyse.YSEtable.t['Name'].values
+		print("TNSnamelist from YSE: ",upltoyse.TNSnamelist) # change me
 
 	for TNSname in upltoyse.TNSnamelist:
 		print("Uploading and/or downloading data for ",TNSname)
 		upltoyse.uploadloop(args,TNSname,overwrite=True)
 
-	#if args.tnslistfilename:
-		#upltoyse.TNSlistfile.write(TNSlistfilename,overwrite=True)
+	if not(args.tnslistfilename is None):
+		upltoyse.TNSlistfile.write(upltoyse.TNSlistfilename,overwrite=True)
 

@@ -153,7 +153,7 @@ class offsetstatsclass(SNloopclass):
 			self.lc.t = self.lc.t.round({'o1_mean':3,'o1_mean_err':3,'o1_stddev':3,'o1_X2norm':4})
 		if 'o2_mean' in self.lc.t.columns:
 			self.lc.t = self.lc.t.round({'o2_mean':3,'o2_mean_err':3,'o2_stddev':3,'o2_X2norm':4})
-		self.save_lc(SNindex,offsetindex=0,filt=self.filt,overwrite=True)
+		self.save_lc(SNindex=SNindex,offsetindex=0,filt=self.filt,overwrite=True)
 
 if __name__ == '__main__':
 

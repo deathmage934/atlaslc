@@ -64,7 +64,7 @@ class averagelcclass(SNloopclass):
 			self.averagelctable.t.drop(self.averagelctable.ix_inrange(lowlim=0,uplim=len(self.averagelctable.t)))
 		result = self.calcaveragelc(args, SNindex, lc_uJy, lc_duJy, lc_MJD, offsetindex=offsetindex,MJDbinsize=MJDbinsize,cuts_indices=cuts_indices)
 
-		filename = self.lcbasename(SNindex,filt=self.filt,offsetindex=offsetindex,MJDbinsize=MJDbinsize)+'.txt'
+		filename = self.lcbasename(SNindex=SNindex,filt=self.filt,offsetindex=offsetindex,MJDbinsize=MJDbinsize)+'.txt'
 		if fileformat is None: 
 			fileformat = self.cfg.params['output']['fileformat']
 

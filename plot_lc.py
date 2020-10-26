@@ -82,7 +82,7 @@ class plotlcclass(SNloopclass):
 					matlib.setp(plotSN,ms=4,color='r')
 
 					# fix?
-					plt.ylim(min(lc_uJy_bad)*1.1,max(lc_uJy_bad)*1.1)
+					plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
 				else:
 					sp, plotSN, dplotSN = dataPlot(lc_MJD, lc_uJy, dy=lc_duJy)
 					matlib.setp(plotSN,ms=4,color='r')
@@ -124,7 +124,7 @@ class plotlcclass(SNloopclass):
 		#if not(len(lc_MJD)==0):
 			#plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
 
-		plotfilename = self.lcbasename(SNindex)+'.png'
+		plotfilename = self.lcbasename(SNindex=SNindex)+'.png'
 		print('Plot file name: ',plotfilename)
 		plt.savefig(plotfilename)
 
@@ -186,7 +186,7 @@ class plotlcclass(SNloopclass):
 				plt.legend((plot,o1_stddev1,o1_stddev2),(self.t.at[SNindex,'tnsname'],'o1_stddev1','o1_stddev2'))
 			plt.axhline(linewidth=1,color='k')
 
-			plotfilename = self.lcbasename(SNindex)+'.mask4mjd.png'
+			plotfilename = self.lcbasename(SNindex=SNindex)+'.mask4mjd.png'
 			print('Plot file name: ',plotfilename)
 			plt.savefig(plotfilename)
 
@@ -224,7 +224,7 @@ class plotlcclass(SNloopclass):
 				plt.legend((plot,o2_stddev1,o2_stddev2),(self.t.at[SNindex,'tnsname'],'o2_stddev1','o2_stddev2'))
 			plt.axhline(linewidth=1,color='k')
 
-			plotfilename = self.lcbasename(SNindex)+'.mask_nan.png'
+			plotfilename = self.lcbasename(SNindex=SNindex)+'.mask_nan.png'
 			print('Plot file name: ',plotfilename)
 			plt.savefig(plotfilename)
 

@@ -108,7 +108,7 @@ class download_atlas_lc_class:
 		
 		return(0)
 
-	def get_lc(self, ra, dec,  lookbacktime_days=None):
+	def get_lc(self, ra, dec, lookbacktime_days=None):
 		# check connection
 		if not self.check_connection():
 			raise(RuntimeError,"No Connection!!!")

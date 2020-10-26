@@ -124,20 +124,30 @@ class SNloopclass(pdastroclass):
 			self.filt=filt
 		return(cfgfiles)
 
-	def lcbasename(self, SNindex, offsetindex=None, filt=None, MJDbinsize=None):
+	def lcbasename(self, SNindex=None, yse=False, TNSname=None, offsetindex=None, filt=None, MJDbinsize=None):
 		# define address and file name of the data table
-		SNID = self.t['tnsname'][SNindex]
+		if yse is True:
+			SNID = TNSname
+		else:
+			SNID = self.t['tnsname'][SNindex]
+		
 		if filt is None:
 			filt=self.filt
+		
 		basename = '%s/%s/%s' % (self.outrootdir,SNID,SNID)
+		
 		if not(offsetindex is None):
 			basename += '_i%03d' % self.RADECtable.t['OffsetID'][offsetindex]
+		
 		self.filt = self.cfg.params['filter']
+		
 		if not(filt is None):
 			self.filt=filt
 			basename += '.%s' % filt
+		
 		if not(MJDbinsize is None):
 			basename += '.%ddays' % int(MJDbinsize)
+		
 		basename += '.lc'
 		return(basename)
 
@@ -154,16 +164,16 @@ class SNloopclass(pdastroclass):
 
 	def load_lc(self, SNindex, filt=None, fileformat=None, offsetindex=None, MJDbinsize=None):
 		# get lc from already existing file
-		filename = self.lcbasename(SNindex,filt=filt,offsetindex=offsetindex,MJDbinsize=MJDbinsize)+'.txt' 
+		filename = self.lcbasename(SNindex=SNindex,filt=filt,offsetindex=offsetindex,MJDbinsize=MJDbinsize)+'.txt' 
 		print('Loading lc: %s' % filename)
 		self.lc.load_spacesep(filename, delim_whitespace=True)
 		if fileformat is None: 
 			fileformat = self.cfg.params['output']['fileformat']
 		return(0)
 
-	def save_lc(self, SNindex, indices=None, filt=None, overwrite=False, fileformat=None, offsetindex=None, MJDbinsize=None):
+	def save_lc(self, SNindex=None, yse=False, TNSname=None, indices=None, filt=None, overwrite=False, fileformat=None, offsetindex=None, MJDbinsize=None):
 		# write table and save lc as file
-		filename = self.lcbasename(SNindex, filt=filt, offsetindex=offsetindex, MJDbinsize=MJDbinsize)+'.txt'
+		filename = self.lcbasename(SNindex=SNindex, yse=False, filt=filt, offsetindex=offsetindex, MJDbinsize=MJDbinsize)+'.txt'
 		if fileformat is None: 
 			fileformat = self.cfg.params['output']['fileformat']
 		self.lc.write(filename,indices=indices,overwrite=True,verbose=True)
@@ -171,7 +181,7 @@ class SNloopclass(pdastroclass):
 		return(0)
 
 	def saveRADEClist(self, SNindex, filt=None):
-		RADEClistfilename = self.lcbasename(SNindex,filt=filt)+'.RADEClist.txt'
+		RADEClistfilename = self.lcbasename(SNindex=SNindex,filt=filt)+'.RADEClist.txt'
 		if self.verbose: 
 			print('Saving RADEClist %s' % RADEClistfilename)
 		self.RADECtable.write(RADEClistfilename,overwrite=True,verbose=True)
@@ -179,7 +189,7 @@ class SNloopclass(pdastroclass):
 
 	def loadRADEClist(self, SNindex, filt=None):
 		# get RADEClist from alreadt existing file
-		RADEClistfilename = self.lcbasename(SNindex,filt=filt)+'.RADEClist.txt'
+		RADEClistfilename = self.lcbasename(SNindex=SNindex,filt=filt)+'.RADEClist.txt'
 		if self.verbose: 
 			print('Loading RADEClist %s' % RADEClistfilename)
 		self.RADECtable.load_spacesep(RADEClistfilename, delim_whitespace=True)

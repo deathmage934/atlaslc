@@ -2,7 +2,7 @@
 
 import numpy as np
 import math
-import sys,socket,os,re
+import sys,socket,os,re,io
 from astropy.io import ascii
 from astropy import units as u
 from astropy.coordinates import Angle
@@ -21,7 +21,6 @@ from plot_lc import plotlcclass, dataPlot
 from average_lc import averagelcclass
 from offsetstats import offsetstatsclass
 import sigmacut
-import io
 from pdastro import pdastroclass, AandB
 
 class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsclass):
@@ -51,9 +50,9 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 
 		# save the lc file with the output filename
 		if savelc:
-			self.save_lc(SNindex,indices=indices,overwrite=overwrite,fileformat=fileformat,offsetindex=offsetindex)
+			self.save_lc(SNindex=SNindex,indices=indices,overwrite=overwrite,fileformat=fileformat,offsetindex=offsetindex)
 			for filt in ['c','o']:
-				filename = self.lcbasename(SNindex,filt=filt, offsetindex=offsetindex)+'.txt'
+				filename = self.lcbasename(SNindex=SNindex,filt=filt, offsetindex=offsetindex)+'.txt'
 				if fileformat is None: 
 					fileformat = self.cfg.params['output']['fileformat']
 				detections4filt=np.where(self.lc.t['F']==filt)
@@ -171,6 +170,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 							print('#Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew.degree, DECnew.degree))
 						OffsetID += 1
 		else:
+			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree)
+			Dec = Angle(DecInDeg(self.t.at[SNindex,'dec']),u.degree)
 			df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 			self.RADECtable.t = self.RADECtable.t.append(df, ignore_index=True)
 

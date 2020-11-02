@@ -242,7 +242,18 @@ class pdastroclass:
             if isinstance(colnames,str):
                 colnames=[colnames]
         return(colnames)
+
+    def ix_equal(self,colnames,val,indices=None):
+        # get the indices based on input.
+        indices=self.getindices(indices)
+        
+        # get the column names over which to iterate
+        colnames=self.getcolnames(colnames)
+        for colname in colnames:
+            (keep,) = np.where(self.t.loc[indices,colname].eq(val))
+            indices = indices[keep]
             
+        return(indices)
 
     def ix_remove_null(self,colnames=None,indices=None):
         # get the indices based on input.

@@ -247,6 +247,11 @@ if __name__ == '__main__':
 		upltoyse.TNSnamelist = upltoyse.YSEtable.t['Name'].values
 		print("TNSnamelist from YSE: ",upltoyse.TNSnamelist) # change me
 
+		#x = np.where(upltoyse.TNSnamelist=='10JYSElrn')
+		#print(upltoyse.TNSnamelist.shape)
+		#print(upltoyse.TNSnamelist[93:]) # delete me
+		#sys.exit(0) # delete me
+
 	for TNSname in upltoyse.TNSnamelist:
 		print("Uploading and/or downloading data for ",TNSname)
 		upltoyse.uploadloop(args,TNSname,overwrite=True)

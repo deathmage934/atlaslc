@@ -7,7 +7,7 @@
 * [Example commands](#example-commands)
 
 ### Description: 
-Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and retrieves the SN light curve data. You will need a table containing your **SN names and your username and password** for the ATLAS machines.
+Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and retrieves the SN light curve data. atlaslc can then perform a variety of functions on said data, including cleaning inacurrate data, plotting data, averaging data, and uploading data to YSE-PZ. You will need a table containing your **SN names and your username and password** for the ATLAS machines.
 
 ### Installation:
 * Download all code.

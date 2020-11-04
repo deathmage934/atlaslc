@@ -72,7 +72,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 			OffsetID = 1
 			foundflag = False
 
-			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree)
+			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree) # why not just put in RA var?? lol
 			Dec = Angle(DecInDeg(self.t.at[SNindex,'dec']),u.degree)
 			#print('RA,Dec: %s %s %f %f' % (self.t.at[SNindex,'ra'],self.t.at[SNindex,'dec'],RA.degree,Dec.degree)) # delete me
 
@@ -170,8 +170,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 							print('#Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew.degree, DECnew.degree))
 						OffsetID += 1
 		else:
-			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree)
-			Dec = Angle(DecInDeg(self.t.at[SNindex,'dec']),u.degree)
+			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree) # just put in RA var
+			Dec = Angle(DecInDeg(self.t.at[SNindex,'dec']),u.degree) # just put in Dec var
 			df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 			self.RADECtable.t = self.RADECtable.t.append(df, ignore_index=True)
 

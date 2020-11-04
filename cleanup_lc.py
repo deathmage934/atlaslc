@@ -18,7 +18,7 @@ class cleanuplcclass(SNloopclass):
 		# define indices
 		a_indices = np.where(self.lc.t[self.dflux_colname]>a)
 		a_indices = list(a_indices[0])
-		print('Indices: ',a_indices,type(a_indices))
+		print('Indices: ',a_indices)
 		if len(self.lc.t.loc[a_indices,self.dflux_colname])>0:
 			if self.verbose:
 				print('%s above %i: ' % (self.dflux_colname, a), len(self.lc.t.loc[a_indices,self.dflux_colname]))
@@ -41,7 +41,7 @@ class cleanuplcclass(SNloopclass):
 		# define indices
 		a_indices = np.where(self.lc.t['chi/N']>a)
 		a_indices = list(a_indices[0])
-		print('Indices: ',a_indices,type(a_indices)) 
+		print('Indices: ',a_indices) 
 		if len(self.lc.t.loc[a_indices,'chi/N'])>0:
 			if self.verbose:
 				print('chi/N above %i: ' % a,len(self.lc.t.loc[a_indices,'chi/N']))

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Adapted from Q. Wang by S. Rest
+
 import astropy.table as at
 import sys,socket
 from astropy.io import ascii

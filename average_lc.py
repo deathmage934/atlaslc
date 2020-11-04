@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# S. Rest
+
 from SNloop import SNloopclass
 import numpy as np
 import sigmacut

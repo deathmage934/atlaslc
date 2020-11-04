@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# S. Rest
+
 from SNloop import SNloopclass
 import pylab as matlib
 import matplotlib.pyplot as plt

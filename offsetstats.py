@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# S. Rest
+
 from SNloop import SNloopclass
 from statistics import median
 import sigmacut

@@ -13,6 +13,9 @@ class offsetstatsclass(SNloopclass):
 	def __init__(self):
 		SNloopclass.__init__(self)
 
+		self.o1_nanindexlist = []
+		self.o2_nanindexlist = []
+
 	def offsetstatsloop(self,SNindex,filt):
 		# load main lc
 		self.load_lc(SNindex,offsetindex=0,filt=self.filt)
@@ -136,19 +139,39 @@ class offsetstatsclass(SNloopclass):
 			Nsigma = 5 # should be from 3-5? check
 			X2norm_max = 3 # check
 			if use_o2 is True:
-				if abs(self.lc.t.at[index,'o2_mean'] / self.lc.t.at[index,'o2_mean_err']) > Nsigma:
-					self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_meannorm)
-				if self.lc.t.at[index,'o2_X2norm'] > X2norm_max:
-					self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_X2norm)
+				#print(self.lc.t.at[index,'o2_mean'],type(self.lc.t.at[index,'o2_mean']))
+				#sys.exit(0)
+				if (np.isnan(self.lc.t.at[index,'o2_mean'])) or (np.isnan(self.lc.t.at[index,'o2_mean_err'])):
+					#print('nans detected for ',index,' index! Skipping o2 masking for this measurement...')
+					self.o2_nanindexlist.append(index)
+				else:
+					if abs(self.lc.t.at[index,'o2_mean'] / self.lc.t.at[index,'o2_mean_err']) > Nsigma:
+						self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_meannorm)
+					if self.lc.t.at[index,'o2_X2norm'] > X2norm_max:
+						self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_X2norm)
 			else:
-				if abs(self.lc.t.at[index,'o1_mean'] / self.lc.t.at[index,'o1_mean_err']) > Nsigma:
-					self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_meannorm)
-				if self.lc.t.at[index,'o1_X2norm'] > X2norm_max:
-					self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_X2norm)
+				if (np.isnan(self.lc.t.at[index,'o1_mean'])) or (np.isnan(self.lc.t.at[index,'o1_mean_err'])):
+					#print('nans detected for ',index,' index! Skipping o1 masking for this measurement...')
+					self.o1_nanindexlist.append(index)
+				else:
+					if abs(self.lc.t.at[index,'o1_mean'] / self.lc.t.at[index,'o1_mean_err']) > Nsigma:
+						self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_meannorm)
+					if self.lc.t.at[index,'o1_X2norm'] > X2norm_max:
+						self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_X2norm)
 
 			if calcaverage.Nused<=0:
 				if self.verbose>2:
 					print('No data values...')
+
+		if len(self.o1_nanindexlist)==0:
+			print('No o1 nans detected!')
+		else:
+			print('o1 nans detected! Index list: ',self.o1_nanindexlist)
+
+		if len(self.o2_nanindexlist)==0:
+			print('No o2 nans detected!')
+		else:
+			print('o2 nans detected! Index list: ',self.o2_nanindexlist)
 
 		# round o1 or o2 data
 		if 'o1_mean' in self.lc.t.columns:

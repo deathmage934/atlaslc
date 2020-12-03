@@ -200,7 +200,6 @@ class SNloopclass(pdastroclass):
 		return(0)
 
 	def makecuts_indices(self,SNindex,offsetindex,procedure1):
-
 		# use when cleaning up data in plot_lc.py or average_lc.py; makes cuts based on mask column created in cleanup_lc.py
 		# set flags in precursor.cfg to control what data to cut based on uncertainties and/or chi/N
 		if procedure1 is 'averagelc': 
@@ -209,8 +208,10 @@ class SNloopclass(pdastroclass):
 			flags = self.cfg.params['plotlc']['flags']
 		elif procedure1 is 'offsetstats':
 			flags = self.cfg.params['offsetstats']['flags']
+		elif procedure1=='upltoyse':
+			flags = self.cfg.params['upltoyse']['flags']
 		else:
-			raise RuntimeError('Procedure %s must be averagelc or offsetstats!' % procedure1)
+			raise RuntimeError('Procedure %s must be averagelc, plotlc, or offsetstats!' % procedure1)
 		print('Setting indices using flags: %x' % flags)
 		
 		mask=np.bitwise_and(self.lc.t['Mask'], flags)

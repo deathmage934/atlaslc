@@ -129,8 +129,8 @@ class plotlcclass(SNloopclass):
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
-		plt.xlim(58900,59250)
-		plt.ylim(minlc*1.1,maxlc*1.1)
+		#plt.xlim(58900,59250) # delete me
+		#plt.ylim(minlc*1.1,maxlc*1.1) # delete me
 		#if not(len(lc_MJD)==0):
 			#plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
 
@@ -191,10 +191,12 @@ class plotlcclass(SNloopclass):
 			if makecuts_apply is True:
 				plot_legend = self.t.at[SNindex,'tnsname']+' cleaned'
 				plot2_legend = self.t.at[SNindex,'tnsname']+' cut data'
-				plt.legend((plot,plot2,o1_stddev1,o1_stddev2),(plot_legend,plot2_legend,'o1_stddev1','o1_stddev2'))
+				plt.legend((plot,plot2),(plot_legend,plot2_legend))
 			else:
-				plt.legend((plot,o1_stddev1,o1_stddev2),(self.t.at[SNindex,'tnsname'],'o1_stddev1','o1_stddev2'))
+				plt.legend((plot),(self.t.at[SNindex,'tnsname']))
 			plt.axhline(linewidth=1,color='k')
+			plt.xlim(58900,59250) # delete me
+			plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1) # delete me
 
 			plotfilename = self.lcbasename(SNindex=SNindex)+'.mask4mjd.png'
 			print('Plot file name: ',plotfilename)
@@ -229,10 +231,14 @@ class plotlcclass(SNloopclass):
 			if makecuts_apply is True:
 				plot_legend = self.t.at[SNindex,'tnsname']+' cleaned'
 				plot2_legend = self.t.at[SNindex,'tnsname']+' cut data'
-				plt.legend((plot,plot2,o2_stddev1,o2_stddev2),(plot_legend,plot2_legend,'o2_stddev1','o2_stddev2'))
+				#plt.legend((plot,plot2,o2_stddev1,o2_stddev2),(plot_legend,plot2_legend,'o2_stddev1','o2_stddev2'))
+				plt.legend((plot,plot2),(plot_legend,plot2_legend))
 			else:
-				plt.legend((plot,o2_stddev1,o2_stddev2),(self.t.at[SNindex,'tnsname'],'o2_stddev1','o2_stddev2'))
+				#plt.legend((plot,o2_stddev1,o2_stddev2),(self.t.at[SNindex,'tnsname'],'o2_stddev1','o2_stddev2'))
+				plt.legend((plot),(self.t.at[SNindex,'tnsname']))
 			plt.axhline(linewidth=1,color='k')
+			#plt.xlim(58900,59250) # delete me
+			plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1) # delete me
 
 			plotfilename = self.lcbasename(SNindex=SNindex)+'.mask_nan.png'
 			print('Plot file name: ',plotfilename)

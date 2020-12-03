@@ -47,6 +47,11 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 		
 		# sort data by mjd
 		self.lc.t = self.lc.t.sort_values(by=['MJD'],ignore_index=True)
+		
+		# delete any rows with duJy=0
+		for index in range(len(self.lc.t['MJD'])):
+			if self.lc.t.at[index,'duJy'] == 0:
+				self.lc.t.drop(index)
 
 		indices = self.lc.ix_remove_null(colnames='uJy')
 

@@ -33,7 +33,7 @@ from astropy.table import Table
 # you can specify these in the commandline using --sourcedir, --outrootdir, and --outsubdir
 # OR
 # 1. you can set the source directory and the output root directory in atlaslc.sourceme
-# 2. you can set the output subdirectory in precursor.cfg next to 'yse_outsubdir' (currently set to default 'ysetest')
+# 2. then set the output subdirectory in precursor.cfg next to 'yse_outsubdir' (currently set to default 'ysetest')
 
 class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 	def __init__(self):
@@ -107,8 +107,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 	    with open(outname, 'w+') as f:
 	        f.write('SNID: '+TNSname+' \nRA: '+str(ra)+'     \nDECL: '+str(dec)+' \n \nVARLIST:  MJD  FLT  FLUXCAL   FLUXCALERR MAG     MAGERR DQ \n')
 	        for k in t:
-	        	#if args.ysecleanlc:
-	        		#if not(k['Mask']>0):
+	        	#if args.cleanlc:
+	        		#if not(k['Mask']>0): #if k['Mask']==0:
 	        			# copy and paste
 	        	#else:
 	        		# copy and paste
@@ -261,6 +261,10 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		self.lc.t = pd.read_csv(io.StringIO('\n'.join(self.download_atlas_lc.lcraw)),delim_whitespace=True,skipinitialspace=True)
 		mask = np.zeros((len(self.lc.t)), dtype=int)
 		self.lc.t = self.lc.t.assign(Mask=mask)
+
+		#self.lc.write()
+		#sys.exit(0)
+
 		self.lc.t = self.lc.t.sort_values(by=['MJD'],ignore_index=True)
 		indices = self.lc.ix_remove_null(colnames='uJy')
 
@@ -341,8 +345,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 				#oindex = '%03d' % offsetindex
 				self.loadyselc(TNSname,offsetindex,filt)
 				print('Loaded %s light curve! Length of self.lc.t: ' % filt,len(self.lc.t))
-				if len(self.lc.t) == 0:
-					return(1)
+				if len(self.lc.t) == 0: return(1)
 
 				# add or replace mask column
 				if 'Mask' in self.lc.t.columns:
@@ -382,7 +385,62 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
 				# save lc with additional mask column
 				self.saveyselc(TNSname,offsetindex,filt,overwrite=True)
+	'''
+	def getcleanlc(self,args):
+		flags = self.cfg.params['upltoyse']['flags']
+		print('Setting indices using flags: %x' % flags)
+		
+		mask=np.bitwise_and(self.lc.t['Mask'], flags)
+		cuts_indices = np.where(mask==0)
+		cuts_indices = cuts_indices[0]
+		bad_data = np.where(mask!=0)
+		bad_data = bad_data[0]
 
+		datacut = len(self.lc.t)-len(self.lc.t.loc[cuts_indices])
+		print('Length original lc: ',len(self.lc.t),', length cleaned lc: ',len(self.lc.t.loc[cuts_indices]),', data points cut: ',datacut)
+
+		lc_m = self.lc.t.loc[cuts_indices, 'm']
+		lc_dm = self.lc.t.loc[cuts_indices,'dm']
+		lc_mjd = self.lc.t.loc[cuts_indices,'MJD']
+		#return(lc_m, lc_dm, lc_mjd, cuts_indices)
+	'''
+	def averageyselc(self,args,TNSname):
+		self.loadRADECtable(TNSname)
+
+		# decide whether or not to make cuts on data to average
+		makecuts_apply = self.cfg.params['averagelc']['makecuts']
+		if not(args.avg_makecuts) is None:
+			if args.avg_makecuts is True:
+				makecuts_apply = True
+			else:
+				makecuts_apply = False
+
+		for offsetindex in range(len(self.RADECtable.t)):
+			MJDbinsize = self.cfg.params['output']['MJDbinsize']
+			if not(args.MJDbinsize is None): MJDbinsize = args.MJDbinsize
+			
+			# load lc
+			self.loadyselc(TNSname,offsetindex,filt)
+			print('Loaded %s light curve! Length of self.lc.t: ' % filt,len(self.lc.t))
+			if len(self.lc.t) == 0: return(1)
+
+			# AHHHHHHHHHHHHH 
+			'''
+			if makecuts_apply == True:
+				if not('Mask' in self.lc.t.columns):
+					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
+				lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, offsetindex, 'averagelc')
+				print('Calculating average_lc table for offset index %d' % offsetindex)
+				self.averagelcs(args, SNindex, offsetindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=MJDbinsize, cuts_indices=cuts_indices)
+			# data set to lc table
+			else:
+				print('Skipping makecuts using mask column...')
+				lc_uJy = self.lc.t[self.flux_colname]
+				lc_duJy = self.lc.t[self.dflux_colname]
+				lc_MJD = self.lc.t['MJD']
+				print('Calculating average_lc table for offset index %d' % offsetindex) 
+				self.averagelcs(args, SNindex, offsetindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=MJDbinsize)
+			'''
 	def uploadloop(self,args,TNSname,overwrite=False):
 		# GET RA AND DEC
 		if args.tnsnamelist:
@@ -414,6 +472,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
 		# check if sn already has lc downloaded
 		self.existflag = False
+		'''
 		for filt in ['c','o']:
 			#oindex = '%03d' % 0
 			filename = self.yselcfilename(TNSname,0,filt)
@@ -423,6 +482,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			else:
 				print("Found no data for %s with filter %s, downloading full lc..." % (TNSname,filt))
 				self.existflag = False
+		'''
 
 		# set offset pattern
 		if not(args.pattern is None):
@@ -438,15 +498,20 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		self.downloadyseoffsetlc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
 		
 		# clean up lc using chi square and uncertainty cuts
-		self.cleanupyseoffsetlc(args,TNSname)
+		if args.cleanlc is True:
+			self.cleanupyseoffsetlc(args,TNSname)
+			#self.getcleanlc(args,TNSname)
 
-		#if args.plot is True:
+		#if args.plotlc is True:
 			#self.plotyselc(args,TNSname)
+		#if args.averagelc is True:
+			#self.averageyselc(args,TNSname)
 		
 		# upload to YSE-PZ
 		for filt in ['c','o']:
-			#oindex = '%03d' % 0
+			# get lc file name
 			filename = self.yselcfilename(TNSname,0,filt)
+			# save yse-friendly lc file and get file name
 			outname = self.atlas2yse(TNSname,filename,ra,dec,filename,filt)
 			self.uploadtoyse(outname)
 
@@ -463,8 +528,8 @@ if __name__ == '__main__':
 	parser.add_argument('--outsubdir', default=None, help='output subdirectory')
 	parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
 	parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
-	parser.add_argument('--plot', default=False, help=('plot lcs')) # to add
-	parser.add_argument('--ysecleanlc', default=False, help=('upload only clean data to yse')) # in progress
+	parser.add_argument('--plotlc', default=False, help=('plot lcs')) # to add
+	parser.add_argument('--cleanlc', default=False, help=('upload only clean data to yse')) # in progress
 	parser.add_argument('--averagelc', default=False, help=('average lcs')) # to add
 	parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
 	parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
@@ -524,7 +589,8 @@ if __name__ == '__main__':
 	upltoyse.averagelctable.default_formatters = {'OffsetID':'{:3d}'.format,'MJD':'{:.5f}'.format,upltoyse.flux_colname:'{:.2f}'.format,upltoyse.dflux_colname:'{:.2f}'.format,'stdev':'{:.2f}'.format,'X2norm':'{:.3f}'.format,'Nused':'{:4d}'.format,'Nclipped':'{:4d}'.format,'MJDNused':'{:4d}'.format,'MJDNskipped':'{:4d}'.format}
 
 	for TNSname in upltoyse.TNSnamelist:
-		print("Uploading and/or downloading data for ",TNSname)
+		index = np.where(upltoyse.TNSnamelist==TNSname)
+		print("Uploading and/or downloading data for %s, TNSnamelist index %d" % (TNSname,index[0]))
 		upltoyse.uploadloop(args,TNSname,overwrite=True)
 
 	if not(args.tnslistfilename is None):

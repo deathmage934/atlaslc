@@ -139,10 +139,9 @@ class offsetstatsclass(SNloopclass):
 			Nsigma = 5 # should be from 3-5? check
 			X2norm_max = 3 # check
 			if use_o2 is True:
-				#print(self.lc.t.at[index,'o2_mean'],type(self.lc.t.at[index,'o2_mean']))
-				#sys.exit(0)
 				if (np.isnan(self.lc.t.at[index,'o2_mean'])) or (np.isnan(self.lc.t.at[index,'o2_mean_err'])):
 					#print('nans detected for ',index,' index! Skipping o2 masking for this measurement...')
+					self.o2_nanindexlist = []
 					self.o2_nanindexlist.append(index)
 				else:
 					if abs(self.lc.t.at[index,'o2_mean'] / self.lc.t.at[index,'o2_mean_err']) > Nsigma:

@@ -123,7 +123,7 @@ class plotlcclass(SNloopclass):
 				plt.legend((plotSN,plotOffset),('SN %s' % self.t.at[SNindex,'tnsname'],offsetlabel))
 		# if only sn
 		else:
-			plt.legend((plotSN),('SN %s cleaned' % self.t.at[SNindex,'tnsname']))
+			plt.legend(('SN %s cleaned' % self.t.at[SNindex,'tnsname']))
 
 		plt.title('SN %s' % self.t.at[SNindex,'tnsname'])
 		plt.axhline(linewidth=1,color='k')

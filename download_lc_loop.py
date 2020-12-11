@@ -73,6 +73,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 					self.lc.write(filename, index=False, indices=newindices, overwrite=True, verbose=False)
 
 	def defineRADEClist(self,RA,Dec,SNindex,pattern=None):
+		self.RADECtable.t = pd.DataFrame(columns=self.RADECtable.t.columns)
 		if not(pattern is None):
 			pattern_list = pattern
 			print('Pattern(s) set to ',pattern_list)
@@ -215,13 +216,15 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 				self.saveRADEClist(SNindex,filt='c')
 				self.saveRADEClist(SNindex,filt='o')
 		else:
-			print('Skipping forcedphot offsets lc...')
+			print('Skipping forcedphot offsets lc for %s...' % self.t.at[SNindex,'tnsname'])
 			# only add SN data in new row without offsets
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
+
 			self.defineRADEClist(RA,Dec,SNindex,pattern=None)
 			if self.verbose>1:
 				print(self.RADECtable.write(index=True,overwrite=False))
+
 			
 			for i in range(len(self.RADECtable.t)):
 				if self.verbose:

@@ -37,6 +37,9 @@ class SNloopclass(pdastroclass):
 		self.RADECtable = pdastroclass()
 		self.averagelctable = pdastroclass()
 
+		self.o1_nanindexlist = []
+		self.o2_nanindexlist = []
+
 		self.flag_cut0_uncertainty = 0x1
 		self.flag_cut0_X2norm_dynamic = 0x2
 		self.flag_cut0_X2norm_static = 0x4

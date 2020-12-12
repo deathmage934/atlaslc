@@ -13,9 +13,6 @@ class offsetstatsclass(SNloopclass):
 	def __init__(self):
 		SNloopclass.__init__(self)
 
-		self.o1_nanindexlist = []
-		self.o2_nanindexlist = []
-
 	def offsetstatsloop(self,SNindex,filt):
 		# load main lc
 		self.load_lc(SNindex,offsetindex=0,filt=self.filt)
@@ -141,7 +138,6 @@ class offsetstatsclass(SNloopclass):
 			if use_o2 is True:
 				if (np.isnan(self.lc.t.at[index,'o2_mean'])) or (np.isnan(self.lc.t.at[index,'o2_mean_err'])):
 					#print('nans detected for ',index,' index! Skipping o2 masking for this measurement...')
-					self.o2_nanindexlist = []
 					self.o2_nanindexlist.append(index)
 				else:
 					if abs(self.lc.t.at[index,'o2_mean'] / self.lc.t.at[index,'o2_mean_err']) > Nsigma:

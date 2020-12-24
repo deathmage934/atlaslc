@@ -275,7 +275,7 @@ if __name__ == '__main__':
 		pattern = downloadlc.cfg.params['forcedphotpatterns']['patterns_to_use']
 
 	for SNindex in SNindexlist:
-		if downloadlc.t.at[SNindex,'tnsname'] == 'NaN':
+		if not(isinstance(downloadlc.t.at[SNindex,'tnsname'],str)):
 			print('\nNaN detected, skipping...')
 		else:
 			downloadlc.downloadoffsetlc(SNindex,

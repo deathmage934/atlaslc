@@ -588,7 +588,7 @@ if __name__ == '__main__':
 	upltoyse.RADECtable.default_formatters = {'OffsetID':'{:3d}'.format,'PatternID':'{:2d}'.format,'Ra':'{:.8f}'.format,'Dec':'{:.8f}'.format,'RaOffset':'{:.2f}'.format,'DecOffset':'{:.2f}'.format,'Radius':'{:.2f}'.format,'Ndet':'{:4d}'.format,'Ndet_c':'{:4d}'.format,'Ndet_o':'{:4d}'.format}
 	upltoyse.averagelctable.default_formatters = {'OffsetID':'{:3d}'.format,'MJD':'{:.5f}'.format,upltoyse.flux_colname:'{:.2f}'.format,upltoyse.dflux_colname:'{:.2f}'.format,'stdev':'{:.2f}'.format,'X2norm':'{:.3f}'.format,'Nused':'{:4d}'.format,'Nclipped':'{:4d}'.format,'MJDNused':'{:4d}'.format,'MJDNskipped':'{:4d}'.format}
 
-	for TNSname in upltoyse.TNSnamelist[151:]:
+	for TNSname in upltoyse.TNSnamelist:
 		index = np.where(upltoyse.TNSnamelist==TNSname)
 		print("\nUploading and/or downloading data for %s, TNSnamelist index %d/%d" % (TNSname,index[0],len(upltoyse.TNSnamelist)))
 		upltoyse.uploadloop(args,TNSname,overwrite=True)

@@ -3,12 +3,16 @@
 wrapper around pandas with convenience functions to ease handling of tables
 A. Rest
 '''
-import sys,os,re,types
+import sys,os,re,types,copy
 import numpy as np
 from astropy.time import Time
 import astropy.io.fits as fits
 import astropy
+#import scipy
 import pandas as pd
+from astropy.nddata import bitmask
+
+from scipy.interpolate import interp1d
 
 def makepath(path,raiseError=True):
     if path == '':
@@ -66,6 +70,9 @@ class pdastroclass:
         # example:
         # self.default_formatters = {'MJD':'{:.6f}'.format,'counter':'{:05d}'.format}
        
+        # dictionary for the splines. arguments are the y columns of the spline
+        self.spline={}
+
 
     def load_spacesep(self,filename,test4commentedheader=True,namesMapping=None,roundingMapping=None,
                       na_values=['None','-','--'],**kwargs):
@@ -113,6 +120,9 @@ class pdastroclass:
 
         # make sure indices are converted into a valid list
         indices=self.getindices(indices)
+        
+        # make sure columns are converted into a valid list
+        columns=self.getcolnames(columns)
 
         # make the path to the file if necessary
         if not (filename is None):
@@ -234,7 +244,7 @@ class pdastroclass:
             
         return(indices)
     
-    def getcolnames(self,colnames=None):
+    def getcolnamesDELME(self,colnames=None):
         """Return a list of all colnames of colnames=None. If colnames=string, return a list"""
         if (colnames is None) or colnames.lower()=='all':
             colnames = self.t.columns
@@ -242,18 +252,19 @@ class pdastroclass:
             if isinstance(colnames,str):
                 colnames=[colnames]
         return(colnames)
-
-    def ix_equal(self,colnames,val,indices=None):
-        # get the indices based on input.
-        indices=self.getindices(indices)
-        
-        # get the column names over which to iterate
-        colnames=self.getcolnames(colnames)
-        for colname in colnames:
-            (keep,) = np.where(self.t.loc[indices,colname].eq(val))
-            indices = indices[keep]
             
-        return(indices)
+
+    def getcolnames(self,colnames=None):
+        """Return a list of all colnames of colnames=None. If colnames=string, return a list"""
+        if (colnames is None):
+             colnames = self.t.columns[:] 
+        elif isinstance(colnames,str):
+            if colnames.lower()=='all':
+                colnames = self.t.columns[:]
+            else:
+                colnames=[colnames]
+        return(colnames)
+            
 
     def ix_remove_null(self,colnames=None,indices=None):
         # get the indices based on input.
@@ -269,6 +280,18 @@ class pdastroclass:
             #print('YYY',notnull)
         return(indices)
 
+    def ix_equal(self,colnames,val,indices=None):
+        # get the indices based on input.
+        indices=self.getindices(indices)
+        
+        # get the column names over which to iterate
+        colnames=self.getcolnames(colnames)
+        for colname in colnames:
+            (keep,) = np.where(self.t.loc[indices,colname].eq(val))
+            indices = indices[keep]
+            
+        return(indices)
+        
     def ix_inrange(self,colnames=None,lowlim=None,uplim=None,indices=None,
                    exclude_lowlim=False,exclude_uplim=False):
 
@@ -277,7 +300,7 @@ class pdastroclass:
         
         # get the column names over which to iterate
         colnames=self.getcolnames(colnames)
-        
+        #print(colnames)
         for colname in colnames:
             if not(lowlim is None):
                 if exclude_lowlim:
@@ -328,7 +351,31 @@ class pdastroclass:
             indices = indices[AorB(keeplow,keepup)]
             
         return(indices)
+    
+    def ix_unmasked(self,maskcol,maskval=None,indices=None):
 
+        # get the indices based on input.
+        indices=self.getindices(indices)  
+        
+        if maskval is None:
+            (keep,) = np.where(self.t.loc[indices,maskcol].eq(0))
+        else:
+            (keep,) = np.where(bitmask.bitfield_to_boolean_mask(self.t.loc[indices,maskcol].astype('int'),ignore_flags=~maskval,good_mask_value=True))
+        indices = indices[keep]
+        return(indices)           
+    
+    def ix_masked(self,maskcol,maskval=None,indices=None):
+
+        # get the indices based on input.
+        indices=self.getindices(indices)  
+        
+        if maskval is None:
+            (keep,) = np.where(self.t.loc[indices,maskcol].ne(0))
+        else:
+            (keep,) = np.where(bitmask.bitfield_to_boolean_mask(self.t.loc[indices,maskcol].astype('int'),ignore_flags=~maskval))
+        indices = indices[keep]
+        return(indices)           
+            
         
     def fitsheader2table(self,fitsfilecolname,indices=None,requiredfitskeys=None,optionalfitskey=None,raiseError=True,skipcolname=None,headercol=None):
 
@@ -385,3 +432,267 @@ class pdastroclass:
         mjds = dateobjects.mjd
 
         self.t[mjdcol]=mjds
+        
+    def initspline(self,xcol,ycol,indices=None,
+                   kind='cubic',bounds_error=False,fill_value='extrapolate', 
+                   **kwargs):
+        if not (xcol in self.t.columns):
+            raise RuntimeError("spline: x column %s does not exist in table!" % xcol)
+        if not (ycol in self.t.columns):
+            raise RuntimeError("spline: y column %s does not exist in table!" % ycol)
+
+        # make sure there are no nan values
+        indices = self.ix_remove_null(colnames=[xcol,ycol])        
+
+        # initialize the spline and save it in self.spline with the key ycol
+        self.spline[ycol]= interp1d(self.t.loc[indices,xcol],self.t.loc[indices,ycol],
+                                    kind=kind,bounds_error=bounds_error,fill_value=fill_value,**kwargs)
+        
+    def getspline(self,xval,ycol):
+        if not(ycol in self.spline):
+            raise RuntimeError('Spline for column %s is not defined!' % ycol)
+        return(self.spline[ycol](xval))
+    
+class pdastrostatsclass(pdastroclass):
+    def __init__(self,**kwargs):
+        pdastroclass.__init__(self,**kwargs)
+        self.reset()
+        self.set_statstring_format()
+        self.c4_smalln = [0.0, 0.0, 0.7978845608028654, 0.8862269254527579, 0.9213177319235613, 0.9399856029866251, 0.9515328619481445]
+
+    def c4(self,n):
+        #http://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation
+        if n<=6:
+            return(self.c4_smalln[n])
+        else:
+            return(1.0 - 1.0/(4.0*n) - 7.0/(32.0*n*n) - 19.0/(128.0*n*n*n))
+        
+    def reset(self):
+        self.statparams = {}
+        for k  in ['mean','mean_err','stdev','stdev_err','X2norm','ix_good','ix_clip']:
+            self.statparams[k]=None
+        for k  in ['Ngood','Nclip','Nchanged','converged','i']:
+            self.statparams[k]=0
+        self.calc_stdev_X2_flag = True
+
+    def set_statstring_format(self,format_floats='{:f}',format_ints='{:d}',format_none='{}', format_X2norm='{:.2f}'):
+        self.str_format1 = "mean:%s(%s) stdev:%s(%s) X2norm:%s Nchanged:%s Ngood:%s Nclip:%s" % (format_floats,format_floats,format_floats,format_floats,format_X2norm,format_ints,format_ints,format_ints)
+        self.str_format_none = "mean:%s(%s) stdev:%s(%s) X2norm:%s Nchanged:%s Ngood:%s Nclip:%s" % (format_none,format_none,format_none,format_none,format_none,format_none,format_none,format_none)
+        #self.str_format2 = "mean:%s(%s) stdev:%s X2norm:%s Nchanged:%s Ngood:%s Nclip:%s" % (format_floats,format_floats,format_floats,format_floats,format_ints,format_ints,format_ints)
+
+    def statstring(self):
+        if self.statparams['mean'] is None or self.statparams['stdev'] is None:
+            formatstring = "WARNING! i:{:02d} "+ self.str_format_none
+        else:            
+            formatstring = "i:{:02d} "+ self.str_format1
+
+        s = formatstring.format(self.statparams['i'],self.statparams['mean'],self.statparams['mean_err'],
+                                self.statparams['stdev'],self.statparams['stdev_err'],self.statparams['X2norm'],
+                                self.statparams['Nchanged'],self.statparams['Ngood'],self.statparams['Nclip'])
+        return(s)
+        
+    def calcaverage_sigmacut(self,datacol, noisecol=None, indices=None, 
+                             mean=None,stdev=None,Nsigma=None,medianflag=False,
+                             return_ix=False, verbose=0):
+
+        # get the indices based on input.
+        indices=self.getindices(indices)
+
+        # If N-sigma cut and second iteration (i.e. we have a stdev from the first iteration), skip bad measurements.
+        if not(Nsigma is None) and not(stdev is None) and not(mean is None):
+            ix_good_bkp = copy.deepcopy(self.statparams['ix_good'])    
+            (keep,) = np.where(np.absolute(self.t.loc[indices,datacol]-mean)<=Nsigma*stdev)
+            ix_good  = indices[keep]
+        else:
+            ix_good_bkp = None
+            ix_good  = indices
+ 
+        
+        if verbose>3 and not(ix_good_bkp is None) and not(ix_good is None):
+            print('good data after sigma clipping:')
+            #self.write(indices=ix_good)
+            self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr'],indices=ix_good)
+ 
+        Ngood = len(ix_good)      
+        if Ngood>1:
+            if medianflag:
+                median = self.t.loc[ix_good,datacol].median()
+                #mean = scipy.median(self.t.loc[ix_good,datacol])
+                if verbose>1: print('median: {:f}'.format(median))
+                stdev =  np.sqrt(1.0/(Ngood-1.0)*np.sum(np.square(self.t.loc[ix_good,datacol] - median)))/self.c4(Ngood)
+                mean = median
+            else:
+                mean = self.t.loc[ix_good,datacol].mean()
+                if verbose>1: print('mean: {:f}'.format(mean))
+                stdev = self.t.loc[ix_good,datacol].std()
+                
+            mean_err = stdev/np.sqrt(Ngood-1)
+            stdev_err = 1.0*stdev/np.sqrt(2.0*Ngood)
+            if noisecol is None:
+                X2norm = 1.0/(Ngood-1.0)*np.sum(np.square((self.t.loc[ix_good,datacol] - mean)/stdev))                
+            else:
+                X2norm = 1.0/(Ngood-1.0)*np.sum(np.square((self.t.loc[ix_good,datacol] - mean)/self.t.loc[ix_good,noisecol]))     
+        else:
+            if Ngood==1:
+                mean = self.t.loc[ix_good[0],datacol]
+                mean_err = self.t.loc[ix_good[0],noisecol]  
+            else:
+                mean = None
+                mean_err = None
+                
+            X2norm   = None
+            stdev     = None
+            stdev_err = None
+           
+        self.statparams['ix_good']=ix_good
+        self.statparams['Ngood']=Ngood
+        self.statparams['ix_clip']=AandB(indices,ix_good)
+        self.statparams['Nclip']=len(indices) - Ngood
+        if not(ix_good_bkp is None):
+            self.statparams['Nchanged'] = len(not_AandB(ix_good_bkp,ix_good))            
+        else:
+            self.statparams['Nchanged'] = 0
+        
+        self.statparams['mean']      = mean    
+        self.statparams['stdev']     = stdev    
+        self.statparams['mean_err']  = mean_err
+        self.statparams['stdev_err'] = stdev_err
+        self.statparams['X2norm']    = X2norm
+
+        if Ngood<1:
+            return(1)
+        return(0)
+        
+
+    def calcaverage_errorcut(self,datacol, noisecol, indices=None, 
+                             mean=None,Nsigma=None,medianflag=False,
+                             return_ix=False, verbose=0):
+
+        # get the indices based on input.
+        indices=self.getindices(indices)
+            
+        # If N-sigma cut and second iteration (i.e. we have a stdev from the first iteration), skip bad measurements.
+        if not(Nsigma is None) and not(mean is None):
+            ix_good_bkp = copy.deepcopy(self.statparams['ix_good'])  
+            (keep,) = np.where(np.absolute(self.t.loc[indices,datacol]-mean)<=Nsigma*self.t.loc[indices,noisecol])
+            ix_good  = indices[keep]
+        else:
+            ix_good_bkp = None
+            ix_good  = indices
+ 
+        
+        if verbose>3 and not(ix_good_bkp is None) and not(ix_good is None):
+            print('{} good data after sigma clipping, {} clipped'.format(len(ix_good),len(indices)-len(ix_good)))
+            #self.write(indices=ix_good)
+            self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr','psfMagErr_tot'],indices=ix_good)
+ 
+        Ngood = len(ix_good)      
+        if Ngood>1:
+            if medianflag:
+                mean = self.t.loc[ix_good,datacol].median()
+                if verbose>1: print('median: {:f}'.format(mean))
+                stdev =  np.sqrt(1.0/(Ngood-1.0)*np.sum(np.square(self.t.loc[ix_good,datacol] - mean)))/self.c4(Ngood)
+                mean_err = stdev/np.sqrt(Ngood-1)
+                
+            else:
+                c1 = np.sum(1.0*self.t.loc[ix_good,datacol]/np.square(self.t.loc[ix_good,noisecol]))
+                c2 = np.sum(1.0/np.square(self.t.loc[ix_good,noisecol]))
+                mean = c1/c2
+                mean_err = np.sqrt(1.0/c2)
+                stdev = self.t.loc[ix_good,datacol].std()
+                
+            stdev_err = 1.0*stdev/np.sqrt(2.0*Ngood)
+            X2norm = 1.0/(Ngood-1.0)*np.sum(np.square((self.t.loc[ix_good,datacol] - mean)/self.t.loc[ix_good,noisecol]))                
+                
+        else:
+            if Ngood==1:
+                mean = self.t.loc[ix_good[0],datacol]
+                mean_err = self.t.loc[ix_good[0],noisecol]  
+            else:
+                mean = None
+                mean_err = None
+                
+            X2norm   = None
+            stdev     = None
+            stdev_err = None
+            
+        self.statparams['ix_good']=ix_good
+        self.statparams['Ngood']=Ngood
+        self.statparams['ix_clip']=AandB(indices,ix_good)
+        self.statparams['Nclip']=len(indices) - Ngood
+        if not(ix_good_bkp is None):
+            self.statparams['Nchanged'] = len(not_AandB(ix_good_bkp,ix_good))            
+        else:
+            self.statparams['Nchanged'] = 0
+        
+        self.statparams['mean']      = mean    
+        self.statparams['stdev']     = stdev    
+        self.statparams['mean_err']  = mean_err
+        self.statparams['stdev_err'] = stdev_err
+        self.statparams['X2norm']    = X2norm
+
+        if Ngood<1:
+            return(1)
+        return(0)
+
+    def calcaverage_sigmacutloop(self,datacol, indices=None, noisecol=None, maskcol=None, maskval=None, 
+                                 Nsigma=3.0,Nitmax=10,verbose=0,
+                                 median_firstiteration=True):
+        """
+        mask must have same dimensions than data. If mask[x]=True, then data[x] is not used.
+        noise must have same dimensions than data. If noise != None, then the error weighted mean is calculated.
+        if saveused, then self.use contains array of datapoints used, and self.clipped the array of datapoints clipped
+        median_firstiteration: in the first iteration, use the median instead the mean. This is more robust if there is a population of bad measurements
+        """
+
+        # get the indices based on input.
+        indices=self.getindices(indices)
+
+        #self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr','mask'],indices=indices)
+        # exclude data if wanted
+        if maskcol!=None:
+            Ntot = len(indices)
+            print('maskval:',maskval)
+            indices = self.ix_unmasked(maskcol,maskval=maskval,indices=indices)
+            if verbose>1: print('Keeping {:d} out of {:d}, skippin {:d} because of masking in column {} (maskval={})'.format(len(indices),Ntot,Ntot-len(indices),maskcol,maskval))
+
+        #print('final')
+        #self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr','mask'],indices=indices)
+        #sys.exit(0)
+
+        self.reset()
+        while ((self.statparams['i']<Nitmax) or (Nitmax==0)) and (not self.statparams['converged']):
+            medianflag = median_firstiteration and (self.statparams['i']==0) and (Nsigma!=None)
+            if noisecol is None:
+                errorflag = self.calcaverage_sigmacut(datacol, indices=indices, 
+                                                      mean = self.statparams['mean'], stdev = self.statparams['stdev'],
+                                                      Nsigma=Nsigma, medianflag=medianflag, verbose=verbose)
+            else:
+                errorflag = self.calcaverage_errorcut(datacol, noisecol, indices=indices, 
+                                                      mean = self.statparams['mean'],
+                                                      Nsigma=Nsigma, medianflag=medianflag, verbose=verbose)
+            #if self.statparams['i']==0:
+            #    self.statparams['stdev']=0.05
+
+            if verbose>2:
+                print(self.statstring())
+                
+                
+            # Not converged???
+            if errorflag or self.statparams['stdev']==None or self.statparams['stdev']==0.0 or self.statparams['mean']==None:
+                self.statparams['converged']=False
+                break
+            # Only do a sigma cut if wanted
+            if Nsigma == None or Nsigma == 0.0:
+                self.statparams['converged']=True
+                break
+            # No changes anymore? If yes converged!!!
+            if (self.statparams['i']>0) and (self.statparams['Nchanged']==0):
+                self.statparams['converged']=True
+                break
+            self.statparams['i']+=1
+        
+        if not(self.statparams['converged']):
+            print('WARNING! no convergence!')
+
+        return(not self.statparams['converged'])

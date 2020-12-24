@@ -29,24 +29,30 @@ class SNloopclass(pdastroclass):
 
 		# config file
 		self.cfg = yamlcfgclass()
+
+		# miscellaneous vars
 		self.verbose = 0
 		self.debug = False
 		self.outrootdir = None
 		self.filt = None
+
+		# tables
 		self.lc = pdastroclass()
 		self.RADECtable = pdastroclass()
 		self.averagelctable = pdastroclass()
 
+		# offsetstats
 		self.o1_nanindexlist = []
 		self.o2_nanindexlist = []
-
 		self.flag_cut0_uncertainty = 0x1
-		self.flag_cut0_X2norm_dynamic = 0x2
+		self.flag_cut0_X2norm_dynamic = 0x2 # delete later
 		self.flag_cut0_X2norm_static = 0x4
-		self.flag_o1_X2norm = 0x20
-		self.flag_o2_X2norm = 0x200
-		self.flag_o1_meannorm = 0x40
-		self.flag_o2_meannorm = 0x400
+		self.flag_o1_good = 0x20
+		self.flag_o2_good = 0x200
+		self.flag_o2_ok = 0x400
+		self.flag_o2_bad = 0x800
+		self.flag_daysigma = 0x1000
+		self.flag_daybad = 0x1 # for averaged lcs
 
 	def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
 		if parser is None:
@@ -62,37 +68,26 @@ class SNloopclass(pdastroclass):
 
 		# can be a sn name from snlist.txt or 'all' (loops through all sn names in snlist.txt)
 		parser.add_argument('SNlist', nargs='+')
-
 		# set default filter
 		parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify default filter'))
-		
 		# set MJD bin size for averagelc.py
 		parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float)
-		
 		# intialize forced photometry offsets
 		parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
-		
 		# set forced photometry offset pattern
-		parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
-		
+		#parser.add_argument('--pattern', choices=['c','b','l'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
 		# initialize plotlc.py
 		parser.add_argument('--plot', default=False, help=('plot lcs'))
-		
 		# initialize averagelc.py
 		parser.add_argument('--averagelc', default=False, help=('average lcs'))
-		
 		# skip uncertainty cleanup when cleaning lcs
 		parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
-		
 		# skip chi square cleanup when cleaning lcs
 		parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
-		
 		# specify whether or not to make cuts using cleaned data when averaging data
 		parser.add_argument('--avg_makecuts', default=None, choices=['True','False'], help=('skip cutting measurements using mask column when averaging'))
-		
 		# specify procedure used in offsetstats.py
 		parser.add_argument('--procedure', default='mask_nan', choices=['mask_nan','mask4mjd'],help=('define offsetstats.py procedure type. can be mask1 or mask2'))
-		
 		parser.add_argument('-v','--verbose', default=0, action='count')
 		parser.add_argument('-d', '--debug', action='count', help="debug")
 		parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))

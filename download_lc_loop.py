@@ -186,6 +186,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,offsetstatsc
 	def downloadoffsetlc(self, SNindex, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None,pattern=None):
 		print('Offset status: ',forcedphot_offset)
 		if forcedphot_offset == 'True':
+			print('Running forcedphot offsets lc for %s...' % self.t.at[SNindex,'tnsname'])
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
 			
@@ -274,19 +275,22 @@ if __name__ == '__main__':
 		pattern = downloadlc.cfg.params['forcedphotpatterns']['patterns_to_use']
 
 	for SNindex in SNindexlist:
-		downloadlc.downloadoffsetlc(SNindex,
-									lookbacktime_days=args.lookbacktime_days,
-									savelc=args.savelc,
-									overwrite=args.overwrite,
-									fileformat=args.fileformat,
-									pattern=pattern,
-									forcedphot_offset=args.forcedphot_offset)
-		for offsetindex in range(len(downloadlc.RADECtable.t)):
-			downloadlc.cleanuplcloop(args,SNindex,offsetindex=offsetindex,filt=downloadlc.filt)
-			if args.averagelc: 
-				downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)
-		if args.forcedphot_offset:
-			downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
-			downloadlc.offsetstatsloop(SNindex,filt=downloadlc.filt)
-		if args.plot: 
-			downloadlc.plotlcloop(args,SNindex)
+		if downloadlc.t.at[SNindex,'tnsname'] == 'NaN':
+			print('\nNaN detected, skipping...')
+		else:
+			downloadlc.downloadoffsetlc(SNindex,
+										lookbacktime_days=args.lookbacktime_days,
+										savelc=args.savelc,
+										overwrite=args.overwrite,
+										fileformat=args.fileformat,
+										pattern=pattern,
+										forcedphot_offset=args.forcedphot_offset)
+			for offsetindex in range(len(downloadlc.RADECtable.t)):
+				downloadlc.cleanuplcloop(args,SNindex,offsetindex=offsetindex,filt=downloadlc.filt)
+				if args.averagelc: 
+					downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)
+			if args.forcedphot_offset:
+				downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+				downloadlc.offsetstatsloop(SNindex,filt=downloadlc.filt)
+			if args.plot: 
+				downloadlc.plotlcloop(args,SNindex)

@@ -13,6 +13,137 @@ class offsetstatsclass(SNloopclass):
 	def __init__(self):
 		SNloopclass.__init__(self)
 
+		self.apply_mask_nan = False
+		self.apply_mask4mjd = False
+
+	def cleanmask(self,indices=None):
+		# cleans mask data if prior o1 and/or o2 columns detected
+		if (self.apply_mask4mjd is True) and (self.apply_mask_nan is True):
+			if ('o2_mean' in self.lc.t.columns) and ('o1_mean' in self.lc.t.columns):
+				self.lc.t.loc[indices,'Mask'] = np.bitwise_xor(self.lc.t.loc[indices,'Mask'],self.flag_o1_good+self.flag_o2_good+self.flag_o2_ok+self.flag_o2_bad)
+		elif self.apply_mask4mjd is True:
+			if 'o2_mean' in self.lc.t.columns:
+				self.lc.t.loc[indices,'Mask'] = np.bitwise_xor(self.lc.t.loc[indices,'Mask'],self.flag_o2_good+self.flag_o2_ok+self.flag_o2_bad)
+		elif self.apply_mask_nan is True:
+			if 'o1_mean' in self.lc.t.columns:
+				self.lc.t.loc[indices,'Mask'] = np.bitwise_xor(self.lc.t.loc[indices,'Mask'],self.flag_o1_good)
+		else:
+			print('No prior mask4mjd or mask_nan data detected!')
+
+	def calcstats(self,N_MJD=None,uJy=None,duJy=None,mask=None):
+		if N_MJD is None:
+			N_MJD = len(self.lc.t['MJD'])
+
+		for index in range(N_MJD):
+			uJy4MJD = uJy[:,index]
+			duJy4MJD = duJy[:,index]
+			Mask4MJD = mask[:,index]
+			# sigmacut and get statistics
+			calcaverage=sigmacut.calcaverageclass()
+			self.lc.t.at[index,'o0_Nmasked'] = np.count_nonzero(Mask4MJD)
+			if self.apply_mask_nan:
+				mask1 = np.bitwise_and(Mask4MJD, 0x8)
+				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=mask1,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
+				# add columns to self.lc.t
+				self.lc.t.at[index,'o1_mean'] = calcaverage.mean
+				self.lc.t.at[index,'o1_mean_err'] = calcaverage.mean_err
+				self.lc.t.at[index,'o1_stddev'] = calcaverage.stdev
+				self.lc.t.at[index,'o1_X2norm'] = calcaverage.X2norm
+				self.lc.t.at[index,'o1_Nvalid'] = calcaverage.Nused
+				self.lc.t.at[index,'o1_Nnan'] = calcaverage.Nskipped
+				self.lc.t.at[index,'Noffsetlc'] = self.lc.t.at[index,'o1_Nvalid'] + self.lc.t.at[index,'o1_Nnan']
+			if self.apply_mask4mjd is True:
+				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=Mask4MJD,verbose=2,Nsigma=3.0,median_firstiteration=True,saveused=True)
+				# add columns to self.lc.t
+				self.lc.t.at[index,'o2_mean'] = calcaverage.mean
+				self.lc.t.at[index,'o2_mean_err'] = calcaverage.mean_err
+				self.lc.t.at[index,'o2_stddev'] = calcaverage.stdev
+				self.lc.t.at[index,'o2_X2norm'] = calcaverage.X2norm
+				self.lc.t.at[index,'o2_Nused'] = calcaverage.Nused
+				self.lc.t.at[index,'o2_Nskipped'] = calcaverage.Nskipped
+				self.lc.t.at[index,'o2_Nin'] = self.lc.t.at[index,'Noffsetlc'] - self.lc.t.at[index,'o0_Nmasked']
+
+	def makecuts(self,N_MJD=None):
+		if N_MJD is None:
+			N_MJD = len(self.lc.t['MJD'])
+
+		# check self.flag_cut0_uncertainty = 0x1 and self.flag_cut0_X2norm_static = 0x4. TO DO: CUT0 UNCERTAINTIES
+		max_X2norm = self.cfg.params['cleanlc']['chi/N']['max_chi2norm']
+		o1max_X2norm = self.cfg.params['offsetstats']['o1max_X2norm']
+		o1max_meannorm = self.cfg.params['offsetstats']['o1max_meannorm']
+		o2max_Nclipped = self.cfg.params['offsetstats']['o2max_Nclipped']
+		o2max_Nused = self.cfg.params['offsetstats']['o2max_Nused']
+
+		for index in range(N_MJD):
+			if self.lc.t.at[index,'chi/N'] < max_X2norm:
+				# if o1_x2norm < 2.5 and o1_mean_err < 3.0 : good. else : o2
+				if (self.lc.t.at[index,'o1_X2norm']<o1max_X2norm) and (self.lc.t.at[index,'o1_mean_err']<o1max_meannorm):
+					self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_good)
+				else:
+					# if o2_Nskipped = 0 and o2_X2norm < 2.5 : ok1.
+					if (self.lc.t.at[index,'o2_Nskipped']==0) and (self.lc.t.at[index,'o2_X2norm']<2.5):
+						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_good)
+					# if o2_X2norm < 2.5 and o2_Nskipped <= 1 and o2_Nused >= 3 : ok2.
+					elif (self.lc.t.at[index,'o2_X2norm']<2.5) and (self.lc.t.at[index,'o2_Nskipped'].astype(int)<=o2max_Nclipped) and (self.lc.t.at[index,'o2_Nused'].astype(int)>=o2max_Nused):
+						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_ok)
+					# else: bad.
+					else:
+						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_bad)
+			# else: bad. do nothing bc measurements already flagged with cut0
+
+		'''
+		# if chi/N < max_chi2norm : o1. else: bad
+		indices = np.where(self.lc.t['chi/N']<max_chi2norm)
+		indices = list(indices[0])
+		# if o1_x2norm < 2.5 and o1_mean_err < 3.0 : good. else : o2
+		if (self.lc.t.loc[indices,'o1_X2norm']<o1max_chi2norm) and (self.lc.t.loc[indices,'o1_mean_err']<o1max_meannorm):
+			self.lc.t.loc[indices,'Mask'] = np.bitwise_or(self.lc.t.loc[indices,'Mask'],self.flag_o1_good)
+		else:
+			# if o2_Nskipped = 0 and o2_X2norm < 2.5 : ok1.
+			if (self.lc.t.loc[indices,'o2_Nskipped']==0) and (self.lc.t.loc[indices,'o2_X2norm']<2.5):
+				self.lc.t.loc[indices,'Mask'] = np.bitwise_or(self.lc.t.loc[indices,'Mask'],self.flag_o2_good)
+			# if o2_X2norm < 2.5 and o2_Nskipped <= 1 and o2_Nused >= 3 : ok2.
+			elif (self.lc.t.loc[indices,'o2_X2norm']<2.5) and (self.lc.t.loc[indices,'o2_Nskipped'].astype(int)<=1) and (self.lc.t.loc[indices,'o2_Nused'].astype(int)>=3):
+				self.lc.t.loc[indices,'Mask'] = np.bitwise_or(self.lc.t.loc[indices,'Mask'],self.flag_o2_ok)
+			# else: bad.
+			else:
+				self.lc.t.loc[indices,'Mask'] = np.bitwise_or(self.lc.t.loc[indices,'Mask'],self.flag_o2_bad)
+		'''
+
+	def daycuts(self,SNindex):
+		daymax_Nskipped = self.cfg.params['offsetstats']['dayflagging']['daymax_Nskipped']
+		daymin_Nused = self.cfg.params['offsetstats']['dayflagging']['daymin_Nused']
+		daymax_X2norm = self.cfg.params['offsetstats']['dayflagging']['daymax_X2norm']
+
+		MJD = np.amin(self.lc.t.loc['MJD'])
+		MJDmax = self.t.at[SNindex,'MJDpreSN']
+		
+		while MJD <= MJDmax:
+			# get 4 measurements
+			ix1 = self.lc.ix_inrange(colnames=['MJD'],lowlim=MJD,uplim=MJD+1)
+			
+			# get good and ok measurements (from offsetstats) out of 4
+			ix2 = self.lc.ix_unmasked('Mask',maskval=self.flag_o2_bad|self.flag_cut0_X2norm_static,indices=ix1)
+			
+			# sigmacut the 4 measurements
+			self.lc.calcaverage_sigmacutloop('uJy',noisecol='duJy',indices=ix2,verbose=2,Nsigma=3.0,median_firstiteration=True)
+
+			badflag = 0
+			if calcaverage.Nskipped > daymax_Nskipped:
+				badflag = 1
+			if calcaverage.Nused < daymin_Nused:
+				badflag = 1
+			if calcaverage.X2norm > daymax_X2norm:
+				badflag = 1
+
+			if badflag == 1:
+				ix_bad = statparams['ix_bad']
+				print(ix_bad) # delete me
+				sys.exit(0) # delete me
+				self.lc.t.at[ix_bad,'Mask'] = np.bitwise_or(self.lc.t.at[ix_bad,'Mask'],self.flag_daysigma)
+
+			MJD += 4
+
 	def offsetstatsloop(self,SNindex,filt):
 		# load main lc
 		self.load_lc(SNindex,offsetindex=0,filt=self.filt)
@@ -80,83 +211,28 @@ class offsetstatsclass(SNloopclass):
 		if len(self.lc.t) == 0:
 			return(1)
 
-		apply_mask4mjd = False
-		apply_mask_nan = False
 		if self.cfg.params['offsetstats']['procedure'] == 'mask4mjd':
 			print('Procedure set to mask4mjd')
-			apply_mask4mjd = True
+			self.apply_mask4mjd = True
 		elif self.cfg.params['offsetstats']['procedure'] == 'mask_nan':
 			print('Procedure set to mask_nan')
-			apply_mask_nan = True
+			self.apply_mask_nan = True
 		elif self.cfg.params['offsetstats']['procedure'] == 'both':
 			print('Procedures set to mask4mjd and mask_nan')
 			apply_mask4mjd = True
-			apply_mask_nan = True
+			self.apply_mask_nan = True
 		else:
 			raise RuntimeError("Mask procedure must be 'mask4mjd', 'mask_nan', or 'both' in precursor.cfg!")
-		
-		for index in range(N_MJD):
-			uJy4MJD = uJy[:,index]
-			duJy4MJD = duJy[:,index]
-			Mask4MJD = Mask[:,index]
 
-			calcaverage=sigmacut.calcaverageclass()
-			self.lc.t.at[index,'o0_Nmasked'] = np.count_nonzero(Mask4MJD)
-			if apply_mask_nan:
-				mask = np.bitwise_and(Mask4MJD, 0x8)
-				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=mask,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
-				# add columns to self.lc.t
-				self.lc.t.at[index,'o1_mean'] = calcaverage.mean
-				self.lc.t.at[index,'o1_mean_err'] = calcaverage.mean_err
-				self.lc.t.at[index,'o1_stddev'] = calcaverage.stdev
-				self.lc.t.at[index,'o1_X2norm'] = calcaverage.X2norm
-				self.lc.t.at[index,'o1_Nvalid'] = calcaverage.Nused
-				self.lc.t.at[index,'o1_Nnan'] = calcaverage.Nskipped
-				self.lc.t.at[index,'Noffsetlc'] = self.lc.t.at[index,'o1_Nvalid'] + self.lc.t.at[index,'o1_Nnan']
-			if apply_mask4mjd is True:
-				calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=Mask4MJD,verbose=2,Nsigma=3.0,median_firstiteration=True,saveused=True)
-				# add columns to self.lc.t
-				self.lc.t.at[index,'o2_mean'] = calcaverage.mean
-				self.lc.t.at[index,'o2_mean_err'] = calcaverage.mean_err
-				self.lc.t.at[index,'o2_stddev'] = calcaverage.stdev
-				self.lc.t.at[index,'o2_X2norm'] = calcaverage.X2norm
-				self.lc.t.at[index,'o2_Nused'] = calcaverage.Nused
-				self.lc.t.at[index,'o2_Nskipped'] = calcaverage.Nskipped
-				self.lc.t.at[index,'o2_Nin'] = self.lc.t.at[index,'Noffsetlc'] - self.lc.t.at[index,'o0_Nmasked']
-			
-			use_o1 = False
-			use_o2 = False
-			# if just one measurement got cut, either poisson noise, cosmic ray hit, or some other issue that only affects 1 measurement
-			# if more than 1 measurement are cut, then something is probably not right
-			if self.lc.t.at[index,'o2_Nin'] - self.lc.t.at[index,'o2_Nused'] <= 1:
-				use_o2 = True
-			else:
-				use_o1 = True
-
-			Nsigma = 5 # should be from 3-5? check
-			X2norm_max = 3 # check
-			if use_o2 is True:
-				if (np.isnan(self.lc.t.at[index,'o2_mean'])) or (np.isnan(self.lc.t.at[index,'o2_mean_err'])):
-					#print('nans detected for ',index,' index! Skipping o2 masking for this measurement...')
-					self.o2_nanindexlist.append(index)
-				else:
-					if abs(self.lc.t.at[index,'o2_mean'] / self.lc.t.at[index,'o2_mean_err']) > Nsigma:
-						self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_meannorm)
-					if self.lc.t.at[index,'o2_X2norm'] > X2norm_max:
-						self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_X2norm)
-			else:
-				if (np.isnan(self.lc.t.at[index,'o1_mean'])) or (np.isnan(self.lc.t.at[index,'o1_mean_err'])):
-					#print('nans detected for ',index,' index! Skipping o1 masking for this measurement...')
-					self.o1_nanindexlist.append(index)
-				else:
-					if abs(self.lc.t.at[index,'o1_mean'] / self.lc.t.at[index,'o1_mean_err']) > Nsigma:
-						self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_meannorm)
-					if self.lc.t.at[index,'o1_X2norm'] > X2norm_max:
-						self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_X2norm)
-
-			if calcaverage.Nused<=0:
-				if self.verbose>2:
-					print('No data values...')
+		indices = self.lc.getindices()
+		# clear o1 and o2 masks
+		self.cleanmask(indices=indices)
+		# calculate offset stats
+		self.calcstats(N_MJD=N_MJD,uJy=uJy,duJy=duJy,mask=Mask)
+		# make cuts on good, bad, and ok measurements
+		self.makecuts(N_MJD=N_MJD)
+		# get sigmacut info and flag for 4-day bins
+		self.daycuts(SNindex)
 
 		if len(self.o1_nanindexlist)==0:
 			print('No o1 nans detected!')

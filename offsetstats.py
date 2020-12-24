@@ -137,9 +137,7 @@ class offsetstatsclass(SNloopclass):
 				badflag = 1
 
 			if badflag == 1:
-				ix_bad = statparams['ix_bad']
-				print(ix_bad) # delete me
-				sys.exit(0) # delete me
+				ix_bad = self.lc.statparams['ix_bad']
 				self.lc.t.at[ix_bad,'Mask'] = np.bitwise_or(self.lc.t.at[ix_bad,'Mask'],self.flag_daysigma)
 
 			MJD += 4

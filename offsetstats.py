@@ -129,11 +129,11 @@ class offsetstatsclass(SNloopclass):
 			self.lc.calcaverage_sigmacutloop('uJy',noisecol='duJy',indices=ix2,verbose=2,Nsigma=3.0,median_firstiteration=True)
 
 			badflag = 0
-			if calcaverage.Nskipped > daymax_Nskipped:
+			if self.lc.statparams['Nclip'] > daymax_Nskipped:
 				badflag = 1
-			if calcaverage.Nused < daymin_Nused:
+			if self.lc.statparams['Ngood'] < daymin_Nused:
 				badflag = 1
-			if calcaverage.X2norm > daymax_X2norm:
+			if self.lc.statparams['X2norm'] > daymax_X2norm:
 				badflag = 1
 
 			if badflag == 1:

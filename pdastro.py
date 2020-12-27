@@ -491,77 +491,6 @@ class pdastrostatsclass(pdastroclass):
                                 self.statparams['Nchanged'],self.statparams['Ngood'],self.statparams['Nclip'])
         return(s)
         
-    def calcaverage_sigmacut(self,datacol, noisecol=None, indices=None, 
-                             mean=None,stdev=None,Nsigma=None,medianflag=False,
-                             return_ix=False, verbose=0):
-
-        # get the indices based on input.
-        indices=self.getindices(indices)
-
-        # If N-sigma cut and second iteration (i.e. we have a stdev from the first iteration), skip bad measurements.
-        if not(Nsigma is None) and not(stdev is None) and not(mean is None):
-            ix_good_bkp = copy.deepcopy(self.statparams['ix_good'])    
-            (keep,) = np.where(np.absolute(self.t.loc[indices,datacol]-mean)<=Nsigma*stdev)
-            ix_good  = indices[keep]
-        else:
-            ix_good_bkp = None
-            ix_good  = indices
- 
-        
-        if verbose>3 and not(ix_good_bkp is None) and not(ix_good is None):
-            print('good data after sigma clipping:')
-            #self.write(indices=ix_good)
-            self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr'],indices=ix_good)
- 
-        Ngood = len(ix_good)      
-        if Ngood>1:
-            if medianflag:
-                median = self.t.loc[ix_good,datacol].median()
-                #mean = scipy.median(self.t.loc[ix_good,datacol])
-                if verbose>1: print('median: {:f}'.format(median))
-                stdev =  np.sqrt(1.0/(Ngood-1.0)*np.sum(np.square(self.t.loc[ix_good,datacol] - median)))/self.c4(Ngood)
-                mean = median
-            else:
-                mean = self.t.loc[ix_good,datacol].mean()
-                if verbose>1: print('mean: {:f}'.format(mean))
-                stdev = self.t.loc[ix_good,datacol].std()
-                
-            mean_err = stdev/np.sqrt(Ngood-1)
-            stdev_err = 1.0*stdev/np.sqrt(2.0*Ngood)
-            if noisecol is None:
-                X2norm = 1.0/(Ngood-1.0)*np.sum(np.square((self.t.loc[ix_good,datacol] - mean)/stdev))                
-            else:
-                X2norm = 1.0/(Ngood-1.0)*np.sum(np.square((self.t.loc[ix_good,datacol] - mean)/self.t.loc[ix_good,noisecol]))     
-        else:
-            if Ngood==1:
-                mean = self.t.loc[ix_good[0],datacol]
-                mean_err = self.t.loc[ix_good[0],noisecol]  
-            else:
-                mean = None
-                mean_err = None
-                
-            X2norm   = None
-            stdev     = None
-            stdev_err = None
-           
-        self.statparams['ix_good']=ix_good
-        self.statparams['Ngood']=Ngood
-        self.statparams['ix_clip']=AandB(indices,ix_good)
-        self.statparams['Nclip']=len(indices) - Ngood
-        if not(ix_good_bkp is None):
-            self.statparams['Nchanged'] = len(not_AandB(ix_good_bkp,ix_good))            
-        else:
-            self.statparams['Nchanged'] = 0
-        
-        self.statparams['mean']      = mean    
-        self.statparams['stdev']     = stdev    
-        self.statparams['mean_err']  = mean_err
-        self.statparams['stdev_err'] = stdev_err
-        self.statparams['X2norm']    = X2norm
-
-        if Ngood<1:
-            return(1)
-        return(0)
         
 
     def calcaverage_errorcut(self,datacol, noisecol, indices=None, 
@@ -635,8 +564,134 @@ class pdastrostatsclass(pdastroclass):
             return(1)
         return(0)
 
+    def calcaverage_sigmacut(self,datacol, noisecol=None, indices=None, 
+                             mean=None,stdev=None,Nsigma=None,
+                             percentile_cut=None,percentile_Nmin=3,
+                             medianflag=False,
+                             return_ix=False, verbose=0,rescol='__tmp_residuals'):
+
+        # get the indices based on input.
+        indices=self.getindices(indices)
+        if len(indices)==0:
+            print('Warning!! no data passed for sigma cut!')
+            self.reset()
+            return(2)
+        
+        ix_good_bkp = None
+        if (percentile_cut is None) or (len(indices)<=percentile_Nmin):
+            # If N-sigma cut and second iteration (i.e. we have a stdev from the first iteration), skip bad measurements.
+            if not(Nsigma is None) and not(stdev is None) and not(mean is None):
+                ix_good_bkp = copy.deepcopy(self.statparams['ix_good'])    
+                (keep,) = np.where(np.absolute(self.t.loc[indices,datacol]-mean)<=Nsigma*stdev)
+                ix_good  = indices[keep]
+                if verbose>3:
+                    print('good data after sigma clipping:')
+                    #self.write(indices=ix_good)
+                    self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr'],indices=ix_good)
+            else:
+                if verbose>3:
+                    print('No sigma clipping yet...')
+                ix_good  = indices        
+        else:
+            # percentile clipping!!!
+            if mean is None:
+                if medianflag:
+                    median = self.t.loc[indices,datacol].median()
+                    if verbose>1: print('median: {:f}'.format(median))
+                    mean = median
+                else:
+                    mean = self.t.loc[indices,datacol].mean()
+                    if verbose>1: print('mean: {:f}'.format(mean))
+            
+            self.t[rescol]=np.absolute(self.t.loc[indices,datacol]-mean)
+            max_residual = np.percentile(np.absolute(self.t.loc[indices,datacol]-mean),percentile_cut)
+            if verbose: 
+                print('%f percentile cut: max residual for cut: %f' % (percentile_cut,max_residual))
+            ix_good  = self.ix_inrange(rescol,None,max_residual,exclude_uplim=True)
+            
+
+            #print('all')
+            #self.write(columns=['objID','psfMag','psfMagErr',rescol],indices=indices)
+            #print('good')
+            #self.write(columns=['objID','psfMag','psfMagErr',rescol],indices=ix_good)
+
+            # make sure the percentile clipping does not cut too much away for small numbers: always keep the best percentile_Nmin
+            if len(ix_good)<percentile_Nmin:
+                print('Warning: %d<%d made it through the percentile cut, too few, taking the %d with the least residuals' % (len(ix_good),percentile_Nmin,percentile_Nmin))
+                residuals = np.sort(self.t.loc[indices,rescol])
+                max_residual = residuals[percentile_Nmin-1]
+                ix_good  = self.ix_inrange(rescol,None,max_residual,exclude_uplim=False)
+                if len(ix_good)<percentile_Nmin:
+                    raise RuntimeError('%d<%d in percentile cut!' % (len(ix_good),percentile_Nmin))
+
+            if verbose>3:
+                print('good data after percentile clipping:')
+                #self.write(indices=ix_good)
+                self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr',rescol],indices=ix_good)
+
+
+            #sys.exit(0)
+            
+            #residuals = np.sort(np.absolute(self.t.loc[indices,datacol]-mean))
+            #print(residuals)
+            #max_residual = np.percentile(np.absolute(self.t.loc[indices,datacol]-mean),percentile_cut)
+
+            #sys.exit(0)
+            
+ 
+        Ngood = len(ix_good)      
+        if Ngood>1:
+            if medianflag:
+                median = self.t.loc[ix_good,datacol].median()
+                #mean = scipy.median(self.t.loc[ix_good,datacol])
+                if verbose>1: print('median: {:f}'.format(median))
+                stdev =  np.sqrt(1.0/(Ngood-1.0)*np.sum(np.square(self.t.loc[ix_good,datacol] - median)))/self.c4(Ngood)
+                mean = median
+            else:
+                mean = self.t.loc[ix_good,datacol].mean()
+                if verbose>1: print('mean: {:f}'.format(mean))
+                stdev = self.t.loc[ix_good,datacol].std()
+                
+            mean_err = stdev/np.sqrt(Ngood-1)
+            stdev_err = 1.0*stdev/np.sqrt(2.0*Ngood)
+            if noisecol is None:
+                X2norm = 1.0/(Ngood-1.0)*np.sum(np.square((self.t.loc[ix_good,datacol] - mean)/stdev))                
+            else:
+                X2norm = 1.0/(Ngood-1.0)*np.sum(np.square((self.t.loc[ix_good,datacol] - mean)/self.t.loc[ix_good,noisecol]))     
+        else:
+            if Ngood==1:
+                mean = self.t.loc[ix_good[0],datacol]
+                mean_err = self.t.loc[ix_good[0],noisecol]  
+            else:
+                mean = None
+                mean_err = None
+                
+            X2norm   = None
+            stdev     = None
+            stdev_err = None
+           
+        self.statparams['ix_good']=ix_good
+        self.statparams['Ngood']=Ngood
+        self.statparams['ix_clip']=AandB(indices,ix_good)
+        self.statparams['Nclip']=len(indices) - Ngood
+        if not(ix_good_bkp is None):
+            self.statparams['Nchanged'] = len(not_AandB(ix_good_bkp,ix_good))            
+        else:
+            self.statparams['Nchanged'] = 0
+        
+        self.statparams['mean']      = mean    
+        self.statparams['stdev']     = stdev    
+        self.statparams['mean_err']  = mean_err
+        self.statparams['stdev_err'] = stdev_err
+        self.statparams['X2norm']    = X2norm
+
+        if Ngood<1:
+            return(1)
+        return(0)
+
     def calcaverage_sigmacutloop(self,datacol, indices=None, noisecol=None, maskcol=None, maskval=None, 
                                  Nsigma=3.0,Nitmax=10,verbose=0,
+                                 percentile_cut_firstiteration=None,
                                  median_firstiteration=True):
         """
         mask must have same dimensions than data. If mask[x]=True, then data[x] is not used.
@@ -662,11 +717,19 @@ class pdastrostatsclass(pdastroclass):
 
         self.reset()
         while ((self.statparams['i']<Nitmax) or (Nitmax==0)) and (not self.statparams['converged']):
+            # median only in first iteration and if wanted
             medianflag = median_firstiteration and (self.statparams['i']==0) and (Nsigma!=None)
+            # percentile_cut only in first interation and if wanted
+            percentile_cut = None
+            if (self.statparams['i']==0):
+                percentile_cut = percentile_cut_firstiteration
+
             if noisecol is None:
                 errorflag = self.calcaverage_sigmacut(datacol, indices=indices, 
                                                       mean = self.statparams['mean'], stdev = self.statparams['stdev'],
-                                                      Nsigma=Nsigma, medianflag=medianflag, verbose=verbose)
+                                                      Nsigma=Nsigma, 
+                                                      medianflag=medianflag, percentile_cut=percentile_cut,
+                                                      verbose=verbose)
             else:
                 errorflag = self.calcaverage_errorcut(datacol, noisecol, indices=indices, 
                                                       mean = self.statparams['mean'],

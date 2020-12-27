@@ -15,7 +15,7 @@ Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and
 * Within that directory, create and name two additional directories. One will be your **source directory**, and the other will be your **data directory**. 
 * Move all code into your **source directory**.
 * In the **source directory**, open `atlaslc.sourceme`.
-* Add the following code to the `atlaslc.sourceme` file below the other `elif` statements: 
+* Add the following code to the `<atlaslc.sourceme>` file below the other `elif` statements: 
 	* `elif [[ $HOSTNAME =~ ADDHOSTNAMEHERE ]]; then`
 	* `export ATLASLC_SOURCEDIR=`
   * `export ATLASLC_DATA=`

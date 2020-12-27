@@ -276,7 +276,7 @@ if __name__ == '__main__':
 
 	for SNindex in SNindexlist:
 		if not(isinstance(downloadlc.t.at[SNindex,'tnsname'],str)):
-			print('\nNaN detected, skipping...')
+			print('\nnan detected, skipping...')
 		else:
 			downloadlc.downloadoffsetlc(SNindex,
 										lookbacktime_days=args.lookbacktime_days,

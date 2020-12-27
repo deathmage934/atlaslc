@@ -114,12 +114,14 @@ class offsetstatsclass(SNloopclass):
 		daymax_Nskipped = self.cfg.params['offsetstats']['dayflagging']['daymax_Nskipped']
 		daymin_Nused = self.cfg.params['offsetstats']['dayflagging']['daymin_Nused']
 		daymax_X2norm = self.cfg.params['offsetstats']['dayflagging']['daymax_X2norm']
+		print('Max Nskipped: %d, min Nused: %d, max X2norm: %f' % (daymax_Nskipped,daymin_Nused,daymax_X2norm))
 
-		MJD = np.amin(self.lc.t.loc['MJD'])
+		MJD = np.amin(self.lc.t['MJD'])
 		MJDmax = self.t.at[SNindex,'MJDpreSN']
 		
 		while MJD <= MJDmax:
 			# get 4 measurements
+			print('MJD range: ',MJD,' to ',MJD+1)
 			ix1 = self.lc.ix_inrange(colnames=['MJD'],lowlim=MJD,uplim=MJD+1)
 			
 			# get good and ok measurements (from offsetstats) out of 4
@@ -128,6 +130,8 @@ class offsetstatsclass(SNloopclass):
 			# sigmacut the 4 measurements
 			self.lc.calcaverage_sigmacutloop('uJy',noisecol='duJy',indices=ix2,verbose=2,Nsigma=3.0,median_firstiteration=True)
 
+			# flag bad measurements
+			print('Nskipped: %d, Nused: %d, X2norm: %f' % (self.lc.statparams['Nclip'],self.lc.statparams['Ngood'],self.lc.statparams['X2norm']))
 			badflag = 0
 			if self.lc.statparams['Nclip'] > daymax_Nskipped:
 				badflag = 1
@@ -135,10 +139,16 @@ class offsetstatsclass(SNloopclass):
 				badflag = 1
 			if self.lc.statparams['X2norm'] > daymax_X2norm:
 				badflag = 1
-
 			if badflag == 1:
+				if self.verbose==1:
+					print('# Flagged as bad day!')
 				ix_bad = self.lc.statparams['ix_bad']
+				print(ix_bad) # delete me
+				sys.exit(0) # delete me
 				self.lc.t.at[ix_bad,'Mask'] = np.bitwise_or(self.lc.t.at[ix_bad,'Mask'],self.flag_daysigma)
+			else:
+				if self.verbose==1:
+					print('# Flagged as good day!')
 
 			MJD += 4
 
@@ -162,14 +172,14 @@ class offsetstatsclass(SNloopclass):
 
 		for offsetindex in range(1,len(self.RADECtable.t)):
 			self.load_lc(SNindex,offsetindex=offsetindex,filt=self.filt)
-			if self.verbose:
+			if self.verbose>=1:
 				print('Length of self.lc.t: ',len(self.lc.t))
 			if len(self.lc.t) == 0:
 				return(1)
 
 			# make sure MJD_SN is the same as self.lc.t['MJD']
 			if (len(self.lc.t) != N_MJD) or (np.array_equal(MJD_SN, self.lc.t['MJD']) is False):
-				if self.verbose:
+				if self.verbose>1:
 					print(MJD_SN,'\n',self.lc.t['MJD']) # delete me
 				print('WARNING: Offset lc not equal to SN lc')
 				counter = 0
@@ -204,9 +214,9 @@ class offsetstatsclass(SNloopclass):
 			print('Mask: ',Mask)
 
 		self.load_lc(SNindex,offsetindex=0,filt=self.filt)
-		if self.verbose:
+		if self.verbose==1:
 			print('Length of self.lc.t: ',len(self.lc.t))
-		if len(self.lc.t) == 0:
+		if len(self.lc.t)==0:
 			return(1)
 
 		if self.cfg.params['offsetstats']['procedure'] == 'mask4mjd':
@@ -224,12 +234,16 @@ class offsetstatsclass(SNloopclass):
 
 		indices = self.lc.getindices()
 		# clear o1 and o2 masks
+		print('Cleaning mask column...')
 		self.cleanmask(indices=indices)
 		# calculate offset stats
+		print('Calculating offset statistics...')
 		self.calcstats(N_MJD=N_MJD,uJy=uJy,duJy=duJy,mask=Mask)
 		# make cuts on good, bad, and ok measurements
+		print('Making cuts based on offset statistics...')
 		self.makecuts(N_MJD=N_MJD)
 		# get sigmacut info and flag for 4-day bins
+		print('Making cuts based on day measurement statistics...')
 		self.daycuts(SNindex)
 
 		if len(self.o1_nanindexlist)==0:

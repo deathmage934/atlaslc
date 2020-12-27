@@ -17,7 +17,7 @@ from tools import DecInDeg
 from astrotable import astrotableclass
 from download_atlas_lc import download_atlas_lc_class
 import sigmacut
-from pdastro import pdastroclass
+from pdastro import pdastroclass, pdastrostatsclass
 import mastcasjobs
 import pylab
 import json
@@ -37,7 +37,7 @@ class SNloopclass(pdastroclass):
 		self.filt = None
 
 		# tables
-		self.lc = pdastroclass()
+		self.lc = pdastrostatsclass()
 		self.RADECtable = pdastroclass()
 		self.averagelctable = pdastroclass()
 

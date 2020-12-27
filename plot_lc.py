@@ -275,7 +275,7 @@ if __name__ == '__main__':
 	SNindexlist = plotlc.initialize(args)
 
 	for SNindex in SNindexlist:
-		SNindex_counter = 0
+		SNindex_counter = 0 # delete me
 		print(SNindex,plotlc.t.at[SNindex,'tnsname']) # delete me
 		plotlc.plotlcloop(args,SNindex)
 

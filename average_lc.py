@@ -16,7 +16,7 @@ class averagelcclass(SNloopclass):
 		self.flag_dynamic = 0x2
 		self.flag_static = 0x4
 
-	def calcaveragelc(self, args, SNindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=None, offsetindex=None, cuts_indices=None):
+	def calcaveragelc(self, args, SNindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=1, offsetindex=None, cuts_indices=None):
 		if not(cuts_indices is None):
 			mjdindices = self.lc.ix_remove_null(indices=cuts_indices)
 			#print(mjdindices)

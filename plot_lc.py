@@ -51,7 +51,7 @@ class plotlcclass(SNloopclass):
 		# plot SN in red first, then loop through offsets to plot in blue
 		for offsetindex in range(len(self.RADECtable.t)-1,-1,-1):
 			self.load_lc(SNindex, filt=self.filt, offsetindex=self.RADECtable.t.at[offsetindex,'OffsetID'])
-			if self.verbose>2: # FIX
+			if self.verbose>2:
 				print('Offset index: ',offsetindex)
 
 			# check if make cuts on data to plot
@@ -61,6 +61,7 @@ class plotlcclass(SNloopclass):
 					makecuts_apply = True
 				else:
 					makecuts_apply = False
+
 			# check if plotting bad data ONLY IF making cuts
 			plot_bad_data = self.cfg.params['plotlc']['plot_bad_data']
 			if makecuts_apply is False:
@@ -71,7 +72,7 @@ class plotlcclass(SNloopclass):
 				if not('Mask' in self.lc.t.columns):
 					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
 				# make cuts on lc, save bad data to possibly plot
-				lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, offsetindex=offsetindex, procedure1='plotlc')
+				lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, offsetindex=offsetindex, procedure1='offsetstats')
 				lc_uJy_bad = self.lc.t.loc[bad_data, self.flux_colname]
 				lc_duJy_bad = self.lc.t.loc[bad_data, self.dflux_colname]
 				lc_MJD_bad = self.lc.t.loc[bad_data, 'MJD']
@@ -129,8 +130,9 @@ class plotlcclass(SNloopclass):
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
-		#plt.xlim(58900,59250) # delete me
+		plt.xlim(58750,59050) # delete me
 		#plt.ylim(minlc*1.1,maxlc*1.1) # delete me
+		plt.ylim(-1000,6000)
 		#if not(len(lc_MJD)==0):
 			#plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
 

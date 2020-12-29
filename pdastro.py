@@ -374,8 +374,12 @@ class pdastroclass:
         else:
             (keep,) = np.where(bitmask.bitfield_to_boolean_mask(self.t.loc[indices,maskcol].astype('int'),ignore_flags=~maskval))
         indices = indices[keep]
-        return(indices)           
-            
+        return(indices)    
+
+    def newrow(self,dicti=None):
+        self.t = self.t.append(dicti,ignore_index=True)
+        index = self.t.index.values[-1]
+        return(index)
         
     def fitsheader2table(self,fitsfilecolname,indices=None,requiredfitskeys=None,optionalfitskey=None,raiseError=True,skipcolname=None,headercol=None):
 
@@ -512,8 +516,8 @@ class pdastrostatsclass(pdastroclass):
         
         if verbose>3 and not(ix_good_bkp is None) and not(ix_good is None):
             print('{} good data after sigma clipping, {} clipped'.format(len(ix_good),len(indices)-len(ix_good)))
-            #self.write(indices=ix_good)
-            self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr','psfMagErr_tot'],indices=ix_good)
+            self.write(indices=ix_good)
+            #self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr','psfMagErr_tot'],indices=ix_good)
  
         Ngood = len(ix_good)      
         if Ngood>1:
@@ -535,8 +539,8 @@ class pdastrostatsclass(pdastroclass):
                 
         else:
             if Ngood==1:
-                mean = self.t.loc[ix_good[0],datacol]
-                mean_err = self.t.loc[ix_good[0],noisecol]  
+                mean = self.t.loc[ix_good[0],datacol]*1.0
+                mean_err = self.t.loc[ix_good[0],noisecol]*1.0
             else:
                 mean = None
                 mean_err = None
@@ -547,7 +551,7 @@ class pdastrostatsclass(pdastroclass):
             
         self.statparams['ix_good']=ix_good
         self.statparams['Ngood']=Ngood
-        self.statparams['ix_clip']=AandB(indices,ix_good)
+        self.statparams['ix_clip']=AnotB(indices,ix_good)
         self.statparams['Nclip']=len(indices) - Ngood
         if not(ix_good_bkp is None):
             self.statparams['Nchanged'] = len(not_AandB(ix_good_bkp,ix_good))            
@@ -586,8 +590,8 @@ class pdastrostatsclass(pdastroclass):
                 ix_good  = indices[keep]
                 if verbose>3:
                     print('good data after sigma clipping:')
-                    #self.write(indices=ix_good)
-                    self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr'],indices=ix_good)
+                    self.write(indices=ix_good)
+                    #self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr'],indices=ix_good)
             else:
                 if verbose>3:
                     print('No sigma clipping yet...')
@@ -626,8 +630,8 @@ class pdastrostatsclass(pdastroclass):
 
             if verbose>3:
                 print('good data after percentile clipping:')
-                #self.write(indices=ix_good)
-                self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr',rescol],indices=ix_good)
+                self.write(indices=ix_good)
+                #self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr',rescol],indices=ix_good)
 
 
             #sys.exit(0)
@@ -660,8 +664,8 @@ class pdastrostatsclass(pdastroclass):
                 X2norm = 1.0/(Ngood-1.0)*np.sum(np.square((self.t.loc[ix_good,datacol] - mean)/self.t.loc[ix_good,noisecol]))     
         else:
             if Ngood==1:
-                mean = self.t.loc[ix_good[0],datacol]
-                mean_err = self.t.loc[ix_good[0],noisecol]  
+                mean = self.t.loc[ix_good[0],datacol]*1.0
+                mean_err = self.t.loc[ix_good[0],noisecol]*1.0
             else:
                 mean = None
                 mean_err = None
@@ -672,7 +676,7 @@ class pdastrostatsclass(pdastroclass):
            
         self.statparams['ix_good']=ix_good
         self.statparams['Ngood']=Ngood
-        self.statparams['ix_clip']=AandB(indices,ix_good)
+        self.statparams['ix_clip']=AnotB(indices,ix_good)
         self.statparams['Nclip']=len(indices) - Ngood
         if not(ix_good_bkp is None):
             self.statparams['Nchanged'] = len(not_AandB(ix_good_bkp,ix_good))            

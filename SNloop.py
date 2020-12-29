@@ -39,7 +39,8 @@ class SNloopclass(pdastroclass):
 		# tables
 		self.lc = pdastrostatsclass()
 		self.RADECtable = pdastroclass()
-		self.averagelctable = pdastroclass()
+		#self.averagelctable = pdastroclass()
+		self.averagelc = pdastrostatsclass()
 
 		# offsetstats
 		self.o1_nanindexlist = []
@@ -52,7 +53,8 @@ class SNloopclass(pdastroclass):
 		self.flag_o2_ok = 0x400
 		self.flag_o2_bad = 0x800
 		self.flag_daysigma = 0x1000
-		self.flag_daybad = 0x1 # for averaged lcs
+		self.flag_daysmallnumber = 0x2000
+		self.flag_daybad = 0x4000 # for averaged and original lcs
 
 	def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
 		if parser is None:
@@ -205,7 +207,10 @@ class SNloopclass(pdastroclass):
 		elif procedure1 is 'plotlc': 
 			flags = self.cfg.params['plotlc']['flags']
 		elif procedure1 is 'offsetstats':
-			flags = self.cfg.params['offsetstats']['flags']
+			if self.cfg.params['offsetstats']['flags'] == 'all':
+				flags = self.flag_daybad | self.flag_o2_bad | self.flag_daysigma | self.flag_cut0_X2norm_static | self.flag_cut0_uncertainty
+			else:
+				flags = self.cfg.params['offsetstats']['flags']
 		elif procedure1=='upltoyse':
 			flags = self.cfg.params['upltoyse']['flags']
 		else:
@@ -264,7 +269,7 @@ class SNloopclass(pdastroclass):
 		self.dflux_colname = self.cfg.params['dflux_colname']
 
 		self.RADECtable = pdastroclass(columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
-		self.averagelctable = pdastroclass(columns=['OffsetID','MJD',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nused','Nclipped','MJDNused','MJDNskipped'])
+		self.averagelc = pdastroclass(columns=['OffsetID','MJD',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nclip','Ngood','Nexcluded','Mask'])
 		self.RADECtable.default_formatters = {'OffsetID':'{:3d}'.format,
 											  'PatternID':'{:2d}'.format,
 											  'Ra':'{:.8f}'.format,
@@ -275,16 +280,16 @@ class SNloopclass(pdastroclass):
 											  'Ndet':'{:4d}'.format,
 											  'Ndet_c':'{:4d}'.format,
 											  'Ndet_o':'{:4d}'.format}
-		self.averagelctable.default_formatters = {'OffsetID':'{:3d}'.format,
-												  'MJD':'{:.5f}'.format,
-												  self.flux_colname:'{:.2f}'.format,
-												  self.dflux_colname:'{:.2f}'.format,
-												  'stdev':'{:.2f}'.format,
-												  'X2norm':'{:.3f}'.format,
-												  'Nused':'{:4d}'.format,
-												  'Nclipped':'{:4d}'.format,
-												  'MJDNused':'{:4d}'.format,
-												  'MJDNskipped':'{:4d}'.format}
+		self.averagelc.default_formatters = {'OffsetID':'{:3d}'.format,
+											'MJD':'{:.5f}'.format,
+											self.flux_colname:'{:.3f}'.format,
+											self.dflux_colname:'{:.3f}'.format,
+											'stdev':'{:.2f}'.format,
+											'X2norm':'{:.3f}'.format,
+											'Nclip':'{:4d}'.format,
+											'Ngood':'{:4d}'.format,
+											'Nexcluded':'{:4d}'.format,
+											'Mask':'{:5d}'.format}
 
 		self.load_spacesep(snlistfilename)
 		print(self.t)

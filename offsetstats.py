@@ -291,8 +291,8 @@ class offsetstatsclass(SNloopclass):
 
 			# loop through offset lcs
 			for offsetindex in range(1,len(self.RADECtable.t)):
-				if offsetindex>=1:
-					sys.exit(0)
+				#if offsetindex>=1:
+					#sys.exit(0)
 				# load offset lc
 				self.load_lc(SNindex,offsetindex=offsetindex,filt=self.filt)
 				if self.verbose==1: 

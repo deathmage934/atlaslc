@@ -11,7 +11,7 @@ class cleanuplcclass(SNloopclass):
 	def __init__(self):
 		SNloopclass.__init__(self)
 
-	def flag_biguncertainty_duJy(self,SNindex,offsetindex):
+	def flag_biguncertainty_duJy(self):
 		# define vars
 		Nmedian = self.cfg.params['cleanlc']['uncertainty']['Nmedian']
 		a = Nmedian * median(self.lc.t[self.dflux_colname])
@@ -30,7 +30,7 @@ class cleanuplcclass(SNloopclass):
 		flag_cut0_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_cut0_uncertainty)
 		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_cut0_uncertainty) 
 
-	def flag_bigchi_dynamic(self,SNindex,offsetindex):
+	def flag_bigchi_dynamic(self):
 		# define vars
 		Nsigma = self.cfg.params['cleanlc']['chi/N']['Nsigma']
 		chi_median = median(self.lc.t['chi/N'])
@@ -52,7 +52,7 @@ class cleanuplcclass(SNloopclass):
 		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_cut0_X2norm_dynamic)
 		print('Nsigma: %.1f, chi_median: %f, chi_stddev: %f' % (Nsigma, chi_median, chi_stddev))
 
-	def flag_bigchi_static(self,SNindex,offsetindex):
+	def flag_bigchi_static(self):
 		# define vars
 		chi_max = self.cfg.params['cleanlc']['chi/N']['max_chi2norm']
 		print('Flagging all measurements with chi/N bigger than %i...' % chi_max)
@@ -69,7 +69,6 @@ class cleanuplcclass(SNloopclass):
 		# update 'Mask' column
 		flag_cut0_X2norm_static = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_cut0_X2norm_static)
 		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_cut0_X2norm_static)		
-		print('chi_max: ',chi_max)
 
 	def cleanuplcloop(self,args,SNindex,offsetindex,filt):
 		# load lc
@@ -78,22 +77,14 @@ class cleanuplcclass(SNloopclass):
 		if len(self.lc.t) == 0:
 			return(1)
 
-		# add or replace mask column
-		if 'Mask' in self.lc.t.columns:
-			if self.verbose:
-				print('Replacing existing Mask column...')
-			for i in range(len(self.lc.t)):
-				self.lc.t.loc[i,'Mask'] = 0
-		else: 
-			mask = np.zeros((len(self.lc.t)),dtype=int)
-			self.lc.t = self.lc.t.assign(Mask=mask)
+		self.lc.t['Mask']=0
 
 		# determine if using uncertainty cleanup
 		uncert_apply = self.cfg.params['cleanlc']['uncertainty']['apply']
 		if args.skip_uncert: uncert_apply = False
 		if uncert_apply == True:
 			print('Applying uncertainty cleanup...')
-			self.flag_biguncertainty_duJy(SNindex,offsetindex)
+			self.flag_biguncertainty_duJy()
 		else:
 			print('Skipping uncertainty cleanup...')
 
@@ -104,18 +95,16 @@ class cleanuplcclass(SNloopclass):
 			chi_type = self.cfg.params['cleanlc']['chi/N']['type']
 			if chi_type == 'dynamic':
 				print('Applying chi/N cleanlc type: %s ' % chi_type)
-				self.flag_bigchi_dynamic(SNindex,offsetindex=offsetindex)
+				self.flag_bigchi_dynamic()
 			elif chi_type == 'static':
 				print('Applying chi/N cleanlc type: %s ' % chi_type)
-				self.flag_bigchi_static(SNindex,offsetindex=offsetindex)
+				self.flag_bigchi_static()
 			else:
 				print('Cleanup type error--type: ',chi_type)
 				raise RuntimeError('chi/N cleanup type must be dynamic or static!')
 		else:
 			print('Skipping chi/N cleanup...')
-		
-		self.lc.write(columns=['Mask'])
-		# save lc with additional mask column
+
 		self.save_lc(SNindex=SNindex,filt=self.filt,overwrite=True,offsetindex=offsetindex)
 
 if __name__ == '__main__':

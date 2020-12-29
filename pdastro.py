@@ -760,6 +760,7 @@ class pdastrostatsclass(pdastroclass):
             self.statparams['i']+=1
         
         if not(self.statparams['converged']):
-            print('WARNING! no convergence!')
+            if self.verbose>1:
+                print('WARNING! no convergence!')
 
         return(not self.statparams['converged'])

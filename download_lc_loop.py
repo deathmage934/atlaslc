@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-
-# S. Rest
+'''
+@author: S. Rest
+'''
 
 import numpy as np
 import math

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-
-# S. Rest
+'''
+@author: S. Rest
+'''
 
 from SNloop import SNloopclass
 from statistics import median
@@ -14,80 +15,10 @@ class offsetstatsclass(SNloopclass):
 	def __init__(self):
 		SNloopclass.__init__(self)
 
-	def cleanmask(self,indices=None):
-		# cleans mask data if prior o1 and/or o2 columns detected
-		if ('o2_mean' in self.lc.t.columns) and ('o1_mean' in self.lc.t.columns):
-			self.lc.t.loc[indices,'Mask'] = np.bitwise_xor(self.lc.t.loc[indices,'Mask'],self.flag_o1_good+self.flag_o2_good+self.flag_o2_ok+self.flag_o2_bad)
-		else:
-			print('No prior mask4mjd or mask_nan data detected!')
-
-	def calcstats(self,N_MJD=None,uJy=None,duJy=None,mask=None):
-		if N_MJD is None:
-			N_MJD = len(self.lc.t['MJD'])
-
-		for index in range(N_MJD):
-			uJy4MJD = uJy[:,index]
-			duJy4MJD = duJy[:,index]
-			Mask4MJD = mask[:,index]
-			# sigmacut and get statistics
-			calcaverage=sigmacut.calcaverageclass()
-			self.lc.t.at[index,'o0_Nmasked'] = np.count_nonzero(Mask4MJD)
-
-			# mask_nan (o1) sigmacut
-			mask1 = np.bitwise_and(Mask4MJD, 0x8)
-			calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=mask1,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
-			# add columns to self.lc.t
-			self.lc.t.at[index,'o1_mean'] = calcaverage.mean
-			self.lc.t.at[index,'o1_mean_err'] = calcaverage.mean_err
-			self.lc.t.at[index,'o1_stddev'] = calcaverage.stdev
-			self.lc.t.at[index,'o1_X2norm'] = calcaverage.X2norm
-			self.lc.t.at[index,'o1_Nvalid'] = calcaverage.Nused
-			self.lc.t.at[index,'o1_Nnan'] = calcaverage.Nskipped
-			self.lc.t.at[index,'Noffsetlc'] = self.lc.t.at[index,'o1_Nvalid'] + self.lc.t.at[index,'o1_Nnan']
-			
-			# mask4mjd (o2) sigmacut
-			calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=Mask4MJD,verbose=2,Nsigma=3.0,median_firstiteration=True,saveused=True)
-			# add columns to self.lc.t
-			self.lc.t.at[index,'o2_mean'] = calcaverage.mean
-			self.lc.t.at[index,'o2_mean_err'] = calcaverage.mean_err
-			self.lc.t.at[index,'o2_stddev'] = calcaverage.stdev
-			self.lc.t.at[index,'o2_X2norm'] = calcaverage.X2norm
-			self.lc.t.at[index,'o2_Nused'] = calcaverage.Nused
-			self.lc.t.at[index,'o2_Nskipped'] = calcaverage.Nskipped
-			self.lc.t.at[index,'o2_Nin'] = self.lc.t.at[index,'Noffsetlc'] - self.lc.t.at[index,'o0_Nmasked']
-
-	def makecuts(self,N_MJD=None):
-		if N_MJD is None:
-			N_MJD = len(self.lc.t['MJD'])
-
-		# check self.flag_cut0_uncertainty = 0x1 and self.flag_cut0_X2norm_static = 0x4. TO DO: CUT0 UNCERTAINTIES
-		max_X2norm = self.cfg.params['cleanlc']['chi/N']['max_chi2norm']
-		o1max_X2norm = self.cfg.params['offsetstats']['o1max_X2norm']
-		o1max_meannorm = self.cfg.params['offsetstats']['o1max_meannorm']
-		o2max_Nclipped = self.cfg.params['offsetstats']['o2max_Nclipped']
-		o2max_Nused = self.cfg.params['offsetstats']['o2max_Nused']
-
-		for index in range(N_MJD):
-			if self.lc.t.at[index,'chi/N'] < max_X2norm:
-				# if o1_x2norm < 2.5 and o1_mean_err < 3.0 : good. else : o2
-				if (self.lc.t.at[index,'o1_X2norm']<o1max_X2norm) and (self.lc.t.at[index,'o1_mean_err']<o1max_meannorm):
-					self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o1_good)
-				else:
-					# if o2_Nskipped = 0 and o2_X2norm < 2.5 : ok1.
-					if (self.lc.t.at[index,'o2_Nskipped']==0) and (self.lc.t.at[index,'o2_X2norm']<2.5):
-						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_good)
-					# if o2_X2norm < 2.5 and o2_Nskipped <= 1 and o2_Nused >= 3 : ok2.
-					elif (self.lc.t.at[index,'o2_X2norm']<2.5) and (self.lc.t.at[index,'o2_Nskipped'].astype(int)<=o2max_Nclipped) and (self.lc.t.at[index,'o2_Nused'].astype(int)>=o2max_Nused):
-						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_ok)
-					# else: bad.
-					else:
-						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_bad)
-			# else: bad. do nothing bc measurements already flagged with cut0
-
 	def cutandaveragelc(self,SNindex,offsetindex=0,MJDbinsize=1):
-		daymax_Nclip = self.cfg.params['offsetstats']['dayflagging']['daymax_Nclip']
-		daymin_Ngood = self.cfg.params['offsetstats']['dayflagging']['daymin_Ngood']
-		daymax_X2norm = self.cfg.params['offsetstats']['dayflagging']['daymax_X2norm']
+		daymax_Nclip = self.cfg.params['offsetstats']['daymax_Nclip']
+		daymin_Ngood = self.cfg.params['offsetstats']['daymin_Ngood']
+		daymax_X2norm = self.cfg.params['offsetstats']['daymax_X2norm']
 		print('Max Nskipped: %d, min Nused: %d, max X2norm: %f' % (daymax_Nclip,daymin_Ngood,daymax_X2norm))
 
 		MJD = np.amin(self.lc.t['MJD'])
@@ -121,7 +52,7 @@ class offsetstatsclass(SNloopclass):
 					self.lc.write(indices=ix1) # delete me
 			
 			# get good and ok measurements (from offsetstats) out of 4
-			ix2 = self.lc.ix_unmasked('Mask',maskval=self.flag_o2_bad|self.flag_cut0_X2norm_static,indices=ix1)
+			ix2 = self.lc.ix_unmasked('Mask',maskval=self.flag_o2_bad|self.flag_o0_X2norm,indices=ix1)
 			if len(ix2)==0:
 				if self.verbose>1: 
 					print('Length of good and ok measurements = 0, skipping MJD range...')
@@ -139,7 +70,8 @@ class offsetstatsclass(SNloopclass):
 			if fluxstatparams['mean'] is None or len(fluxstatparams['ix_good'])<1:
 				if self.verbose>1: 
 					print('Mean uJy is None OR length index good < 1, flagging bad day and skipping MJD range...')
-				self.lc.t.loc[ix1,'Mask'] = np.bitwise_or(self.lc.t.loc[ix1,'Mask'],self.flag_badday)
+				self.lc.t.loc[ix1,'Mask'] = np.bitwise_or(self.lc.t.loc[ix1,'Mask'],self.flag_daybad)
+				MJD += MJDbinsize
 				continue
 
 			# get average mjd
@@ -171,11 +103,11 @@ class offsetstatsclass(SNloopclass):
 				self.averagelc.t.at[lcaverageindex,'Mask'] = np.bitwise_or(self.averagelc.t.at[lcaverageindex,'Mask'],self.flag_daysmallnumber)
 			else:
 				# check sigmacut stats and, if badflag, flag as bad day in original and averaged lc
-				if fluxstatparams['Nclip'] > daymax_Nclip: 
-					badflag = 1
 				if fluxstatparams['Ngood'] < daymin_Ngood: 
 					badflag = 1
-				if (fluxstatparams['X2norm'] > daymax_X2norm): 
+				if fluxstatparams['Nclip'] > daymax_Nclip: 
+					badflag = 1
+				if not(fluxstatparams['X2norm'] is None) and (fluxstatparams['X2norm'] > daymax_X2norm): 
 					badflag = 1
 			if badflag == 1:
 				if self.verbose>1:
@@ -194,96 +126,20 @@ class offsetstatsclass(SNloopclass):
 		#self.averagelc.write()
 		self.averagelc.write(avglcfilename,overwrite=True,verbose=True)
 
-	def offsetstatsloop(self,SNindex,filt):
-		# load main SN lc
-		self.load_lc(SNindex,offsetindex=0,filt=self.filt)
-		if self.verbose:
-			print('Length of self.lc.t: ',len(self.lc.t))
-		if len(self.lc.t) == 0:
-			return(1)
-
-		N_lc = len(self.RADECtable.t)
-		MJD_SN = self.lc.t['MJD']
-		N_MJD = len(self.lc.t['MJD'])
-
-		uJy = np.full((N_lc,N_MJD),np.nan,dtype=np.int64)
-		duJy = np.full((N_lc,N_MJD),np.nan,dtype=np.int64)
-		Mask = np.full((N_lc,N_MJD),np.nan,dtype=np.int32)
-
-		for offsetindex in range(1,len(self.RADECtable.t)):
-			# load offset lc
-			self.load_lc(SNindex,offsetindex=offsetindex,filt=self.filt)
-			if self.verbose>=1:
-				print('Length of offset light curve: ',len(self.lc.t))
-			if len(self.lc.t) == 0:
-				return(1)
-
-			# make sure MJD_SN is the same as self.lc.t['MJD']
-			if (len(self.lc.t) != N_MJD) or (np.array_equal(MJD_SN, self.lc.t['MJD']) is False):
-				if self.verbose>1: 
-					print(MJD_SN,'\n',self.lc.t['MJD'])
-				print('WARNING: Offset lc not equal to SN lc')
-				counter = 0
-				for mjd_index in range(N_MJD):
-					if counter >= len(self.lc.t['MJD']):
-						break
-					foundflag = False
-					if MJD_SN[mjd_index] == self.lc.t.at[counter,'MJD']:
-						foundflag = True
-					else:
-						if MJD_SN[mjd_index] > self.lc.t.at[counter,'MJD']:
-							while self.lc.t.at[counter,'MJD']<MJD_SN[mjd_index] and counter<len(self.lc.t['MJD'])-1:
-								counter += 1
-							if MJD_SN[mjd_index] == self.lc.t.at[counter,'MJD']:
-								foundflag = True
-					if foundflag:
-						uJy[offsetindex,mjd_index] = self.lc.t.at[counter,self.flux_colname]
-						duJy[offsetindex,mjd_index] = self.lc.t.at[counter,self.dflux_colname]
-						Mask[offsetindex,mjd_index] = self.lc.t.at[counter,'Mask']
-						counter += 1
-					else:
-						uJy[offsetindex,mjd_index] = 0
-						duJy[offsetindex,mjd_index] = 0
-						Mask[offsetindex,mjd_index] = 0x8
-			else:
-				uJy[offsetindex,:] = self.lc.t[self.flux_colname]
-				duJy[offsetindex,:] = self.lc.t[self.dflux_colname]
-				Mask[offsetindex,:] = self.lc.t['Mask']
-		if self.verbose>1:
-			print(self.flux_colname,': ',uJy)
-			print(self.dflux_colname,': ',duJy)
-			print('Mask: ',Mask)
-
+	def offsetstatsloop(self,SNindex):
 		# load main lc
 		self.load_lc(SNindex,offsetindex=0,filt=self.filt)
 		if self.verbose==1: print('Length of self.lc.t: ',len(self.lc.t))
 		if len(self.lc.t)==0: return(1)
-		
-		# clear o1 and o2 masks
-		print('Cleaning mask column...')
-		indices = self.lc.getindices()
-		self.cleanmask(indices=indices)
-		
-		# calculate offset stats
-		print('Calculating offset statistics...')
-		self.calcstats(N_MJD=N_MJD,uJy=uJy,duJy=duJy,mask=Mask)	
-		
-		# make cuts on good, bad, and ok measurements
-		print('Making cuts based on offset statistics...')
-		self.makecuts(N_MJD=N_MJD)
 
 		# get sigmacut info and flag for 4-day bins
 		print('Making cuts based on day measurement statistics...')
 		self.cutandaveragelc(SNindex,offsetindex=0)
 
-		# round o1 or o2 data and save lc
-		#if 'o1_mean' in self.lc.t.columns:
-			#self.lc.t = self.lc.t.round({'o1_mean':3,'o1_mean_err':3,'o1_stddev':3,'o1_X2norm':4})
-		#if 'o2_mean' in self.lc.t.columns:
-			#self.lc.t = self.lc.t.round({'o2_mean':3,'o2_mean_err':3,'o2_stddev':3,'o2_X2norm':4})
+		# save lc
 		self.save_lc(SNindex=SNindex,offsetindex=0,filt=self.filt,overwrite=True)
 
-		if self.cfg.params['offsetstats']['dayflagging']['apply2offsets'] is True:
+		if self.cfg.params['offsetstats']['apply2offsets'] is True:
 			# get o1 and o2 masks from SN lc for copying to offset lc mask column
 			flags = self.flag_o1_good | self.flag_o2_bad | self.flag_o2_ok | self.flag_o2_good
 			flags_array = np.full(self.lc.t['Mask'].shape,flags)
@@ -306,16 +162,6 @@ class offsetstatsclass(SNloopclass):
 				print('Making cuts based on day measurement statistics...')
 				self.cutandaveragelc(SNindex,offsetindex=offsetindex)
 
-				if len(self.o1_nanindexlist)==0:
-					print('No o1 nans detected!')
-				else:
-					print('o1 nans detected! Index list: ',self.o1_nanindexlist)
-
-				if len(self.o2_nanindexlist)==0:
-					print('No o2 nans detected!')
-				else:
-					print('o2 nans detected! Index list: ',self.o2_nanindexlist)
-
 				# round o1 or o2 data and save lc
 				if 'o1_mean' in self.lc.t.columns:
 					self.lc.t = self.lc.t.round({'o1_mean':3,'o1_mean_err':3,'o1_stddev':3,'o1_X2norm':4})
@@ -332,5 +178,5 @@ if __name__ == '__main__':
 	SNindexlist = offsetstats.initialize(args)
 
 	for SNindex in SNindexlist:
-		offsetstats.loadRADEClist(SNindex, filt=offsetstats.filt)
-		offsetstats.offsetstatsloop(SNindex,filt=offsetstats.filt)
+		offsetstats.loadRADEClist(SNindex,filt=offsetstats.filt)
+		offsetstats.offsetstatsloop(SNindex)

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+'''
+@author: S. Rest
+'''
 
 import argparse
 import numpy as np

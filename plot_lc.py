@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-
-# S. Rest
+'''
+@author: S. Rest
+'''
 
 from SNloop import SNloopclass
 import pylab as matlib
@@ -36,43 +37,31 @@ class plotlcclass(SNloopclass):
 	def __init__(self):
 		SNloopclass.__init__(self)
 
-		self.flag_uncertainty = 0x1
-		self.flag_dynamic = 0x2
-		self.flag_static = 0x4
-
 	def plot_lc(self,args,SNindex,sp=None):
 		print('Plotting SN lc and offsets...')
 		plt.figure()
-		if sp is None:
-			sp = matlib.subplot(111)
+		if sp is None: sp = matlib.subplot(111)
 		self.loadRADEClist(SNindex)
-		totalcuts = 0
 
 		# plot SN in red first, then loop through offsets to plot in blue
 		for offsetindex in range(len(self.RADECtable.t)-1,-1,-1):
 			self.load_lc(SNindex, filt=self.filt, offsetindex=self.RADECtable.t.at[offsetindex,'OffsetID'])
-			if self.verbose>2:
-				print('Offset index: ',offsetindex)
+			if self.verbose>2: print('Offset index: ',offsetindex)
 
-			# check if make cuts on data to plot
+			# check if plotting good data
 			makecuts_apply = self.cfg.params['plotlc']['makecuts']
-			if not(args.avg_makecuts) is None:
-				if args.avg_makecuts is True:
-					makecuts_apply = True
-				else:
-					makecuts_apply = False
-
-			# check if plotting bad data ONLY IF making cuts
+			# check if plotting bad SN lc data ONLY IF making cuts
 			plot_bad_data = self.cfg.params['plotlc']['plot_bad_data']
 			if makecuts_apply is False:
 				print("WARNING: Cannot plot bad data without making cuts! Setting plot_bad_data to False.")
 				plot_bad_data = False
+			# check if plotting offset data (makecuts also applies)
+			plot_offset_data = self.cfg.params['plotlc']['plot_offset_data']
 			
-			if makecuts_apply == True:
-				if not('Mask' in self.lc.t.columns):
-					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
+			if makecuts_apply is True:
+				if not('Mask' in self.lc.t.columns): raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
 				# make cuts on lc, save bad data to possibly plot
-				lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, offsetindex=offsetindex, procedure1='offsetstats')
+				lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, offsetindex=offsetindex, procedure1='plotlc')
 				lc_uJy_bad = self.lc.t.loc[bad_data, self.flux_colname]
 				lc_duJy_bad = self.lc.t.loc[bad_data, self.dflux_colname]
 				lc_MJD_bad = self.lc.t.loc[bad_data, 'MJD']
@@ -92,16 +81,15 @@ class plotlcclass(SNloopclass):
 				matlib.setp(plotSN,ms=4,color='r')
 				maxlc = max(lc_uJy)
 				minlc = min(lc_uJy)
-			#elif len(self.RADECtable.t)==1:
-				#print('No offsets, skipping plotting...')
 			else: 
-				if plot_bad_data is True:
-					# plot bad data with open red circles
-					sp, plotOffsetBad, dplotOffsetBad = dataPlot(lc_MJD_bad,lc_uJy_bad,dy=lc_duJy_bad,sp=sp)
-					matlib.setp(plotOffsetBad,mfc='white',ms=4,color='b')
-				# plot good data in closed red circles
-				sp, plotOffset, dplotOffset = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
-				matlib.setp(plotOffset,ms=4,color='b')
+				if plot_offset_data is True:
+					if plot_bad_data is True:
+						# plot bad data with open red circles
+						sp, plotOffsetBad, dplotOffsetBad = dataPlot(lc_MJD_bad,lc_uJy_bad,dy=lc_duJy_bad,sp=sp)
+						matlib.setp(plotOffsetBad,mfc='white',ms=4,color='b')
+					# plot good data in closed red circles
+					sp, plotOffset, dplotOffset = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
+					matlib.setp(plotOffset,ms=4,color='b')
 
 		# determine legend and check if offset data plotted
 		# if offsets
@@ -109,17 +97,16 @@ class plotlcclass(SNloopclass):
 			# offset PatternID circle gets specific legend
 			if max(self.RADECtable.t['PatternID']) == 1:
 				if len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1:
-					offsetlabel = '%s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
+					offsetlabel = '%s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
 				else:
-					offsetlabel = '%s %s" Offset and %s %s" Offset' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0],self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
+					offsetlabel = '%s %s" Control LCs and %s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0],self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
 			# greater/multiple different offset PatternIDs get simpler legend
 			else:
 				offsettotal = len(self.RADECtable.t)-1
-				offsetlabel = '%d Total Offsets' % offsettotal
-
+				offsetlabel = '%d Total Control LCs' % offsettotal
 			# check if bad data plotted
 			if plot_bad_data is True:
-				plt.legend((plotSN,plotbad,plotOffset,plotOffsetBad),('SN %s cleaned' % self.t.at[SNindex,'tnsname'],'SN %s cut data' % self.t.at[SNindex,'tnsname'],offsetlabel+' cleaned',offsetlabel+' cut data'))
+				plt.legend((plotSN,plotbad,plotOffset,plotOffsetBad),('SN %s Accurate & Usable Data' % self.t.at[SNindex,'tnsname'],'SN %s Inaccurate Data' % self.t.at[SNindex,'tnsname'],offsetlabel+' Accurate & Usable Data',offsetlabel+' Inaccurate Data'))
 			else:
 				plt.legend((plotSN,plotOffset),('SN %s' % self.t.at[SNindex,'tnsname'],offsetlabel))
 		# if only sn
@@ -130,9 +117,9 @@ class plotlcclass(SNloopclass):
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
-		plt.xlim(58750,59050) # delete me
-		#plt.ylim(minlc*1.1,maxlc*1.1) # delete me
-		plt.ylim(-1000,6000)
+		#plt.xlim(58750,59000) # delete me
+		plt.ylim(minlc*1.1,maxlc*1.1) # delete me
+		#plt.ylim(-500,500)
 		#if not(len(lc_MJD)==0):
 			#plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
 
@@ -249,13 +236,13 @@ class plotlcclass(SNloopclass):
 	def plotlcloop(self,args,SNindex):
 		self.plot_lc(args,SNindex)
 		
+		# decide if plotting offsetstats
 		o1_flag = False
 		o2_flag = False
 		if self.cfg.params['plotlc']['plot_mask4mjd'] is True:
 			o1_flag = True
 		if self.cfg.params['plotlc']['plot_mask_nan'] is True:
 			o2_flag = True
-
 		if (o1_flag is True) and (o2_flag is True):
 			print('mask4mjd and mask_nan data detected, plotting mask4mjd and mask_nan offsetstats...')
 			self.plot_lc_offsetstats(args,SNindex,o1_flag=True,o2_flag=True)

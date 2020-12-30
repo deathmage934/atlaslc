@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-
-# S. Rest
+'''
+@author: S. Rest
+'''
 
 import numpy as np
 import math
@@ -43,18 +44,16 @@ class SNloopclass(pdastroclass):
 		self.averagelc = pdastrostatsclass()
 
 		# offsetstats
-		self.o1_nanindexlist = []
-		self.o2_nanindexlist = []
-		self.flag_cut0_uncertainty = 0x1
-		self.flag_cut0_X2norm_dynamic = 0x2 # delete later
-		self.flag_cut0_X2norm_static = 0x4
-		self.flag_o1_good = 0x20
-		self.flag_o2_good = 0x200
-		self.flag_o2_ok = 0x400
-		self.flag_o2_bad = 0x800
-		self.flag_daysigma = 0x1000
-		self.flag_daysmallnumber = 0x2000
+		self.flag_o0_uncertainty = 0x1 # decimal: 1
+		self.flag_o0_X2norm = 0x2 # decimal: 2
+		self.flag_o1_good = 0x20 # decimal: 32
+		self.flag_o2_good = 0x200 # decimal: 512
+		self.flag_o2_ok = 0x400 # decimal: 1024
+		self.flag_o2_bad = 0x800 # decimal: 2048
+		self.flag_daysigma = 0x1000 # decimal: 4096
+		self.flag_daysmallnumber = 0x2000 # decimal: 8192
 		self.flag_daybad = 0x4000 # for averaged and original lcs
+		self.flags={'flag_o0_uncertainty':0x1,'flag_o0_X2norm':0x2,'flag_o2_ok':0x400,'flag_o2_bad':0x800,'flag_daysigma':0x1000,'flag_daybad':0x4000}
 
 	def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
 		if parser is None:
@@ -81,15 +80,15 @@ class SNloopclass(pdastroclass):
 		# initialize plotlc.py
 		parser.add_argument('--plot', default=False, help=('plot lcs'))
 		# initialize averagelc.py
-		parser.add_argument('--averagelc', default=False, help=('average lcs'))
+		#parser.add_argument('--averagelc', default=False, help=('average lcs'))
 		# skip uncertainty cleanup when cleaning lcs
-		parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
+		#parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
 		# skip chi square cleanup when cleaning lcs
-		parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
+		#parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
 		# specify whether or not to make cuts using cleaned data when averaging data
-		parser.add_argument('--avg_makecuts', default=None, choices=['True','False'], help=('skip cutting measurements using mask column when averaging'))
+		#parser.add_argument('--avg_makecuts', default=None, choices=['True','False'], help=('skip cutting measurements using mask column when averaging'))
 		# specify procedure used in offsetstats.py
-		parser.add_argument('--procedure', default='mask_nan', choices=['mask_nan','mask4mjd'],help=('define offsetstats.py procedure type. can be mask1 or mask2'))
+		#parser.add_argument('--procedure', default='mask_nan', choices=['mask_nan','mask4mjd'],help=('define offsetstats.py procedure type. can be mask1 or mask2'))
 		parser.add_argument('-v','--verbose', default=0, action='count')
 		parser.add_argument('-d', '--debug', action='count', help="debug")
 		parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
@@ -202,19 +201,17 @@ class SNloopclass(pdastroclass):
 	def makecuts_indices(self,SNindex,offsetindex,procedure1):
 		# use when cleaning up data in plot_lc.py or average_lc.py; makes cuts based on mask column created in cleanup_lc.py
 		# set flags in precursor.cfg to control what data to cut based on uncertainties and/or chi/N
-		if procedure1 is 'averagelc': 
-			flags = self.cfg.params['averagelc']['flags']
-		elif procedure1 is 'plotlc': 
-			flags = self.cfg.params['plotlc']['flags']
-		elif procedure1 is 'offsetstats':
-			if self.cfg.params['offsetstats']['flags'] == 'all':
-				flags = self.flag_daybad | self.flag_o2_bad | self.flag_daysigma | self.flag_cut0_X2norm_static | self.flag_cut0_uncertainty
-			else:
-				flags = self.cfg.params['offsetstats']['flags']
-		elif procedure1=='upltoyse':
+		if procedure1 == 'plotlc': 
+			maskval = 0
+			for key in self.cfg.params['plotlc']['flags2apply']:
+				if not (key in self.flags):
+					raise RuntimeError('bad flag name %s' % key)
+				maskval |= self.flags[key]
+			flags = maskval
+		elif procedure1 =='upltoyse':
 			flags = self.cfg.params['upltoyse']['flags']
 		else:
-			raise RuntimeError('Procedure %s must be averagelc, plotlc, or offsetstats!' % procedure1)
+			raise RuntimeError('Procedure %s must be plotlc or upltoyse!' % procedure1)
 		print('Setting indices using flags: %x' % flags)
 		
 		mask=np.bitwise_and(self.lc.t['Mask'], flags)

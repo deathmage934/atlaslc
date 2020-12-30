@@ -375,6 +375,18 @@ class pdastroclass:
             (keep,) = np.where(bitmask.bitfield_to_boolean_mask(self.t.loc[indices,maskcol].astype('int'),ignore_flags=~maskval))
         indices = indices[keep]
         return(indices)    
+    
+    def ix_sort_by_cols(self,cols,indices=None):
+
+        # get the indices based on input.
+        indices=self.getindices(indices)  
+        
+        # get the column names (makes sure that it is a list)
+        cols=self.getcolnames(cols)
+
+        ix_sorted = self.t.loc[indices].sort_values(cols).index.values
+
+        return(ix_sorted)
 
     def newrow(self,dicti=None):
         self.t = self.t.append(dicti,ignore_index=True)

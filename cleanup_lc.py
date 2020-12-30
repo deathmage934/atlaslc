@@ -97,9 +97,9 @@ class cleanuplcclass(SNloopclass):
 			N_MJD = len(self.lc.t['MJD'])
 
 		for index in range(N_MJD):
-			uJy4MJD = uJy[:,index]
-			duJy4MJD = duJy[:,index]
-			Mask4MJD = mask[:,index]
+			uJy4MJD = uJy[1:,index]
+			duJy4MJD = duJy[1:,index]
+			Mask4MJD = mask[1:,index]
 			# sigmacut and get statistics
 			calcaverage=sigmacut.calcaverageclass()
 			self.lc.t.at[index,'o0_Nmasked'] = np.count_nonzero(Mask4MJD)
@@ -197,9 +197,9 @@ class cleanuplcclass(SNloopclass):
 			N_MJD = len(self.lc.t['MJD'])
 
 			# construct arrays for offset data
-			uJy = np.full((N_lc,N_MJD),np.nan,dtype=np.int64)
-			duJy = np.full((N_lc,N_MJD),np.nan,dtype=np.int64)
-			Mask = np.full((N_lc,N_MJD),np.nan,dtype=np.int32)
+			uJy = np.full((N_lc,N_MJD),np.nan)
+			duJy = np.full((N_lc,N_MJD),np.nan)
+			Mask = np.full((N_lc,N_MJD),0,dtype=np.int32)
 
 			for offsetindex in range(1,len(self.RADECtable.t)):
 				# load offset lc
@@ -211,8 +211,6 @@ class cleanuplcclass(SNloopclass):
 
 				# make sure MJD_SN is the same as self.lc.t['MJD'], then fill array of offset uJy, duJy, Mask
 				if (len(self.lc.t) != N_MJD) or (np.array_equal(MJD_SN, self.lc.t['MJD']) is False):
-					if self.verbose>1: 
-						print(MJD_SN,'\n',self.lc.t['MJD'])
 					print('WARNING: Offset lc not equal to SN lc')
 					counter = 0
 					for mjd_index in range(N_MJD):
@@ -259,7 +257,9 @@ class cleanuplcclass(SNloopclass):
 			print('Making cuts based on offset statistics...')
 			self.makecuts(N_MJD=N_MJD)
 
-			# save lc
+			# round o1 or o2 data and save lc
+			self.lc.t = self.lc.t.round({'o1_mean':4,'o1_mean_err':4,'o1_stddev':4,'o1_X2norm':4})
+			self.lc.t = self.lc.t.round({'o2_mean':4,'o2_mean_err':4,'o2_stddev':4,'o2_X2norm':4})
 			self.save_lc(SNindex=SNindex,offsetindex=0,filt=self.filt,overwrite=True)
 
 		else:

@@ -147,12 +147,9 @@ class offsetstatsclass(SNloopclass):
 
 			# loop through offset lcs
 			for offsetindex in range(1,len(self.RADECtable.t)):
-				#if offsetindex>=1:
-					#sys.exit(0)
 				# load offset lc
 				self.load_lc(SNindex,offsetindex=offsetindex,filt=self.filt)
-				if self.verbose==1: 
-					print('Length of self.lc.t: ',len(self.lc.t))
+				if self.verbose==1: print('Length of self.lc.t: ',len(self.lc.t))
 				if len(self.lc.t)==0: return(1)
 
 				# copy over SN o1 and o2 masks to offset mask column
@@ -162,11 +159,7 @@ class offsetstatsclass(SNloopclass):
 				print('Making cuts based on day measurement statistics...')
 				self.cutandaveragelc(SNindex,offsetindex=offsetindex)
 
-				# round o1 or o2 data and save lc
-				if 'o1_mean' in self.lc.t.columns:
-					self.lc.t = self.lc.t.round({'o1_mean':3,'o1_mean_err':3,'o1_stddev':3,'o1_X2norm':4})
-				if 'o2_mean' in self.lc.t.columns:
-					self.lc.t = self.lc.t.round({'o2_mean':3,'o2_mean_err':3,'o2_stddev':3,'o2_X2norm':4})
+				# save lc
 				self.save_lc(SNindex=SNindex,offsetindex=offsetindex,filt=self.filt,overwrite=True)
 
 if __name__ == '__main__':

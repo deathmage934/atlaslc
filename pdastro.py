@@ -487,7 +487,7 @@ class pdastrostatsclass(pdastroclass):
         self.statparams = {}
         for k  in ['mean','mean_err','stdev','stdev_err','X2norm','ix_good','ix_clip']:
             self.statparams[k]=None
-        for k  in ['Ngood','Nclip','Nchanged','converged','i']:
+        for k  in ['Ngood','Nclip','Nchanged','Nmask','Nnan','converged','i']:
             self.statparams[k]=0
         self.calc_stdev_X2_flag = True
 
@@ -706,6 +706,7 @@ class pdastrostatsclass(pdastroclass):
         return(0)
 
     def calcaverage_sigmacutloop(self,datacol, indices=None, noisecol=None, maskcol=None, maskval=None, 
+                                 removeNaNs = True,
                                  Nsigma=3.0,Nitmax=10,verbose=0,
                                  percentile_cut_firstiteration=None,
                                  median_firstiteration=True):
@@ -718,6 +719,20 @@ class pdastrostatsclass(pdastroclass):
 
         # get the indices based on input.
         indices=self.getindices(indices)
+        
+        # remove null values if wanted
+        if removeNaNs:
+            print('REMOVING NANS!!!')
+            colnames = [datacol]
+            if not(noisecol is None): colnames.append(noisecol)
+            if not(maskcol is None): colnames.append(maskcol)
+            Ntot = len(indices)
+            indices = self.ix_remove_null(colnames,indices=indices)
+            self.statparams['Nnan']= Ntot-len(indices)
+            if verbose>1: print('Keeping {:d} out of {:d}, skippin {:d} because of null values in columns {:s}'.format(len(indices),Ntot,Ntot-len(indices),",".join(colnames)))
+        else:
+            self.statparams['Nnan']= 0
+            
 
         #self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr','mask'],indices=indices)
         # exclude data if wanted
@@ -725,11 +740,10 @@ class pdastrostatsclass(pdastroclass):
             Ntot = len(indices)
             print('maskval:',maskval)
             indices = self.ix_unmasked(maskcol,maskval=maskval,indices=indices)
+            self.statparams['Nmask']= Ntot-len(indices)
             if verbose>1: print('Keeping {:d} out of {:d}, skippin {:d} because of masking in column {} (maskval={})'.format(len(indices),Ntot,Ntot-len(indices),maskcol,maskval))
-
-        #print('final')
-        #self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr','mask'],indices=indices)
-        #sys.exit(0)
+        else:
+            self.statparams['Nmask']= 0
 
         self.reset()
         while ((self.statparams['i']<Nitmax) or (Nitmax==0)) and (not self.statparams['converged']):
@@ -776,3 +790,34 @@ class pdastrostatsclass(pdastroclass):
                 print('WARNING! no convergence!')
 
         return(not self.statparams['converged'])
+    
+    def statresults2table(self,desttable,destindex=None,colmapping={},prefix='',suffix='',skipcolumns=[]):
+        
+        skipcolumns = self.getcolnames(skipcolumns)
+        
+        cols=[]
+        vals=[]
+        resultdict={}
+        for k  in ['mean','mean_err','stdev','stdev_err','X2norm','Ngood','Nclip','Nmask','Nnan','converged','i']:
+            if k in skipcolumns:
+                continue
+            
+            # set outcol basename to
+            outcol=k
+            if k in colmapping:
+                outcol=colmapping[k]
+                
+            outcol='{}{}{}'.format(prefix,outcol,suffix)
+            if destindex is None:
+                resultdict[outcol]:self.statparams[k]
+            else:
+                cols.append(outcol)
+                vals.append(self.statparams[k])
+        if destindex is None:
+            outindex = self.newrow(resultdict)
+        else:
+            outindex = destindex
+            print('Cols:',cols)
+            print('Vals:',vals)
+            desttable.loc[destindex,cols]=vals
+            

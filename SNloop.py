@@ -52,8 +52,8 @@ class SNloopclass(pdastroclass):
 		self.flag_o2_bad = 0x800 # decimal: 2048
 		self.flag_daysigma = 0x1000 # decimal: 4096
 		self.flag_daysmallnumber = 0x2000 # decimal: 8192
-		self.flag_daybad = 0x4000 # for averaged and original lcs
-		self.flags={'flag_o0_uncertainty':0x1,'flag_o0_X2norm':0x2,'flag_o2_ok':0x400,'flag_o2_bad':0x800,'flag_daysigma':0x1000,'flag_daybad':0x4000}
+		self.flag_daybad = 0x4000 # decimal: 16384; for averaged and original lcs
+		self.flags={'flag_o0_uncertainty':0x1,'flag_o0_X2norm':0x2,'flag_o2_ok':0x400,'flag_o2_bad':0x800,'flag_daysigma':0x1000,'flag_daysmallnumber':0x2000,'flag_daybad':0x4000}
 
 	def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
 		if parser is None:

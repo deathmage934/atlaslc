@@ -117,7 +117,7 @@ class plotlcclass(SNloopclass):
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
-		#plt.xlim(58750,59000) # delete me
+		#plt.xlim(58000,58500) # delete me
 		plt.ylim(minlc*1.1,maxlc*1.1) # delete me
 		#plt.ylim(-500,500)
 		#if not(len(lc_MJD)==0):
@@ -244,16 +244,14 @@ class plotlcclass(SNloopclass):
 		if self.cfg.params['plotlc']['plot_mask_nan'] is True:
 			o2_flag = True
 		if (o1_flag is True) and (o2_flag is True):
-			print('mask4mjd and mask_nan data detected, plotting mask4mjd and mask_nan offsetstats...')
+			print('Plotting mask4mjd and mask_nan offsetstats...')
 			self.plot_lc_offsetstats(args,SNindex,o1_flag=True,o2_flag=True)
 		elif o1_flag is True:
-			print('mask4mjd data detected, plotting mask4mjd offsetstats...')
+			print('Plotting mask4mjd offsetstats...')
 			self.plot_lc_offsetstats(args,SNindex,o1_flag=True)
 		elif o2_flag is True:
-			print('mask_nan data detected, plotting mask_nan offsetstats...')
+			print('Plotting mask_nan offsetstats...')
 			self.plot_lc_offsetstats(args,SNindex,o2_flag=True)
-		else:
-			print('No offsetstats data detected!! Please run offsetstats.py first.')
 		
 if __name__ == '__main__':
 

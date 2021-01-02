@@ -17,9 +17,6 @@ class verifyMJDclass(SNloopclass):
     
     def verifyMJD(self,SNindex,skip_savelc=False):
         """
-        
-
-
         Parameters
         ----------
         SNindex : interger
@@ -31,8 +28,7 @@ class verifyMJDclass(SNloopclass):
         None.
 
         """
-        
-        
+  
         # load main SN lc
         self.load_lc(SNindex,offsetindex=0,filt=self.filt)
         if self.verbose:
@@ -52,7 +48,6 @@ class verifyMJDclass(SNloopclass):
             print('SN LC sorted by MJD')
             self.lc.write(indices=ix_sorted)
          
-
         # loop through the control LCs
         for controlindex in range(1,len(self.RADECtable.t)):
             if self.verbose: print('Control LC %d' % controlindex)
@@ -107,8 +102,6 @@ class verifyMJDclass(SNloopclass):
 
             else:
                 if self.verbose: print('MJDs fit!!')
-
-
 
 if __name__ == '__main__':
 

@@ -158,7 +158,7 @@ class cleanuplcclass(SNloopclass):
 	def cleanuplcloop(self,args,SNindex):
 		# o0 - mask lcs based on PSF X2norm and uncertainty
 
-		for offsetindex in range(len(cleanuplc.RADECtable.t)):
+		for offsetindex in range(len(self.RADECtable.t)):
 			# load lc
 			self.load_lc(SNindex, filt=self.filt, offsetindex=offsetindex, MJDbinsize=None)
 			print('Length of self.lc.t: ',len(self.lc.t))
@@ -167,6 +167,8 @@ class cleanuplcclass(SNloopclass):
 
 			# clear mask column
 			self.lc.t['Mask'] = 0
+			for col in ['o0_Nmasked','o1_mean','o1_mean_err','o1_stddev','o1_X2norm','o1_Nvalid','o1_Nnan','Noffsetlc','o2_mean','o2_mean_err','o2_stddev','o2_X2norm','o2_Nused','o2_Nskipped','o2_Nin']:
+				self.lc.t[col] = None
 
 			if self.cfg.params['cleanlc']['o0']['PSF_uncertainty']['apply'] is True:
 				print('Applying uncertainty cleanup...')

@@ -277,19 +277,12 @@ if __name__ == '__main__':
 		if not(isinstance(downloadlc.t.at[SNindex,'tnsname'],str)):
 			print('\nnan detected, skipping...')
 		else:
-			downloadlc.downloadoffsetlc(SNindex,
-										lookbacktime_days=args.lookbacktime_days,
-										savelc=args.savelc,
-										overwrite=args.overwrite,
-										fileformat=args.fileformat,
-										pattern=pattern,
-										forcedphot_offset=args.forcedphot_offset)
+			downloadlc.downloadoffsetlc(SNindex,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
 			downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
 			downloadlc.verifyMJD(SNindex)
-			for offsetindex in range(len(downloadlc.RADECtable.t)):
-				downloadlc.cleanuplcloop(args,SNindex,offsetindex=offsetindex,filt=downloadlc.filt)
-				#if args.averagelc: downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)
+			downloadlc.cleanuplcloop(args,SNindex)
+			#if args.averagelc: downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)
 			if (args.forcedphot_offset) and (args.offsetstats): 
-				downloadlc.offsetstatsloop(SNindex,filt=downloadlc.filt)
+				downloadlc.offsetstatsloop(SNindex)
 			if args.plot: 
 				downloadlc.plotlcloop(args,SNindex)

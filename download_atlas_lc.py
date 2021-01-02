@@ -10,7 +10,7 @@ import requests, re
 from jumpssh import SSHSession
 import argparse
 from astropy.time import Time
-from astrotable import astrotableclass
+#from astrotable import astrotableclass
 from tools import DecInDeg,RaInDeg
 
 class download_atlas_lc_class:

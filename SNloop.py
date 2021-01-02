@@ -15,7 +15,7 @@ from tools import yamlcfgclass
 from tools import rmfile
 from tools import RaInDeg
 from tools import DecInDeg
-from astrotable import astrotableclass
+#from astrotable import astrotableclass
 from download_atlas_lc import download_atlas_lc_class
 import sigmacut
 from pdastro import pdastroclass, pdastrostatsclass

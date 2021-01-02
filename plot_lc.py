@@ -117,8 +117,8 @@ class plotlcclass(SNloopclass):
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
-		plt.xlim(58750,59200)
-		plt.ylim(-500,5000)
+		plt.xlim(58750,59200) # HARD-CODED
+		plt.ylim(-500,5000) # HARD-CODED
 		#plt.ylim(minlc*1.1,maxlc*1.1)
 		#if not(len(lc_MJD)==0):
 			#plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)

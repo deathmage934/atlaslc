@@ -16,7 +16,7 @@ from tools import rmfile
 from tools import RaInDeg
 from tools import DecInDeg
 import pandas as pd
-from astrotable import astrotableclass
+#from astrotable import astrotableclass
 from download_atlas_lc import download_atlas_lc_class
 from SNloop import SNloopclass
 from cleanup_lc import cleanuplcclass

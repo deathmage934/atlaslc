@@ -70,7 +70,8 @@ class offsetstatsclass(SNloopclass):
 			if fluxstatparams['mean'] is None or len(fluxstatparams['ix_good'])<1:
 				if self.verbose>1: 
 					print('Mean uJy is None OR length index good < 1, flagging bad day and skipping MJD range...')
-				self.lc.t.loc[ix1,'Mask'] = np.bitwise_or(self.lc.t.loc[ix1,'Mask'],self.flag_daybad)
+				flag_array = np.full(len(ix1),self.flag_daybad)
+				self.lc.t.loc[ix1,'Mask'] = np.bitwise_or(self.lc.t.loc[ix1,'Mask'],flag_array)
 				MJD += MJDbinsize
 				continue
 

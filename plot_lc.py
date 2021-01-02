@@ -117,12 +117,31 @@ class plotlcclass(SNloopclass):
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
-		plt.xlim(58750,59200) # HARD-CODED
-		plt.ylim(-500,5000) # HARD-CODED
-		#plt.ylim(minlc*1.1,maxlc*1.1)
-		#if not(len(lc_MJD)==0):
-			#plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1)
 
+		# get x limits from args; else, leave as is
+		xlim_lower, xlim_upper = plt.xlim()
+		if not(args.xlim_lower is None): 
+			xlim_lower = args.xlim_lower
+		if not(args.xlim_upper is None):
+			xlim_upper = args.xlim_upper
+		
+		# get y limits from args; else, set to min and max lc
+		if not(args.ylim_lower is None): 
+			ylim_lower = args.ylim_lower
+		else: 
+			ylim_lower = minlc*1.1
+		if not(args.ylim_upper is None): 
+			ylim_upper = args.ylim_upper
+		else:
+			ylim_upper = maxlc*1.1
+		
+		# set x and y limits
+		plt.xlim(xlim_lower,xlim_upper)
+		plt.ylim(ylim_lower,ylim_upper)
+		print('xlim lower: ',xlim_lower,'. xlim upper: ',xlim_upper,'. ')
+		print('ylim lower: ',ylim_lower,'. ylim upper: ',ylim_upper,'. ')
+
+		# save plot
 		plotfilename = self.lcbasename(SNindex=SNindex)+'.png'
 		print('Plot file name: ',plotfilename)
 		plt.savefig(plotfilename)

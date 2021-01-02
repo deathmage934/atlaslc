@@ -79,7 +79,11 @@ class SNloopclass(pdastroclass):
 		#parser.add_argument('--pattern', choices=['c','b','l'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
 		# initialize plotlc.py
 		parser.add_argument('--plot', default=False, help=('plot lcs'))
-		# initialize offsetstats.py
+		parser.add_argument('--xlim_lower', default=None, type=float, help=('set lower x limit when plotting'))
+		parser.add_argument('--xlim_upper', default=None, type=float, help=('set upper x limit when plotting'))
+		parser.add_argument('--ylim_lower', default=None, type=float, help=('set lower y limit when plotting'))
+		parser.add_argument('--ylim_upper', default=None, type=float, help=('set upper y limit when plotting'))
+		# iniialize offsetstats.py
 		parser.add_argument('--offsetstats', default=False, help=('flag measurements based on day statistics and get average lcs'))
 		# initialize averagelc.py
 		#parser.add_argument('--averagelc', default=False, help=('average lcs'))

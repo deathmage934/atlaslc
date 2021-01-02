@@ -211,7 +211,8 @@ class cleanuplcclass(SNloopclass):
 
 				# make sure MJD_SN is the same as self.lc.t['MJD'], then fill array of offset uJy, duJy, Mask
 				if (len(self.lc.t) != N_MJD) or (np.array_equal(MJD_SN, self.lc.t['MJD']) is False):
-					print('WARNING: Offset lc not equal to SN lc')
+					raise RuntimeError('SN lc not equal to offset lc! Please run verifyMJD.py')
+					"""
 					counter = 0
 					for mjd_index in range(N_MJD):
 						if counter >= len(self.lc.t['MJD']):
@@ -234,6 +235,7 @@ class cleanuplcclass(SNloopclass):
 							uJy[offsetindex,mjd_index] = 0
 							duJy[offsetindex,mjd_index] = 0
 							Mask[offsetindex,mjd_index] = 0x8
+					"""
 				else:
 					uJy[offsetindex,:] = self.lc.t[self.flux_colname]
 					duJy[offsetindex,:] = self.lc.t[self.dflux_colname]

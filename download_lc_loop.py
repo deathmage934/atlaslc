@@ -16,17 +16,18 @@ from tools import rmfile
 from tools import RaInDeg
 from tools import DecInDeg
 import pandas as pd
-from astrotable import astrotableclass
+#from astrotable import astrotableclass
 from download_atlas_lc import download_atlas_lc_class
 from SNloop import SNloopclass
 from cleanup_lc import cleanuplcclass
 from plot_lc import plotlcclass, dataPlot
+from verifyMJD import verifyMJDclass
 #from average_lc import averagelcclass
 from offsetstats import offsetstatsclass
 import sigmacut
 from pdastro import pdastroclass, AandB
 
-class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass):
+class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDclass):
 	def __init__(self):
 		cleanuplcclass.__init__(self)
 		plotlcclass.__init__(self)
@@ -187,7 +188,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass):
 	def downloadoffsetlc(self, SNindex, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None,pattern=None):
 		print('Offset status: ',forcedphot_offset)
 		if forcedphot_offset == 'True':
-			print('Running forcedphot offsets lc for %s...' % self.t.at[SNindex,'tnsname'])
+			#print('Running forcedphot offsets lc for %s...' % self.t.at[SNindex,'tnsname'])
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
 			
@@ -218,7 +219,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass):
 				self.saveRADEClist(SNindex,filt='c')
 				self.saveRADEClist(SNindex,filt='o')
 		else:
-			print('Skipping forcedphot offsets lc for %s...' % self.t.at[SNindex,'tnsname'])
+			#print('Skipping forcedphot offsets lc for %s...' % self.t.at[SNindex,'tnsname'])
 			# only add SN data in new row without offsets
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
@@ -276,19 +277,12 @@ if __name__ == '__main__':
 		if not(isinstance(downloadlc.t.at[SNindex,'tnsname'],str)):
 			print('\nnan detected, skipping...')
 		else:
-			downloadlc.downloadoffsetlc(SNindex,
-										lookbacktime_days=args.lookbacktime_days,
-										savelc=args.savelc,
-										overwrite=args.overwrite,
-										fileformat=args.fileformat,
-										pattern=pattern,
-										forcedphot_offset=args.forcedphot_offset)
-			for offsetindex in range(len(downloadlc.RADECtable.t)):
-				downloadlc.cleanuplcloop(args,SNindex,offsetindex=offsetindex,filt=downloadlc.filt)
-				#if args.averagelc: 
-					#downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)
-			if args.forcedphot_offset:
-				downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
-				downloadlc.offsetstatsloop(SNindex,filt=downloadlc.filt)
+			downloadlc.downloadoffsetlc(SNindex,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
+			downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+			downloadlc.verifyMJD(SNindex)
+			downloadlc.cleanuplcloop(args,SNindex)
+			#if args.averagelc: downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)
+			if (args.forcedphot_offset) and (args.offsetstats): 
+				downloadlc.offsetstatsloop(SNindex)
 			if args.plot: 
 				downloadlc.plotlcloop(args,SNindex)

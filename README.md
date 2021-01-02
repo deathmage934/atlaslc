@@ -36,7 +36,6 @@ This code allows you to download SN light curves. There are many options to conf
 * Add the SN name(s) that you want light curves for (or use 'all' if you want to use all SNe in the `snlist.txt` file) to the command.
 * `--passwd` specifies your password for the ATLAS machines (**required**). It is recommended to put your password in 'quotation marks' to avoid any errors with symbols.
 * `-s` will make sure all files you download are saved (**recommended; should be added to the command every time you run the code**).
-* `-o` will overwrite any files with the same name (**recommended** if you download data for the same SN multiple times).
 * `-v` specifies verbose level (**recommended**).
 * `-l` specifies the lookback time in days.
 * `--snlistfilename` gives you the option to read a different text file that houses a SN list instead of using the address in the `precursor.cfg` file.
@@ -50,11 +49,12 @@ This code allows you to download SN light curves. There are many options to conf
 You can also use forced photometry to get offset light curves, plot each SN's light curve, and average the light curve data. To do any of these, follow the following instructions.
 * **To get forced photometry offsets automatically**, add `--forcedphot_offset True` to the command. In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius.
 * **To plot each SN's light curve automatically**, add `--plot True` to the command.
-* **To average the light curve data automatically**, add `--averagelc True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
+* **To average the light curve data automatically**, add `--offsetstats True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
 
 Additional functionality enables you to do these tasks using existing data that has already been downloaded.
 * **To plot each SN's light curve using existing data**, initialize the program using `plot_lc.py`, then add to the command the SN name(s) you want plotted.
-* **To average the light curves using existing data**, initialize the program using `averagelc_loop.py`, then add to the command the SN name(s) you want plotted. You can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
+* **To clean up existing SN data and flag in the Mask column**, run `cleanup_lc.py`, then add to the command the SN name(s) you want plotted.
+* **To average the light curves using existing data**, initialize the program using `offsetstats.py`, then add to the command the SN name(s) you want plotted. You can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
 
 #### Using autoadd.py with your snlist.txt
 Given a TNS name, `autoadd.py` can automatically retrieve the RA and Dec coordinates from the TNS and add the TNS name, RA, and Dec to `snlist.txt`. To run the script, follow the following instructions:
@@ -63,6 +63,6 @@ Given a TNS name, `autoadd.py` can automatically retrieve the RA and Dec coordin
 
 #### Example commands:
 * `autoadd.py 2020lse` adds the TNS name 2020lse, its RA, and its Dec to `snlist.txt`. Similarly, `autoadd.py 2020lse --ra 10:41:02.20 --dec -27:05:00.3` adds the TNS name 2020lse, the given RA, and the given Dec to `snlist.txt`.
-* `download_lc_loop.py 2020lse -v -o -s -l 70 --forcedphot_offset True --plot True --averagelc True --MJDbinsize 20 --passwd 'XXX'` gets the data for SN 2020lse with verbose level 1, overwrites files with the same name, saves the files, and uses a lookback time of 70. Then the offset data is downloaded, plots are saved, and the SN light curve data is averaged with an MJDbinsize of 20.
+* `download_lc_loop.py 2020lse -v -s -l 70 --forcedphot_offset True --plot True --averagelc True --MJDbinsize 20 --passwd 'XXX'` gets the data for SN 2020lse with verbose level 1, overwrites files with the same name, saves the files, and uses a lookback time of 70. Then the offset data is downloaded, plots are saved, and the SN light curve data is averaged with an MJDbinsize of 20.
 * `plot_lc.py 2020lse -v -s` plots the data for SN 2020lse as long as there is already existing light curve data.
-* `averagelc_loop.py 2020lse -v -s --MJDbinsize 20` averages the data for SN 2020lse as long as there is already existing light curve data.
+* `offsetstats.py 2020lse -v -s --MJDbinsize 20` averages the data for SN 2020lse as long as there is already existing light curve data.

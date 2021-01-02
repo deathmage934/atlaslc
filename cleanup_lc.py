@@ -27,9 +27,9 @@ class cleanuplcclass(SNloopclass):
 		a_indices = list(a_indices[0])
 		if self.verbose>1: print('Indices: ',a_indices)
 		if len(self.lc.t.loc[a_indices,self.dflux_colname])>0:
-			if self.verbose: print('%s above %i: ' % (self.dflux_colname, a), len(self.lc.t.loc[a_indices,self.dflux_colname]))
+			if self.verbose: print('# %s above %i: %i/%i' % (self.dflux_colname, a, len(self.lc.t.loc[a_indices,self.dflux_colname]),len(self.lc.t[self.dflux_colname])))
 		else:
-			if self.verbose: print('No measurements flagged!')
+			if self.verbose: print('# No measurements flagged!')
 
 		# update 'Mask' column
 		flag_o0_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_o0_uncertainty)
@@ -70,9 +70,9 @@ class cleanuplcclass(SNloopclass):
 		a_indices = list(a_indices[0])
 		if self.verbose>1: print('Indices: ',a_indices) 
 		if len(self.lc.t.loc[a_indices,'chi/N'])>0:
-			if self.verbose: print('chi/N above %i: ' % o0max_X2norm,len(self.lc.t.loc[a_indices,'chi/N']))
+			if self.verbose: print('# chi/N above %i: %i/%i' % (o0max_X2norm,len(self.lc.t.loc[a_indices,'chi/N']),len(self.lc.t['chi/N'])))
 		else:
-			if self.verbose: print('No measurements flagged!')		
+			if self.verbose: print('# No measurements flagged!')		
 
 		# update 'Mask' column
 		flag_o0_X2norm = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_o0_X2norm)

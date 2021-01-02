@@ -66,7 +66,7 @@ class offsetstatsclass(SNloopclass):
 			self.lc.calcaverage_sigmacutloop('uJy',noisecol='duJy',indices=ix2,verbose=1,Nsigma=3.0,median_firstiteration=True)
 			fluxstatparams = deepcopy(self.lc.statparams)
 			if self.verbose>1: 
-				print('Nclip: {}, Ngood: {}, X2norm: {}'.format(fluxstatparams['Nclip'],fluxstatparams['Ngood'],fluxstatparams['X2norm']))
+				print('Nclip: {}, Ngood: {}, X2norm: {:.4f}'.format(fluxstatparams['Nclip'],fluxstatparams['Ngood'],fluxstatparams['X2norm']))
 			if fluxstatparams['mean'] is None or len(fluxstatparams['ix_good'])<1:
 				if self.verbose>1: 
 					print('Mean uJy is None OR length index good < 1, flagging bad day and skipping MJD range...')

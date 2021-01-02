@@ -202,6 +202,7 @@ class SNloopclass(pdastroclass):
 		# use when cleaning up data in plot_lc.py or average_lc.py; makes cuts based on mask column created in cleanup_lc.py
 		# set flags in precursor.cfg to control what data to cut based on uncertainties and/or chi/N
 		if procedure1 == 'plotlc': 
+			print('Using cfg flags: ',self.cfg.params['plotlc']['flags2apply'])
 			maskval = 0
 			for key in self.cfg.params['plotlc']['flags2apply']:
 				if not (key in self.flags):
@@ -212,7 +213,7 @@ class SNloopclass(pdastroclass):
 			flags = self.cfg.params['upltoyse']['flags']
 		else:
 			raise RuntimeError('Procedure %s must be plotlc or upltoyse!' % procedure1)
-		print('Setting indices using flags: %x' % flags)
+		print('Setting indices using flag values: 0x%x' % flags)
 		
 		mask=np.bitwise_and(self.lc.t['Mask'], flags)
 		cuts_indices = np.where(mask==0)

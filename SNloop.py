@@ -44,18 +44,18 @@ class SNloopclass(pdastroclass):
         self.averagelc = pdastrostatsclass()
 
         # offsetstats
-        self.flag_o0_uncertainty = 0x1 # decimal: 1
-        self.flag_o0_X2norm = 0x2 # decimal: 2
+        self.flag_c0_uncertainty = 0x1 # decimal: 1
+        self.flag_c0_X2norm = 0x2 # decimal: 2
         #self.flag_o0_NaN = 0x8 # decimal: 8
              
-        self.flag_o1_good = 0x20 # decimal: 32
-        self.flag_o2_good = 0x200 # decimal: 512
-        self.flag_o2_ok = 0x400 # decimal: 1024
-        self.flag_o2_bad = 0x800 # decimal: 2048
+        self.flag_c1_good = 0x20 # decimal: 32
+        self.flag_c2_good = 0x200 # decimal: 512
+        self.flag_c2_ok = 0x400 # decimal: 1024
+        self.flag_c2_bad = 0x800 # decimal: 2048
         self.flag_daysigma = 0x1000 # decimal: 4096
         self.flag_daysmallnumber = 0x2000 # decimal: 8192
         self.flag_daybad = 0x4000 # decimal: 16384; for averaged and original lcs
-        self.flags={'flag_o0_uncertainty':0x1,'flag_o0_X2norm':0x2,'flag_o2_ok':0x400,'flag_o2_bad':0x800,'flag_daysigma':0x1000,'flag_daysmallnumber':0x2000,'flag_daybad':0x4000}
+        self.flags={'flag_c0_uncertainty':0x1,'flag_c0_X2norm':0x2,'flag_c2_ok':0x400,'flag_c2_bad':0x800,'flag_daysigma':0x1000,'flag_daysmallnumber':0x2000,'flag_daybad':0x4000}
 
     def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
         if parser is None:

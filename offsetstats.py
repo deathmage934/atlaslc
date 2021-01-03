@@ -52,7 +52,7 @@ class offsetstatsclass(SNloopclass):
 					self.lc.write(indices=ix1) # delete me
 			
 			# get good and ok measurements (from offsetstats) out of 4
-			ix2 = self.lc.ix_unmasked('Mask',maskval=self.flag_o2_bad|self.flag_o0_X2norm,indices=ix1)
+			ix2 = self.lc.ix_unmasked('Mask',maskval=self.flag_c2_bad|self.flag_c0_X2norm,indices=ix1)
 			if len(ix2)==0:
 				if self.verbose>1: 
 					print('Length of good and ok measurements = 0, skipping MJD range...')
@@ -141,20 +141,12 @@ class offsetstatsclass(SNloopclass):
 		self.save_lc(SNindex=SNindex,offsetindex=0,filt=self.filt,overwrite=True)
 
 		if self.cfg.params['offsetstats']['apply2offsets'] is True:
-			# get o1 and o2 masks from SN lc for copying to offset lc mask column
-			flags = self.flag_o1_good | self.flag_o2_bad | self.flag_o2_ok | self.flag_o2_good
-			flags_array = np.full(self.lc.t['Mask'].shape,flags)
-			omask = self.lc.t['Mask'] & flags_array
-
 			# loop through offset lcs
 			for offsetindex in range(1,len(self.RADECtable.t)):
 				# load offset lc
 				self.load_lc(SNindex,offsetindex=offsetindex,filt=self.filt)
 				if self.verbose==1: print('Length of self.lc.t: ',len(self.lc.t))
 				if len(self.lc.t)==0: return(1)
-
-				# copy over SN o1 and o2 masks to offset mask column
-				self.lc.t['Mask'] = np.bitwise_or(self.lc.t['Mask'],omask)
 
 				# get sigmacut info and flag for 4-day bins
 				print('Making cuts based on day measurement statistics...')

@@ -44,7 +44,14 @@ def AorB(A,B):
 def AandB(A,B,assume_unique=False):
     return(np.intersect1d(A,B,assume_unique=assume_unique))
 
-def AnotB(A,B):
+def AnotB(A,B,keeporder=False):
+    if keeporder:
+        # This is slower, but keeps order
+        out=[]
+        for i in A: 
+            if not(i in B):
+                out.append(i)
+        return(out)
     return(np.setdiff1d(A,B))
 
 def not_AandB(A,B):
@@ -158,6 +165,7 @@ class pdastroclass:
         # if both formatters and self.defaultformatters are None, then no formatting. formatters supersedes self.defaultformatters
         if formatters is None:
             formatters = self.default_formatters
+        
         
         if indices is None:
             # no indices are passed
@@ -722,7 +730,6 @@ class pdastrostatsclass(pdastroclass):
         
         # remove null values if wanted
         if removeNaNs:
-            print('REMOVING NANS!!!')
             colnames = [datacol]
             if not(noisecol is None): colnames.append(noisecol)
             if not(maskcol is None): colnames.append(maskcol)
@@ -791,33 +798,115 @@ class pdastrostatsclass(pdastroclass):
 
         return(not self.statparams['converged'])
     
-    def statresults2table(self,desttable,destindex=None,colmapping={},prefix='',suffix='',skipcolumns=[]):
-        
-        skipcolumns = self.getcolnames(skipcolumns)
-        
+    """
+    def colnames4params(self,columns=None,colmapping={},prefix='',suffix='',skipcols=[]):
         cols=[]
-        vals=[]
-        resultdict={}
-        for k  in ['mean','mean_err','stdev','stdev_err','X2norm','Ngood','Nclip','Nmask','Nnan','converged','i']:
-            if k in skipcolumns:
+        keys=[]
+        for k in ['mean','mean_err','stdev','stdev_err','X2norm','Ngood','Nclip','Nmask','Nnan','converged','i']:
+            if k in skipcols:
                 continue
-            
-            # set outcol basename to
             outcol=k
             if k in colmapping:
                 outcol=colmapping[k]
                 
-            outcol='{}{}{}'.format(prefix,outcol,suffix)
+            keys.append(k)
+            cols.append('{}{}{}'.format(prefix,outcol,suffix))
+        return(keys,cols)
+"""
+
+
+    def intializecols4statparams(self,params=None,prefix='',suffix='',parammapping={},skipparams=[],
+                                 addformat2defaultformatter=True,format4outvals='{:.3f}',
+                                 setcol2None=True):
+        outcols=[]
+        outparams=[]
+
+        if params is None:
+            params=['mean','mean_err','stdev','stdev_err','X2norm','Ngood','Nclip','Nmask','Nnan','converged','i']
+
+        if addformat2defaultformatter and (self.default_formatters is None):
+                    self.default_formatters = {}
+
+        for param in params:
+            if param in skipparams:
+                continue
+
+            outparams.append(param)
+
+            colbase=param  
+            if param in parammapping:
+                colbase=parammapping[param]
+                
+            outcol='{}{}{}'.format(prefix,colbase,suffix)
+            outcols.append(outcol)
+
+            if addformat2defaultformatter:
+                if not(re.search('^N',param) is None) or param =='i':
+                    self.default_formatters[outcol]='{:d}'.format
+                elif param=='X2norm':
+                    self.default_formatters[outcol]='{:.2f}'.format
+                elif param in ['converged']:
+                    pass
+                else:
+                    self.default_formatters[outcol]=format4outvals.format
+            
+            if setcol2None:
+                self.t[outcol]=None
+            
+        return(set(zip(outparams,outcols)))
+
+    def statresults2table(self,pdstats,param2columnmapping,destindex=None):
+        vals=[]
+        resultdict={}
+        
+        # loop through keys,outcols, and assign values
+        for (param,outcol) in param2columnmapping:
+            if destindex is None:
+                resultdict[outcol]:pdstats.statparams[param]
+            else:
+                #vals.append(pdstats.statparams[param])
+                self.t.loc[destindex,outcol]=pdstats.statparams[param]
+
+        # either put the data into a new row or into an existing one
+        if destindex is None:
+            outindex = self.t.newrow(resultdict)
+        else:
+            outindex = destindex
+            #self.t.loc[destindex,outcols]=vals
+        return(outindex)
+
+
+
+"""
+    def statresults2tableOLD(self,desttable,destindex=None,colmapping={},prefix='',suffix='',skipcols=[])
+        vals=[]
+        resultdict={}
+
+        # get matching statistic keys for self.statparams and output cols
+        (keys,outcols)=self.colnames4params(colmapping=colmapping,prefix=prefix,suffix=suffix,skipcols=skipcols)
+
+        # loop through keys,outcols, and assign values
+        for (k,outcol) in zip(keys,outcols):
             if destindex is None:
                 resultdict[outcol]:self.statparams[k]
             else:
-                cols.append(outcol)
                 vals.append(self.statparams[k])
+
+        # initialize column if not exist yet
+        cols_not_exists=AnotB(outcols,desttable.columns)
+        if len(cols_not_exists)>0:
+            # redo it, but ordered.
+            print('BBBB',cols_not_exists)
+            cols_not_exists=AnotB(outcols,desttable.columns,keeporder=True)
+            print('BBBB',cols_not_exists)
+            sys.exit(0)
+            for col in cols_not_exists: desttable[col]=None
+
+        # either put the data into a new row or into an existing one
         if destindex is None:
             outindex = self.newrow(resultdict)
         else:
             outindex = destindex
-            print('Cols:',cols)
-            print('Vals:',vals)
-            desttable.loc[destindex,cols]=vals
-            
+            desttable.loc[destindex,outcols]=vals
+        return(outindex)
+"""

@@ -70,47 +70,47 @@ class SNloopclass(pdastroclass):
             cfgfile = None
             outrootdir = None
 
-		# can be a sn name from snlist.txt or 'all' (loops through all sn names in snlist.txt)
-		parser.add_argument('SNlist', nargs='+')
-		# set default filter
-		parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify default filter'))
-		# set MJD bin size for averagelc.py
-		parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float)
-		# intialize forced photometry offsets
-		parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
-		# set forced photometry offset pattern
-		#parser.add_argument('--pattern', choices=['c','b','l'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
-		# initialize plotlc.py
-		parser.add_argument('--plot', default=False, help=('plot lcs'))
-		parser.add_argument('--xlim_lower', default=None, type=float, help=('set lower x limit when plotting'))
-		parser.add_argument('--xlim_upper', default=None, type=float, help=('set upper x limit when plotting'))
-		parser.add_argument('--ylim_lower', default=None, type=float, help=('set lower y limit when plotting'))
-		parser.add_argument('--ylim_upper', default=None, type=float, help=('set upper y limit when plotting'))
-		# iniialize offsetstats.py
-		parser.add_argument('--offsetstats', default=False, help=('flag measurements based on day statistics and get average lcs'))
-		# initialize averagelc.py
-		#parser.add_argument('--averagelc', default=False, help=('average lcs'))
-		# skip uncertainty cleanup when cleaning lcs
-		#parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
-		# skip chi square cleanup when cleaning lcs
-		#parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
-		# specify whether or not to make cuts using cleaned data when averaging data
-		#parser.add_argument('--avg_makecuts', default=None, choices=['True','False'], help=('skip cutting measurements using mask column when averaging'))
-		# specify procedure used in offsetstats.py
-		#parser.add_argument('--procedure', default='mask_nan', choices=['mask_nan','mask4mjd'],help=('define offsetstats.py procedure type. can be mask1 or mask2'))
-		parser.add_argument('-v','--verbose', default=0, action='count')
-		parser.add_argument('-d', '--debug', action='count', help="debug")
-		parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
-		parser.add_argument('-s','--savelc', default=False, action="store_true", help=("save lc"))
-		parser.add_argument('--outrootdir', default=outrootdir, help=('output root directory.''(default=%(default)s)'))
-		parser.add_argument('--outsubdir', default=None, help=('subdir added to the output root directory (and filename) ''(default=%(default)s)'))
-		parser.add_argument('-c', '--cfgfile', default=cfgfile, help='main config file. (default=%(default)s)')
-		parser.add_argument('-e', '--extracfgfile', default=None, action='append', help=('additional config file. These cfg files do not need to have all ''parameters. They overwrite the parameters in the main cfg file.'))
-		parser.add_argument('-p', '--params', default=None, action='append', nargs=2, help=('"param val": change parameter in config file (not in section, only ''main part) (default=%(default)s)'))
-		parser.add_argument('--pall', action='append', default=None, nargs=2, help=('"param val". change parameter in all sections of config file ''(section independent) (default=%(default)s)'))
-		parser.add_argument('--pp', action='append', default=None, nargs=3, help=('"section param val". change parameters in given section of ''config file (default=%(default)s)'))
-		#parser.add_argument('--skip_makecuts_offsetstats',default=False,help=('skip cutting measurements using mask colum when '))
-		return parser
+        # can be a sn name from snlist.txt or 'all' (loops through all sn names in snlist.txt)
+        parser.add_argument('SNlist', nargs='+')
+        # set default filter
+        parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify default filter'))
+        # set MJD bin size for averagelc.py
+        parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float)
+        # intialize forced photometry offsets
+        parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
+        # set forced photometry offset pattern
+        #parser.add_argument('--pattern', choices=['c','b','l'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
+        # initialize plotlc.py
+        parser.add_argument('--plot', default=False, help=('plot lcs'))
+        parser.add_argument('--xlim_lower', default=None, type=float, help=('set lower x limit when plotting'))
+        parser.add_argument('--xlim_upper', default=None, type=float, help=('set upper x limit when plotting'))
+        parser.add_argument('--ylim_lower', default=None, type=float, help=('set lower y limit when plotting'))
+        parser.add_argument('--ylim_upper', default=None, type=float, help=('set upper y limit when plotting'))
+        # iniialize offsetstats.py
+        parser.add_argument('--offsetstats', default=False, help=('flag measurements based on day statistics and get average lcs'))
+        # initialize averagelc.py
+        #parser.add_argument('--averagelc', default=False, help=('average lcs'))
+        # skip uncertainty cleanup when cleaning lcs
+        #parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
+        # skip chi square cleanup when cleaning lcs
+        #parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
+        # specify whether or not to make cuts using cleaned data when averaging data
+        #parser.add_argument('--avg_makecuts', default=None, choices=['True','False'], help=('skip cutting measurements using mask column when averaging'))
+        # specify procedure used in offsetstats.py
+        #parser.add_argument('--procedure', default='mask_nan', choices=['mask_nan','mask4mjd'],help=('define offsetstats.py procedure type. can be mask1 or mask2'))
+        parser.add_argument('-v','--verbose', default=0, action='count')
+        parser.add_argument('-d', '--debug', action='count', help="debug")
+        parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
+        parser.add_argument('-s','--savelc', default=False, action="store_true", help=("save lc"))
+        parser.add_argument('--outrootdir', default=outrootdir, help=('output root directory.''(default=%(default)s)'))
+        parser.add_argument('--outsubdir', default=None, help=('subdir added to the output root directory (and filename) ''(default=%(default)s)'))
+        parser.add_argument('-c', '--cfgfile', default=cfgfile, help='main config file. (default=%(default)s)')
+        parser.add_argument('-e', '--extracfgfile', default=None, action='append', help=('additional config file. These cfg files do not need to have all ''parameters. They overwrite the parameters in the main cfg file.'))
+        parser.add_argument('-p', '--params', default=None, action='append', nargs=2, help=('"param val": change parameter in config file (not in section, only ''main part) (default=%(default)s)'))
+        parser.add_argument('--pall', action='append', default=None, nargs=2, help=('"param val". change parameter in all sections of config file ''(section independent) (default=%(default)s)'))
+        parser.add_argument('--pp', action='append', default=None, nargs=3, help=('"section param val". change parameters in given section of ''config file (default=%(default)s)'))
+        #parser.add_argument('--skip_makecuts_offsetstats',default=False,help=('skip cutting measurements using mask colum when '))
+        return parser
 
     def setoutdir(self,outrootdir=None, outsubdir=None):
         if outrootdir is None:
@@ -288,7 +288,7 @@ class SNloopclass(pdastroclass):
                                               'Ndet_c':'{:4d}'.format,
                                               'Ndet_o':'{:4d}'.format}
         self.averagelc.default_formatters = {'OffsetID':'{:3d}'.format,
-                                            'MJD':'{:.5f}'.format,
+                                            'MJD':'{:.6f}'.format,
                                             self.flux_colname:'{:.3f}'.format,
                                             self.dflux_colname:'{:.3f}'.format,
                                             'stdev':'{:.2f}'.format,

@@ -92,8 +92,70 @@ class cleanuplcclass(SNloopclass):
     #print('Cleaning mask column...')
     #indices = self.lc.getindices()
     #self.cleanmask(indices=indices)
+    
+    def make_c0_cuts(self, SNindex, prepare_c1c2_cuts=False):
+        
+        if prepare_c1c2_cuts:
+            self.load_lc(SNindex,offsetindex=0,filt=self.filt)
+            N_lc = len(self.RADECtable.t)
+            MJD_SN = self.lc.t['MJD']
+            N_MJD = len(self.lc.t['MJD'])
 
-    def calcstats(self,uJy,duJy,mask):
+            # construct arrays for offset data
+            uJy = np.full((N_lc,N_MJD),np.nan)
+            duJy = np.full((N_lc,N_MJD),np.nan)
+            Mask = np.full((N_lc,N_MJD),0,dtype=np.int32)
+        else:
+            MJD_SN=uJy=duJy=Mask=None
+            
+        for offsetindex in self.RADECtable.getindices():
+            # load lc
+            self.load_lc(SNindex, filt=self.filt, offsetindex=offsetindex, MJDbinsize=None)
+            
+            print('Length of self.lc.t: ',len(self.lc.t))
+            if len(self.lc.t) == 0:
+                raise RuntimeError('No data in control lc with index {}'.format(offsetindex))
+                
+            # INITIALIZE MASK: Set Mask to 0
+            self.lc.t['Mask'] = 0
+            
+            # get rid of all OLD statistic columns
+            dropcols=[]
+            if 'Noffsetlc' in self.lc.t.columns: dropcols.append('Noffsetlc')
+            for col in self.lc.t.columns:
+                if re.search('^o',col): dropcols.append(col)
+            if len(dropcols)>0: self.lc.t.drop(columns=dropcols,inplace=True)
+            
+            if self.cfg.params['cleanlc']['o0']['PSF_uncertainty']['apply'] is True:
+                print('Applying uncertainty cleanup...')
+                self.o0_PSF_uncertainty_cut()
+            else:
+                print('Skipping uncertainty cleanup...')
+            if self.cfg.params['cleanlc']['o0']['PSF_X2norm']['apply'] is True:
+                print('Applying chi/N static cleanlc')
+                self.o0_PSF_X2norm_cut()
+            else:
+                print('Skipping chi/N cleanup...')
+
+            if prepare_c1c2_cuts and offsetindex!=0:
+                # make sure MJD_SN is the same as self.lc.t['MJD'], then fill array of offset uJy, duJy, Mask
+                if (len(self.lc.t) != N_MJD) or (np.array_equal(MJD_SN, self.lc.t['MJD']) is False):
+                    print('ERROR!!!')
+                    print('SN MJD:',SN_MJD)
+                    print('Control LC MJD:',self.lc.t['MJD'])
+                    raise RuntimeError('SN lc not equal to control lc for controlindex {}! Please run verifyMJD.py'.format(offsetindex))
+                else:
+                    uJy[offsetindex,:] = self.lc.t[self.flux_colname]
+                    duJy[offsetindex,:] = self.lc.t[self.dflux_colname]
+                    Mask[offsetindex,:] = self.lc.t['Mask']
+
+
+            self.save_lc(SNindex=SNindex,filt=self.filt,overwrite=True,offsetindex=offsetindex)
+
+        return(MJD_SN,uJy,duJy,Mask)
+        
+
+    def calc_c1c2_stats(self,uJy,duJy,mask):
         N_MJD = uJy.shape[-1]
 
         c1_param2columnmapping = self.lc.intializecols4statparams(prefix='o1_',format4outvals='{:.2f}',parammapping={'Ngood':'Nvalid'},skipparams=['converged','i','Nclip','Nmask'])
@@ -154,9 +216,7 @@ class cleanuplcclass(SNloopclass):
             self.lc.t.at[index,'o2_Nskipped'] = calcaverage.Nskipped
             self.lc.t.at[index,'o2_Nin'] = self.lc.t.at[index,'Noffsetlc'] - self.lc.t.at[index,'o0_Nmasked']
 
-    def makecuts(self,N_MJD=None):
-        if N_MJD is None:
-            N_MJD = len(self.lc.t['MJD'])
+    def make_c1c2_cuts(self):
 
         o0max_X2norm = self.cfg.params['cleanlc']['o0']['PSF_X2norm']['o0max_X2norm']
         o1max_X2norm = self.cfg.params['cleanlc']['o1']['o1max_X2norm']
@@ -164,7 +224,7 @@ class cleanuplcclass(SNloopclass):
         o2max_Nclipped = self.cfg.params['cleanlc']['o2']['o2max_Nclipped']
         o2max_Nused = self.cfg.params['cleanlc']['o2']['o2max_Nused']
 
-        for index in range(N_MJD):
+        for index in self.lc.getindices():
             # check self.flag_o0_uncertainty = 0x1 and self.flag_o0_X2norm = 0x2. TO DO: CUT0 UNCERTAINTIES
             if self.lc.t.at[index,'chi/N'] < o0max_X2norm:
                 # if o1_x2norm < 2.5 and o1_mean_err < 3.0 : good. else : o2
@@ -180,10 +240,43 @@ class cleanuplcclass(SNloopclass):
                     # else: bad.
                     else:
                         self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_o2_bad)
-            # else: bad. do nothing because measurements already flagged with o0        
+            # else: bad. do nothing because measurements already flagged with o0  
+            
+        
+        # ADD: copy mask over to control lcs!
 
     def cleanuplcloop(self,args,SNindex):
         # o0 - mask lcs based on PSF X2norm and uncertainty
+
+        (MJD_SN,uJy,duJy,Mask) = self.make_c0_cuts(SNindex,prepare_c1c2_cuts = self.cfg.params['cleanlc']['apply_o1o2'])
+            
+        if self.verbose>1:
+            print(self.flux_colname,': ',uJy)
+            print(self.dflux_colname,': ',duJy)
+            print('Mask: ',Mask)
+
+        # load main lc
+        self.load_lc(SNindex,offsetindex=0,filt=self.filt)
+            
+        # calculate offset stats
+        print('Calculating offset statistics...')
+        self.calc_c1c2_stats(uJy,duJy,Mask)    
+        self.lc.write()    
+        
+        # make cuts on good, bad, and ok measurements
+        print('Making cuts based on offset statistics...')
+        self.make_c1c2_cuts()
+
+        # round o1 or o2 data and save lc
+        self.lc.t = self.lc.t.round({'o1_mean':4,'o1_mean_err':4,'o1_stddev':4,'o1_X2norm':4})
+        self.lc.t = self.lc.t.round({'o2_mean':4,'o2_mean_err':4,'o2_stddev':4,'o2_X2norm':4})
+        self.save_lc(SNindex=SNindex,offsetindex=0,filt=self.filt,overwrite=True)
+
+
+"""
+    def cleanuplcloop(self,args,SNindex):
+        # o0 - mask lcs based on PSF X2norm and uncertainty
+    
 
         for offsetindex in self.RADECtable.getindices():
             # load lc
@@ -276,7 +369,7 @@ class cleanuplcclass(SNloopclass):
         self.lc.t = self.lc.t.round({'o1_mean':4,'o1_mean_err':4,'o1_stddev':4,'o1_X2norm':4})
         self.lc.t = self.lc.t.round({'o2_mean':4,'o2_mean_err':4,'o2_stddev':4,'o2_X2norm':4})
         self.save_lc(SNindex=SNindex,offsetindex=0,filt=self.filt,overwrite=True)
-
+"""
 
 if __name__ == '__main__':
 

@@ -107,9 +107,9 @@ class cleanuplcclass(SNloopclass):
 			dropcols=[]
 			if 'Noffsetlc' in self.lc.t.columns: dropcols.append('Noffsetlc')
 			for col in self.lc.t.columns:
-				if re.search('^c',col): dropcols.append(col)
+				if re.search('^c\d_',col): dropcols.append(col)
 			if len(dropcols)>0: self.lc.t.drop(columns=dropcols,inplace=True)
-			
+		
 			if self.cfg.params['cleanlc']['cut0']['PSF_uncertainty']['apply'] is True:
 				print('Applying uncertainty cleanup...')
 				self.c0_PSF_uncertainty_cut()
@@ -125,7 +125,7 @@ class cleanuplcclass(SNloopclass):
 				# make sure MJD_SN is the same as self.lc.t['MJD'], then fill array of control lc uJy, duJy, Mask
 				if (len(self.lc.t) != N_MJD) or (np.array_equal(MJD_SN, self.lc.t['MJD']) is False):
 					print('ERROR!!!')
-					print('SN MJD:',SN_MJD)
+					print('SN MJD:',MJD_SN)
 					print('Control LC MJD:',self.lc.t['MJD'])
 					raise RuntimeError('SN lc not equal to control lc for controlindex {}! Please run verifyMJD.py'.format(offsetindex))
 				else:
@@ -202,9 +202,6 @@ class cleanuplcclass(SNloopclass):
 		"""
 
 	def make_c1c2_cuts(self):
-		# load main lc
-		self.load_lc(SNindex,offsetindex=0,filt=self.filt)
-
 		c0max_X2norm = self.cfg.params['cleanlc']['cut0']['PSF_X2norm']['c0max_X2norm']
 		c1max_X2norm = self.cfg.params['cleanlc']['cut1']['c1max_X2norm']
 		c1max_meannorm = self.cfg.params['cleanlc']['cut1']['c1max_meannorm']
@@ -219,10 +216,10 @@ class cleanuplcclass(SNloopclass):
 					self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_c1_good)
 				else:
 					# if c2_Nskipped = 0 and c2_X2norm < 2.5 : ok1.
-					if (self.lc.t.at[index,'c2_Nskipped']==0) and (self.lc.t.at[index,'c2_X2norm']<2.5):
+					if (self.lc.t.at[index,'c2_Nclip']==0) and (self.lc.t.at[index,'c2_X2norm']<2.5):
 						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_c2_good)
 					# if c2_X2norm < 2.5 and c2_Nskipped <= 1 and c2_Nused >= 3 : ok2.
-					elif (self.lc.t.at[index,'c2_X2norm']<2.5) and (self.lc.t.at[index,'c2_Nskipped'].astype(int)<=c2max_Nclipped) and (self.lc.t.at[index,'c2_Nused'].astype(int)>=c2max_Nused):
+					elif (self.lc.t.at[index,'c2_X2norm']<2.5) and (self.lc.t.at[index,'c2_Nclip'].astype(int)<=c2max_Nclipped) and (self.lc.t.at[index,'c2_Ngood'].astype(int)>=c2max_Nused):
 						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_c2_ok)
 					# else: bad.
 					else:
@@ -230,11 +227,11 @@ class cleanuplcclass(SNloopclass):
 
 		# save main lc
 		self.save_lc(SNindex=SNindex,offsetindex=0,filt=self.filt,overwrite=True)
-			
+		
+		print('Copying over SN c2 mask column to control lc mask column...')
 		# get c1 and c2 masks from SN lc and copy to control lc mask column
-		flags = self.flag_c1_good | self.flag_c2_bad | self.flag_c2_ok | self.flag_c2_good
-		flags_array = np.full(self.lc.t['Mask'].shape,flags)
-		omask = self.lc.t['Mask'] & flags_array
+		flags_array = np.full(self.lc.t['Mask'].shape,0xff0)
+		omask = np.bitwise_and(self.lc.t['Mask'],flags_array)
 		# loop through control lcs
 		for offsetindex in range(1,len(self.RADECtable.t)):
 			# load control lc
@@ -244,11 +241,13 @@ class cleanuplcclass(SNloopclass):
 			# copy over SN c1 and c2 masks to control lc mask column
 			self.lc.t['Mask'] = np.bitwise_or(self.lc.t['Mask'],omask)
 			# save lc
+			print('... done, saving lc')
 			self.save_lc(SNindex=SNindex,offsetindex=offsetindex,filt=self.filt,overwrite=True)
 
 	def cleanuplcloop(self,args,SNindex):
 		# load main lc
 		self.load_lc(SNindex,offsetindex=0,filt=self.filt)
+		print(self.lc.t.columns)
 
 		# cut0 - mask lcs based on PSF X2norm and uncertainty
 		(MJD_SN,uJy,duJy,Mask) = self.make_c0_cuts(SNindex,prepare_c1c2_cuts = self.cfg.params['cleanlc']['apply_c1c2'])

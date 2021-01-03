@@ -46,9 +46,8 @@ class SNloopclass(pdastroclass):
         # offsetstats
         self.flag_o0_uncertainty = 0x1 # decimal: 1
         self.flag_o0_X2norm = 0x2 # decimal: 2
-        self.flag_o0_NaN = 0x8 # decimal: 8
-        
-        
+        #self.flag_o0_NaN = 0x8 # decimal: 8
+             
         self.flag_o1_good = 0x20 # decimal: 32
         self.flag_o2_good = 0x200 # decimal: 512
         self.flag_o2_ok = 0x400 # decimal: 1024

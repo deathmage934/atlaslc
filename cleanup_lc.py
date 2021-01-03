@@ -158,30 +158,28 @@ class cleanuplcclass(SNloopclass):
     def calc_c1c2_stats(self,uJy,duJy,mask):
         N_MJD = uJy.shape[-1]
 
-        c1_param2columnmapping = self.lc.intializecols4statparams(prefix='o1_',format4outvals='{:.2f}',parammapping={'Ngood':'Nvalid'},skipparams=['converged','i','Nclip','Nmask'])
-        c2_param2columnmapping = self.lc.intializecols4statparams(prefix='o2_',format4outvals='{:.2f}',skipparams=['converged','i'])
-        #print(self.lc.t)
-
-        
+        c1_param2columnmapping = self.lc.intializecols4statparams(prefix='c1_',format4outvals='{:.2f}',parammapping={'Ngood':'Nvalid'},skipparams=['converged','i','Nclip','Nmask'])
+        c2_param2columnmapping = self.lc.intializecols4statparams(prefix='c2_',format4outvals='{:.2f}',skipparams=['converged','i'])
+ 
         for index in range(N_MJD):
             pda4MJD = pdastrostatsclass()
             pda4MJD.t['uJy']=uJy[1:,index]
             pda4MJD.t['duJy']=duJy[1:,index]
-            pda4MJD.t['Mask']=np.bitwise_and(mask[1:,index],self.flag_o0_uncertainty | self.flag_o0_X2norm)
+            pda4MJD.t['Mask']=np.bitwise_and(mask[1:,index],self.flag_o0_uncertainty|self.flag_o0_X2norm)
             
-            # o1 stats ....
-            pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',verbose=4,Nsigma=0.0,median_firstiteration=False)
+            # c1 stats ...
+            pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',verbose=1,Nsigma=0.0,median_firstiteration=False)
             # ... and save them into the table
             self.lc.statresults2table(pda4MJD,c1_param2columnmapping,destindex=index)
 
-            # o2 stats ....
-            pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',verbose=4,Nsigma=3.0,median_firstiteration=True)
+            # c2 stats ...
+            pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',maskcol='Mask',maskval=(self.flag_o0_uncertainty|self.flag_o0_X2norm),verbose=1,Nsigma=3.0,median_firstiteration=True)
             # ... and save them into the table
             self.lc.statresults2table(pda4MJD,c2_param2columnmapping,destindex=index)            
             
         return(0)
     
-        ###############################
+        """
         if N_MJD is None:
             N_MJD = len(self.lc.t['MJD'])
 
@@ -215,6 +213,7 @@ class cleanuplcclass(SNloopclass):
             self.lc.t.at[index,'o2_Nused'] = calcaverage.Nused
             self.lc.t.at[index,'o2_Nskipped'] = calcaverage.Nskipped
             self.lc.t.at[index,'o2_Nin'] = self.lc.t.at[index,'Noffsetlc'] - self.lc.t.at[index,'o0_Nmasked']
+        """
 
     def make_c1c2_cuts(self):
 
@@ -247,7 +246,6 @@ class cleanuplcclass(SNloopclass):
 
     def cleanuplcloop(self,args,SNindex):
         # o0 - mask lcs based on PSF X2norm and uncertainty
-
         (MJD_SN,uJy,duJy,Mask) = self.make_c0_cuts(SNindex,prepare_c1c2_cuts = self.cfg.params['cleanlc']['apply_o1o2'])
             
         if self.verbose>1:
@@ -261,15 +259,15 @@ class cleanuplcclass(SNloopclass):
         # calculate offset stats
         print('Calculating offset statistics...')
         self.calc_c1c2_stats(uJy,duJy,Mask)    
-        self.lc.write()    
+        self.lc.write()
         
         # make cuts on good, bad, and ok measurements
         print('Making cuts based on offset statistics...')
         self.make_c1c2_cuts()
 
         # round o1 or o2 data and save lc
-        self.lc.t = self.lc.t.round({'o1_mean':4,'o1_mean_err':4,'o1_stddev':4,'o1_X2norm':4})
-        self.lc.t = self.lc.t.round({'o2_mean':4,'o2_mean_err':4,'o2_stddev':4,'o2_X2norm':4})
+        self.lc.t = self.lc.t.round({'c1_mean':4,'c1_mean_err':4,'c1_stddev':4,'c1_X2norm':4})
+        self.lc.t = self.lc.t.round({'c2_mean':4,'c2_mean_err':4,'c2_stddev':4,'c2_X2norm':4})
         self.save_lc(SNindex=SNindex,offsetindex=0,filt=self.filt,overwrite=True)
 
 

@@ -727,6 +727,8 @@ class pdastrostatsclass(pdastroclass):
 
         # get the indices based on input.
         indices=self.getindices(indices)
+
+        self.reset()
         
         # remove null values if wanted
         if removeNaNs:
@@ -745,14 +747,12 @@ class pdastrostatsclass(pdastroclass):
         # exclude data if wanted
         if maskcol!=None:
             Ntot = len(indices)
-            print('maskval:',maskval)
             indices = self.ix_unmasked(maskcol,maskval=maskval,indices=indices)
             self.statparams['Nmask']= Ntot-len(indices)
             if verbose>1: print('Keeping {:d} out of {:d}, skippin {:d} because of masking in column {} (maskval={})'.format(len(indices),Ntot,Ntot-len(indices),maskcol,maskval))
         else:
             self.statparams['Nmask']= 0
 
-        self.reset()
         while ((self.statparams['i']<Nitmax) or (Nitmax==0)) and (not self.statparams['converged']):
             # median only in first iteration and if wanted
             medianflag = median_firstiteration and (self.statparams['i']==0) and (Nsigma!=None)

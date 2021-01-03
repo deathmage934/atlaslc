@@ -175,6 +175,7 @@ class cleanuplcclass(SNloopclass):
             # c2 stats ...
             pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',maskcol='Mask',maskval=(self.flag_o0_uncertainty|self.flag_o0_X2norm),verbose=1,Nsigma=3.0,median_firstiteration=True)
             # ... and save them into the table
+            print('VVVV',pda4MJD.statparams)
             self.lc.statresults2table(pda4MJD,c2_param2columnmapping,destindex=index)            
             
         return(0)

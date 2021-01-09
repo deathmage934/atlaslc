@@ -18,7 +18,7 @@ from tools import DecInDeg
 #from astrotable import astrotableclass
 from download_atlas_lc import download_atlas_lc_class
 import sigmacut
-from pdastro import pdastroclass, pdastrostatsclass
+from pdastro import pdastroclass, pdastrostatsclass, AnotB
 import mastcasjobs
 import pylab
 import json
@@ -227,6 +227,8 @@ class SNloopclass(pdastroclass):
         mask=np.bitwise_and(self.lc.t['Mask'], flags)
         cuts_indices = np.where(mask==0)
         cuts_indices = cuts_indices[0]
+        #cuts_indices = self.lc.ix_unmasked('Mask',maskval=flags)
+        #bad_data = self.lc.AnotB(self.lc.getindices(),cuts_indices)
         bad_data = np.where(mask!=0)
         bad_data = bad_data[0]
         datacut = len(self.lc.t)-len(self.lc.t.loc[cuts_indices])

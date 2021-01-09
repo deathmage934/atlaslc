@@ -60,7 +60,7 @@ class averagelcclass(SNloopclass):
             if len(ix2)==0:
                 flag_array = np.full(len(ix1),self.flag_day_bad)
                 self.lc.t.loc[ix1,'Mask'] = np.bitwise_or(self.lc.t.loc[ix1,'Mask'],flag_array)
-                self.averagelc.t.loc[lcaverageindex,'Mask'] = int(self.averagelc.t.loc[lcaverageindex,'Mask']) |  self.flag_day_bad
+                self.averagelc.t.loc[lcaverageindex,'Mask'] = int(self.averagelc.t.loc[lcaverageindex,'Mask']) | self.flag_day_bad
                 if self.verbose>1: 
                     print('Length of good and ok measurements = 0, no average flux values')
 

@@ -136,34 +136,29 @@ class averagelcclass(SNloopclass):
             self.averagelc.t[col] = self.averagelc.t[col].astype(np.int32)
 
         avglcfilename = self.lcbasename(SNindex=SNindex,filt=self.filt,controlindex=controlindex,MJDbinsize=MJDbinsize)+'.txt'
-        if self.verbose: self.averagelc.write()
+        if self.verbose>1: self.averagelc.write()
         self.averagelc.write(avglcfilename,overwrite=True,verbose=True)
 
     def averagelcloop(self,SNindex):
         print('###################################\nAveraging LCs...\n###################################')
         
         # loop through SN and control lcs
-        for controlindex in range(0,len(self.RADECtable.t)):
-            
+        for controlindex in range(0,len(self.RADECtable.t)):    
             # stop loop if only SN should be done
             if (not self.cfg.params['averageLC']['apply2offsets']) and (controlindex>0):
                 break
-            
             # load control lc
             if self.verbose: print('Averaging lc for controlID %d' % self.RADECtable.t['ControlID'][controlindex])
             self.load_lc(SNindex,controlindex=controlindex,filt=self.filt)
             if len(self.lc.t)==0: 
                 print('WARNING!!! no data in lc')
                 return(1)
-
             # get sigmacut info and flag for 4-day bins
-            #print('AAAAAAAAAAAAA',self.averagelc.hexcols)
             if not(args.MJDbinsize is None):
                 MJDbinsize = args.MJDbinsize
                 self.calcaveragelc(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
             else:
                 self.calcaveragelc(SNindex,controlindex=controlindex)
-
             # save lc
             self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,overwrite=True)
         print('### Averaging LCs done')

@@ -23,15 +23,15 @@ from cleanup_lc import cleanuplcclass
 from plot_lc import plotlcclass, dataPlot
 from verifyMJD import verifyMJDclass
 #from average_lc import averagelcclass
-from averageLC import averageLCclass
+from averageLC import averagelcclass
 import sigmacut
 from pdastro import pdastroclass, AandB
 
-class downloadlcloopclass(cleanuplcclass,plotlcclass,averageLCclass,verifyMJDclass):
+class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDclass):
 	def __init__(self):
 		cleanuplcclass.__init__(self)
 		plotlcclass.__init__(self)
-		averageLCclass.__init__(self)
+		averagelcclass.__init__(self)
 		self.download_atlas_lc = download_atlas_lc_class()
 
 	def downloadlc(self, SNindex, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, controlindex=None):
@@ -283,6 +283,6 @@ if __name__ == '__main__':
 			downloadlc.cleanuplcloop(args,SNindex)
 			#if args.averagelc: downloadlc.averagelcloop(args,SNindex,controlindex=controlindex)
 			if (args.forcedphot_offset) and (args.averageLC): 
-				downloadlc.averageLCloop(SNindex)
+				downloadlc.averagelcloop(SNindex)
 			if args.plot: 
 				downloadlc.plotlcloop(args,SNindex)

@@ -11,7 +11,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-class averageLCclass(SNloopclass):
+class averagelcclass(SNloopclass):
     def __init__(self):
         SNloopclass.__init__(self)
 
@@ -139,8 +139,8 @@ class averageLCclass(SNloopclass):
         if self.verbose: self.averagelc.write()
         self.averagelc.write(avglcfilename,overwrite=True,verbose=True)
 
-    def averageLCloop(self,SNindex):
-        print('###################################\n### Averaging LCs ...\n###################################')
+    def averagelcloop(self,SNindex):
+        print('###################################\nAveraging LCs...\n###################################')
         
         # loop through SN and control lcs
         for controlindex in range(0,len(self.RADECtable.t)):
@@ -157,8 +157,12 @@ class averageLCclass(SNloopclass):
                 return(1)
 
             # get sigmacut info and flag for 4-day bins
-            print('AAAAAAAAAAAAA',self.averagelc.hexcols)
-            self.calcaveragelc(SNindex,controlindex=controlindex)
+            #print('AAAAAAAAAAAAA',self.averagelc.hexcols)
+            if not(args.MJDbinsize is None):
+                MJDbinsize = args.MJDbinsize
+                self.calcaveragelc(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
+            else:
+                self.calcaveragelc(SNindex,controlindex=controlindex)
 
             # save lc
             self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,overwrite=True)
@@ -166,12 +170,12 @@ class averageLCclass(SNloopclass):
 
 if __name__ == '__main__':
 
-    averageLC = averageLCclass()
-    parser = averageLC.define_options()
+    averagelc = averagelcclass()
+    parser = averagelc.define_options()
     args = parser.parse_args()
 
-    SNindexlist = averageLC.initialize(args)
+    SNindexlist = averagelc.initialize(args)
 
     for SNindex in SNindexlist:
-        averageLC.loadRADEClist(SNindex,filt=averageLC.filt)
-        averageLC.averageLCloop(SNindex)
+        averagelc.loadRADEClist(SNindex,filt=averagelc.filt)
+        averagelc.averagelcloop(SNindex)

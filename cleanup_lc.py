@@ -195,7 +195,7 @@ class cleanuplcclass(SNloopclass):
             if (self.lc.t.loc[index,'c2_X2norm']>self.cfg.params['cleanlc']['cut2']['c2_X2norm_max']):
                 mask |= self.flag_c2_X2norm
             if (np.fabs(self.lc.t.loc[index,'c2_mean']/self.lc.t.loc[index,'c2_mean_err'])>self.cfg.params['cleanlc']['cut2']['c2_absmeannorm_max']):
-                mask |= self.flag_c2_absmeanerr
+                mask |= self.flag_c2_absnormmean
             if (self.lc.t.loc[index,'c2_Nclip']>self.cfg.params['cleanlc']['cut2']['c2_Nclipped_max']):
                 mask |= self.flag_c2_Nclip
             if (self.lc.t.loc[index,'c2_Ngood']<self.cfg.params['cleanlc']['cut2']['c2_Ngood_min']):

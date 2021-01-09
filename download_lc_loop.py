@@ -59,7 +59,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 
 		# save the lc file with the output filename
 		if savelc:
-			self.save_lc(SNindex=SNindex,indices=indices,overwrite=overwrite,fileformat=fileformat,controlindex=controlindex)
+			self.save_lc(SNindex=SNindex,indices=indices,overwrite=overwrite,controlindex=controlindex)
 			for filt in ['c','o']:
 				filename = self.lcbasename(SNindex=SNindex,filt=filt, controlindex=controlindex)+'.txt'
 				if fileformat is None: 

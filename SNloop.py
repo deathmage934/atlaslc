@@ -43,7 +43,7 @@ class SNloopclass(pdastroclass):
         self.averagelc = pdastrostatsclass(hexcols=['Mask'])
 
         # flags for cuts
-        self.flag_c0_X2norm.      = 0x1 
+        self.flag_c0_X2norm       = 0x1 
         self.flag_c0_uncertainty  = 0x2
              
         #self.flag_c1_good = 0x20 

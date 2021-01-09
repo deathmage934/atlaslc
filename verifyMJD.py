@@ -29,7 +29,7 @@ class verifyMJDclass(SNloopclass):
         """
   
         # load main SN lc
-        self.load_lc(SNindex,offsetindex=0,filt=self.filt)
+        self.load_lc(SNindex,controlindex=0,filt=self.filt)
         if self.verbose:
             print('Length of self.lc.t: ',len(self.lc.t))
         if len(self.lc.t) == 0:
@@ -40,7 +40,7 @@ class verifyMJDclass(SNloopclass):
         # ... and save it sorted
         if not(skip_savelc):
             if self.verbose: print('Saving SN LC sorted by MJD')
-            self.save_lc(SNindex,offsetindex=0,filt=self.filt,indices=ix_sorted)
+            self.save_lc(SNindex,controlindex=0,filt=self.filt,indices=ix_sorted)
         # ... and get the sorted MJD array
         MJD_SN = self.lc.t.loc[ix_sorted,'MJD'].to_numpy()
         if self.verbose>2:
@@ -52,7 +52,7 @@ class verifyMJDclass(SNloopclass):
             if self.verbose: print('Control LC %d' % controlindex)
 
             # load offset lc
-            self.load_lc(SNindex,offsetindex=controlindex,filt=self.filt)
+            self.load_lc(SNindex,controlindex=controlindex,filt=self.filt)
             
             # sort it by MJD...
             ix_sorted = self.lc.ix_sort_by_cols('MJD')
@@ -94,7 +94,7 @@ class verifyMJDclass(SNloopclass):
                 ix_sorted = self.lc.ix_sort_by_cols('MJD',indices=indices)
                 if not(skip_savelc):
                     if self.verbose: print('Saving control LC sorted by MJD')
-                    self.save_lc(SNindex,offsetindex=controlindex,filt=self.filt,indices=ix_sorted)
+                    self.save_lc(SNindex,controlindex=controlindex,filt=self.filt,indices=ix_sorted)
                 if self.verbose>2:
                     print('control LC sorted by MJD')
                     self.lc.write(indices=ix_sorted)

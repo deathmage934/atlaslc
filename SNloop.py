@@ -36,27 +36,49 @@ class SNloopclass(pdastroclass):
         self.debug = False
         self.outrootdir = None
         self.filt = None
-
+        
         # tables
-        self.lc = pdastrostatsclass()
+        #self.lc = pdastrostatsclass(hexcols=['Mask'])
+        self.lc = pdastrostatsclass(hexcols=['Mask'])
         self.RADECtable = pdastroclass()
         #self.averagelctable = pdastroclass()
-        self.averagelc = pdastrostatsclass()
+        self.averagelc = pdastrostatsclass(hexcols=['Mask'])
 
-        # offsetstats
-        self.flag_c0_uncertainty = 0x1 # decimal: 1
-        self.flag_c0_X2norm = 0x2 # decimal: 2
-        #self.flag_o0_NaN = 0x8 # decimal: 8
+        # flags for cuts
+        self.flag_c0_X2norm      = 0x1 
+        self.flag_c0_uncertainty = 0x2
              
-        self.flag_c1_good = 0x20 # decimal: 32
-        self.flag_c2_good = 0x200 # decimal: 512
-        self.flag_c2_ok = 0x400 # decimal: 1024
-        self.flag_c2_bad = 0x800 # decimal: 2048
-        self.flag_daysigma = 0x1000 # decimal: 4096
-        self.flag_daysmallnumber = 0x2000 # decimal: 8192
-        self.flag_daybad = 0x4000 # decimal: 16384; for averaged and original lcs
-        self.flags={'flag_c0_uncertainty':0x1,'flag_c0_X2norm':0x2,'flag_c2_ok':0x400,'flag_c2_bad':0x800,'flag_daysigma':0x1000,'flag_daysmallnumber':0x2000,'flag_daybad':0x4000}
+        #self.flag_c1_good = 0x20 
+        self.flag_c1_X2norm     = 0x10
+        self.flag_c1_absnormmean= 0x20
+        
+        self.flag_c2_X2norm     = 0x100
+        self.flag_c2_absmeanerr = 0x200
+        self.flag_c2_Nclip      = 0x400
+        self.flag_c2_Nused      = 0x800
 
+        self.flag_daysigma       = 0x1000 # decimal: 4096
+        self.flag_daysmallnumber = 0x2000 # decimal: 8192
+        #self.flag_daybad         = 0x4000 # decimal: 16384; for averaged and original lcs
+
+        #SOFIA: change this like I did for flag_c0_uncertainty
+        self.flags={'flag_c0_uncertainty':self.flag_c0_uncertainty,
+                    'flag_c0_X2norm':0x2,'flag_c2_ok':0x400,'flag_c2_bad':0x800,'flag_daysigma':0x1000,'flag_daysmallnumber':0x2000,'flag_daybad':0x4000}
+
+        #self.flag_c0_good = 0x10000
+        self.flag_c1_good = 0x20000
+        self.flag_c2_good = 0x40000
+        self.flag_c2_ok   = 0x80000
+
+        self.flag_c0_bad    = 0x100000
+        #self.flag_c1_bad    = 0x200000
+        self.flag_c2_bad    = 0x400000
+        self.flag_day_bad   = 0x800000
+        
+        self.flags_c1c2= self.flag_c1_X2norm|self.flag_c1_absnormmean|self.flag_c2_X2norm|\
+            self.flag_c2_absmeanerr|self.flag_c2_Nclip|self.flag_c2_Nused|\
+                self.flag_c1_good|self.flag_c2_good|self.flag_c2_ok|self.flag_c2_bad 
+        
     def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
         if parser is None:
             parser = argparse.ArgumentParser(usage=usage, conflict_handler=conflict_handler)
@@ -86,18 +108,8 @@ class SNloopclass(pdastroclass):
         parser.add_argument('--xlim_upper', default=None, type=float, help=('set upper x limit when plotting'))
         parser.add_argument('--ylim_lower', default=None, type=float, help=('set lower y limit when plotting'))
         parser.add_argument('--ylim_upper', default=None, type=float, help=('set upper y limit when plotting'))
-        # iniialize offsetstats.py
-        parser.add_argument('--offsetstats', default=False, help=('flag measurements based on day statistics and get average lcs'))
-        # initialize averagelc.py
-        #parser.add_argument('--averagelc', default=False, help=('average lcs'))
-        # skip uncertainty cleanup when cleaning lcs
-        #parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
-        # skip chi square cleanup when cleaning lcs
-        #parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
-        # specify whether or not to make cuts using cleaned data when averaging data
-        #parser.add_argument('--avg_makecuts', default=None, choices=['True','False'], help=('skip cutting measurements using mask column when averaging'))
-        # specify procedure used in offsetstats.py
-        #parser.add_argument('--procedure', default='mask_nan', choices=['mask_nan','mask4mjd'],help=('define offsetstats.py procedure type. can be mask1 or mask2'))
+        # initialize averageLC.py
+        parser.add_argument('--averageLC', default=False, help=('average lcs'))
         parser.add_argument('-v','--verbose', default=0, action='count')
         parser.add_argument('-d', '--debug', action='count', help="debug")
         parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
@@ -109,7 +121,6 @@ class SNloopclass(pdastroclass):
         parser.add_argument('-p', '--params', default=None, action='append', nargs=2, help=('"param val": change parameter in config file (not in section, only ''main part) (default=%(default)s)'))
         parser.add_argument('--pall', action='append', default=None, nargs=2, help=('"param val". change parameter in all sections of config file ''(section independent) (default=%(default)s)'))
         parser.add_argument('--pp', action='append', default=None, nargs=3, help=('"section param val". change parameters in given section of ''config file (default=%(default)s)'))
-        #parser.add_argument('--skip_makecuts_offsetstats',default=False,help=('skip cutting measurements using mask colum when '))
         return parser
 
     def setoutdir(self,outrootdir=None, outsubdir=None):
@@ -134,7 +145,7 @@ class SNloopclass(pdastroclass):
             self.filt=filt
         return(cfgfiles)
 
-    def lcbasename(self, SNindex=None, yse=False, TNSname=None, offsetindex=None, filt=None, MJDbinsize=None):
+    def lcbasename(self, SNindex=None, yse=False, TNSname=None, controlindex=None, filt=None, MJDbinsize=None):
         # define address and file name of the data table
         if yse is True:
             SNID = TNSname
@@ -146,8 +157,8 @@ class SNloopclass(pdastroclass):
         
         basename = '%s/%s/%s' % (self.outrootdir,SNID,SNID)
         
-        if not(offsetindex is None):
-            basename += '_i%03d' % self.RADECtable.t['OffsetID'][offsetindex]
+        if not(controlindex is None):
+            basename += '_i%03d' % self.RADECtable.t['ControlID'][controlindex]
         
         self.filt = self.cfg.params['filter']
         
@@ -156,7 +167,10 @@ class SNloopclass(pdastroclass):
             basename += '.%s' % filt
         
         if not(MJDbinsize is None):
-            basename += '.%ddays' % int(MJDbinsize)
+            if int(MJDbinsize)==MJDbinsize:
+                basename += '.%ddays' % int(MJDbinsize)
+            else:
+                basename += '.%.2fdays' % int(MJDbinsize)
         
         basename += '.lc'
         return(basename)
@@ -172,42 +186,43 @@ class SNloopclass(pdastroclass):
                     SNindexlist.append(index)
         return(SNindexlist)
 
-    def load_lc(self, SNindex, filt=None, fileformat=None, offsetindex=None, MJDbinsize=None):
+    def load_lc(self, SNindex, filt=None, controlindex=None, MJDbinsize=None,hexcols=None):
         # get lc from already existing file
-        filename = self.lcbasename(SNindex=SNindex,filt=filt,offsetindex=offsetindex,MJDbinsize=MJDbinsize)+'.txt' 
-        print('Loading lc: %s' % filename)
-        self.lc.load_spacesep(filename, delim_whitespace=True)
-        if fileformat is None: 
-            fileformat = self.cfg.params['output']['fileformat']
+        filename = self.lcbasename(SNindex=SNindex,filt=filt,controlindex=controlindex,MJDbinsize=MJDbinsize)+'.txt' 
+        self.lc.load_spacesep(filename, delim_whitespace=True, hexcols=hexcols,verbose=(self.verbose>1))
+        if self.lc.default_formatters is None: self.lc.default_formatters = {}
+        self.lc.default_formatters['Mask']='0x{:06x}'.format
+            
         return(0)
 
-    def save_lc(self, SNindex=None, yse=False, TNSname=None, indices=None, filt=None, overwrite=False, fileformat=None, offsetindex=None, MJDbinsize=None):
+    def save_lc(self, SNindex=None, yse=False, TNSname=None, indices=None, filt=None, overwrite=False, controlindex=None, MJDbinsize=None):
         # write table and save lc as file
-        filename = self.lcbasename(SNindex=SNindex, yse=False, filt=filt, offsetindex=offsetindex, MJDbinsize=MJDbinsize)+'.txt'
-        if fileformat is None: 
-            fileformat = self.cfg.params['output']['fileformat']
-        self.lc.write(filename,indices=indices,overwrite=True,verbose=True)
+        filename = self.lcbasename(SNindex=SNindex, yse=False, filt=filt, controlindex=controlindex, MJDbinsize=MJDbinsize)+'.txt'
+        self.lc.write(filename, indices=indices,overwrite=True,verbose=self.verbose)
         #self.lc.write(filename,format=fileformat, overwrite=overwrite,verbose=(self.verbose>0))
         return(0)
 
     def saveRADEClist(self, SNindex, filt=None):
         RADEClistfilename = self.lcbasename(SNindex=SNindex,filt=filt)+'.RADEClist.txt'
-        if self.verbose: 
-            print('Saving RADEClist %s' % RADEClistfilename)
         self.RADECtable.write(RADEClistfilename,overwrite=True,verbose=True)
         return(0)
 
     def loadRADEClist(self, SNindex, filt=None):
         # get RADEClist from alreadt existing file
         RADEClistfilename = self.lcbasename(SNindex=SNindex,filt=filt)+'.RADEClist.txt'
-        if self.verbose: 
-            print('Loading RADEClist %s' % RADEClistfilename)
+        if self.verbose>1: print('Loading RADEClist %s' % RADEClistfilename)
         self.RADECtable.load_spacesep(RADEClistfilename, delim_whitespace=True)
-        if self.verbose>1:
-            print(self.RADECtable.write())
+        
+        # temporary fix to move OffsetID to ControlID
+        if 'OffsetID' in self.RADECtable.t.columns:
+            if 'ControlID' in self.RADECtable.t.columns: self.RADECtable.t.drop(columns=['ControlID'])
+            self.RADECtable.t = self.RADECtable.t.rename(columns={'OffsetID':'ControlID'})
+        
+        if self.verbose>2:
+            self.RADECtable.write()
         return(0)
 
-    def makecuts_indices(self,SNindex,offsetindex,procedure1):
+    def makecuts_indices(self,SNindex,controlindex,procedure1):
         # use when cleaning up data in plot_lc.py or average_lc.py; makes cuts based on mask column created in cleanup_lc.py
         # set flags in precursor.cfg to control what data to cut based on uncertainties and/or chi/N
         if procedure1 == 'plotlc': 
@@ -275,9 +290,8 @@ class SNloopclass(pdastroclass):
         self.flux_colname = self.cfg.params['flux_colname']
         self.dflux_colname = self.cfg.params['dflux_colname']
 
-        self.RADECtable = pdastroclass(columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
-        self.averagelc = pdastroclass(columns=['OffsetID','MJD',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nclip','Ngood','Nexcluded','Mask'])
-        self.RADECtable.default_formatters = {'OffsetID':'{:3d}'.format,
+        self.RADECtable = pdastroclass(columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
+        self.RADECtable.default_formatters = {'ControlID':'{:3d}'.format,
                                               'PatternID':'{:2d}'.format,
                                               'Ra':'{:.8f}'.format,
                                               'Dec':'{:.8f}'.format,
@@ -287,8 +301,12 @@ class SNloopclass(pdastroclass):
                                               'Ndet':'{:4d}'.format,
                                               'Ndet_c':'{:4d}'.format,
                                               'Ndet_o':'{:4d}'.format}
-        self.averagelc.default_formatters = {'OffsetID':'{:3d}'.format,
+
+
+        self.averagelc = pdastroclass(columns=['ControlID','MJD','MJDbin',self.flux_colname,self.dflux_colname,'stdev','X2norm','Nclip','Ngood','Nexcluded','Mask'],hexcols='Mask')
+        self.averagelc.default_formatters = {'ControlID':'{:3d}'.format,
                                             'MJD':'{:.6f}'.format,
+                                            'MJDbin':'{:.2f}'.format,
                                             self.flux_colname:'{:.3f}'.format,
                                             self.dflux_colname:'{:.3f}'.format,
                                             'stdev':'{:.2f}'.format,
@@ -296,11 +314,12 @@ class SNloopclass(pdastroclass):
                                             'Nclip':'{:4d}'.format,
                                             'Ngood':'{:4d}'.format,
                                             'Nexcluded':'{:4d}'.format,
-                                            'Mask':'{:5d}'.format}
+                                            'Mask':'0x{:06x}'.format}
 
         self.load_spacesep(snlistfilename)
-        print(self.t)
-        print(args.SNlist)
+        if self.verbose>1:
+            print(self.t)
+        #print(args.SNlist)
 
         SNindexlist = self.getSNlist(args.SNlist)
         return(SNindexlist)

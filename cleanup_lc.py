@@ -14,268 +14,260 @@ import pandas as pd
 from pdastro import pdastrostatsclass
 
 class cleanuplcclass(SNloopclass):
-	def __init__(self):
-		SNloopclass.__init__(self)
+    def __init__(self):
+        SNloopclass.__init__(self)
 
-	def c0_PSF_uncertainty_cut(self):
-		# define vars
-		c0_Nmedian = self.cfg.params['cleanlc']['cut0']['PSF_uncertainty']['c0_Nmedian']
-		a = c0_Nmedian * median(self.lc.t[self.dflux_colname])
-		print('Flagging all measurements with %s bigger than %i...' % (self.dflux_colname, a))
+    def c0_PSF_uncertainty_cut(self,N_dflux_max):
+        if N_dflux_max is None:
+            if self.verbose>1: print('No cut on the detection uncertainties...')
+            return(0)
+        
+        dflux_max = N_dflux_max * median(self.lc.t[self.dflux_colname])
+        if self.verbose: print('Flagging all measurements with %s bigger than %f...' % (self.dflux_colname, dflux_max))
 
-		# define indices
-		a_indices = np.where(self.lc.t[self.dflux_colname]>a)
-		a_indices = list(a_indices[0])
-		if self.verbose>1: print('Indices: ',a_indices)
-		if len(self.lc.t.loc[a_indices,self.dflux_colname])>0:
-			if self.verbose: print('# %s above %i: %i/%i' % (self.dflux_colname, a, len(self.lc.t.loc[a_indices,self.dflux_colname]),len(self.lc.t[self.dflux_colname])))
-		else:
-			if self.verbose: print('# No measurements flagged!')
+        # get indices
+        a_indices = self.lc.ix_inrange(self.dflux_colname,dflux_max,None)
+        #a_indices = np.where(self.lc.t[self.dflux_colname]>a)
+        #a_indices = list(a_indices[0])
+        #if self.verbose>1: print('Indices: ',a_indices)
+        if len(a_indices)>0:
+            #if self.verbose: print('# %s above %i: %i/%i' % (self.dflux_colname, a, len(self.lc.t.loc[a_indices,self.dflux_colname]),len(self.lc.t[self.dflux_colname])))
+            if self.verbose: print('# %s above %f: %i/%i' % (self.dflux_colname,dflux_max,len(a_indices),len(self.lc.getindices())))
+        else:
+            if self.verbose: print('# No measurements flagged!')
+            return(0)
 
-		# update 'Mask' column
-		flag_c0_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_c0_uncertainty)
-		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_c0_uncertainty) 
-	
-	# ended up not working, will not use but keep just in case
-	'''
-	def flag_bigchi_dynamic(self):
-		# define vars
-		Nsigma = self.cfg.params['cleanlc']['chi/N']['Nsigma']
-		chi_median = median(self.lc.t['chi/N'])
-		chi_stddev = np.std(self.lc.t['chi/N'])
-		a = int(chi_median+(Nsigma*chi_stddev)) # !! CURRENTLY ROUNDS DOWN
-		print('Flagging all measurements with chi/N bigger than %i...' % a)
+        # update 'Mask' column
+        flag_c0_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_c0_uncertainty|self.flag_c0_bad)
+        self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_c0_uncertainty) 
+        return(0)
+        
+    def c0_PSF_X2norm_cut(self,X2norm_max):
+        if X2norm_max is None:
+            if self.verbose>1: print('No cut on the X2norm...')
+            return(0)
+        
+        if self.verbose: print('Flagging all measurements with chi/N bigger than %f...' % X2norm_max)
+        
+        # get indices
+        a_indices = self.lc.ix_inrange('chi/N',X2norm_max,None)
+        #a_indices = np.where(self.lc.t['chi/N']>c0max_X2norm)
+        #a_indices = list(a_indices[0])
+        #if self.verbose>1: print('Indices: ',a_indices) 
+        
+        if len(a_indices)>0:
+            if self.verbose: print('# chi/N above %f: %i/%i' % (X2norm_max,len(a_indices),len(self.lc.getindices())))
+        else:
+            if self.verbose: print('# No measurements flagged!')
+            return(0)
 
-		# define indices
-		a_indices = np.where(self.lc.t['chi/N']>a)
-		a_indices = list(a_indices[0])
-		if self.verbose>1: print('Indices: ',a_indices) 
-		if len(self.lc.t.loc[a_indices,'chi/N'])>0:
-			if self.verbose: print('chi/N above %i: ' % a,len(self.lc.t.loc[a_indices,'chi/N']))
-		else:
-			if self.verbose: print('No measurements flagged!')
+        # update 'Mask' column
+        flag_c0_X2norm = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_c0_X2norm|self.flag_c0_bad)
+        
+        ### CHANGE ME BACK!!!!!
+        #flag_c0_X2norm = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_c0_X2norm|self.flag_daysigma)
+        
+        self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_c0_X2norm)
+        return(0)
+    
+    def make_c0_cuts(self, SNindex, prepare_c1c2_cuts=False):
+        if prepare_c1c2_cuts:
+            # load main SN LC
+            self.load_lc(SNindex, filt=self.filt, controlindex=0, MJDbinsize=None)
+            
+            # construct arrays for control lc data
+            MJD_SN = self.lc.t['MJD']
 
-		# update 'Mask' column
-		flag_cut0_X2norm_dynamic = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_cut0_X2norm_dynamic)
-		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_cut0_X2norm_dynamic)
-		print('Nsigma: %.1f, chi_median: %f, chi_stddev: %f' % (Nsigma, chi_median, chi_stddev))
-	'''
-	
-	def c0_PSF_X2norm_cut(self):
-		# define vars
-		c0max_X2norm = self.cfg.params['cleanlc']['cut0']['PSF_X2norm']['c0max_X2norm']
-		print('Flagging all measurements with chi/N bigger than %i...' % c0max_X2norm)
-		
-		# define indices
-		a_indices = np.where(self.lc.t['chi/N']>c0max_X2norm)
-		a_indices = list(a_indices[0])
-		if self.verbose>1: print('Indices: ',a_indices) 
-		if len(self.lc.t.loc[a_indices,'chi/N'])>0:
-			if self.verbose: print('# chi/N above %i: %i/%i' % (c0max_X2norm,len(self.lc.t.loc[a_indices,'chi/N']),len(self.lc.t['chi/N'])))
-		else:
-			if self.verbose: print('# No measurements flagged!')        
+            N_lc = len(self.RADECtable.t)
+            N_MJD = len(self.lc.t['MJD'])
 
-		# update 'Mask' column
-		flag_c0_X2norm = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_c0_X2norm)
-		self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_c0_X2norm)
-	
-	def make_c0_cuts(self, SNindex, prepare_c1c2_cuts=False):
-		if prepare_c1c2_cuts:
-			N_lc = len(self.RADECtable.t)
-			MJD_SN = self.lc.t['MJD']
-			N_MJD = len(self.lc.t['MJD'])
+            uJy = np.full((N_lc,N_MJD),np.nan)
+            duJy = np.full((N_lc,N_MJD),np.nan)
+            Mask = np.full((N_lc,N_MJD),0,dtype=np.int32)
+        else:
+            MJD_SN = uJy = duJy = Mask = None
+            
+        for controlindex in self.RADECtable.getindices():
+            # load lc
+            self.load_lc(SNindex, filt=self.filt, controlindex=controlindex, MJDbinsize=None)
+            
+            if len(self.lc.t) == 0:
+                raise RuntimeError('No data in control lc with index {}'.format(controlindex))
+                
+            # set Mask to 0
+            self.lc.t['Mask'] = 0
+            
+            # get rid of all old statistic columns
+            dropcols=[]
+            if 'Noffsetlc' in self.lc.t.columns: dropcols.append('Noffsetlc')
+            for col in self.lc.t.columns:
+                if re.search('^c\d_',col): dropcols.append(col)
+                if re.search('^o\d_',col): dropcols.append(col)
+            if len(dropcols)>0: self.lc.t.drop(columns=dropcols,inplace=True)
+            
+            # make c0 cuts
+            self.c0_PSF_uncertainty_cut(self.cfg.params['cleanlc']['cut0']['N_dflux_max'])
+            self.c0_PSF_X2norm_cut(self.cfg.params['cleanlc']['cut0']['PSF_X2norm_max'])
+            
+            #if self.cfg.params['cleanlc']['cut0']['PSF_uncertainty']['apply'] is True:
+            #    self.c0_PSF_uncertainty_cut()
+            #if self.cfg.params['cleanlc']['cut0']['PSF_X2norm']['apply'] is True:
+            #    self.c0_PSF_X2norm_cut()
 
-			# construct arrays for control lc data
-			uJy = np.full((N_lc,N_MJD),np.nan)
-			duJy = np.full((N_lc,N_MJD),np.nan)
-			Mask = np.full((N_lc,N_MJD),0,dtype=np.int32)
-		else:
-			MJD_SN = uJy = duJy = Mask = None
-			
-		for offsetindex in self.RADECtable.getindices():
-			# load lc
-			self.load_lc(SNindex, filt=self.filt, offsetindex=offsetindex, MJDbinsize=None)
-			
-			print('Length of self.lc.t: ',len(self.lc.t))
-			if len(self.lc.t) == 0:
-				raise RuntimeError('No data in control lc with index {}'.format(offsetindex))
-				
-			# set Mask to 0
-			self.lc.t['Mask'] = 0
-			
-			# get rid of all old statistic columns
-			dropcols=[]
-			if 'Noffsetlc' in self.lc.t.columns: dropcols.append('Noffsetlc')
-			for col in self.lc.t.columns:
-				if re.search('^c\d_',col): dropcols.append(col)
-			if len(dropcols)>0: self.lc.t.drop(columns=dropcols,inplace=True)
-		
-			if self.cfg.params['cleanlc']['cut0']['PSF_uncertainty']['apply'] is True:
-				print('Applying uncertainty cleanup...')
-				self.c0_PSF_uncertainty_cut()
-			else:
-				print('Skipping uncertainty cleanup...')
-			if self.cfg.params['cleanlc']['cut0']['PSF_X2norm']['apply'] is True:
-				print('Applying X2norm static cleanlc')
-				self.c0_PSF_X2norm_cut()
-			else:
-				print('Skipping X2norm cleanup...')
+            # for later c1/c2 cuts: prepare the flux,dflux,mask arrays of all light curves
+            if prepare_c1c2_cuts and controlindex!=0:
+                # make sure MJD_SN is the same as self.lc.t['MJD'], then fill array of control lc uJy, duJy, Mask
+                if (len(self.lc.t) != N_MJD) or (np.array_equal(MJD_SN, self.lc.t['MJD']) is False):
+                    print('ERROR!!!')
+                    print('SN MJD:',MJD_SN)
+                    print('Control LC MJD:',self.lc.t['MJD'])
+                    raise RuntimeError('SN lc not equal to control lc for controlindex {}! Please run verifyMJD.py'.format(controlindex))
+                else:
+                    uJy[controlindex,:] = self.lc.t[self.flux_colname]
+                    duJy[controlindex,:] = self.lc.t[self.dflux_colname]
+                    Mask[controlindex,:] = self.lc.t['Mask']
 
-			if prepare_c1c2_cuts and offsetindex!=0:
-				# make sure MJD_SN is the same as self.lc.t['MJD'], then fill array of control lc uJy, duJy, Mask
-				if (len(self.lc.t) != N_MJD) or (np.array_equal(MJD_SN, self.lc.t['MJD']) is False):
-					print('ERROR!!!')
-					print('SN MJD:',MJD_SN)
-					print('Control LC MJD:',self.lc.t['MJD'])
-					raise RuntimeError('SN lc not equal to control lc for controlindex {}! Please run verifyMJD.py'.format(offsetindex))
-				else:
-					uJy[offsetindex,:] = self.lc.t[self.flux_colname]
-					duJy[offsetindex,:] = self.lc.t[self.dflux_colname]
-					Mask[offsetindex,:] = self.lc.t['Mask']
+            # Save the light curve with cuts in Mask
+            self.save_lc(SNindex=SNindex,filt=self.filt,overwrite=True,controlindex=controlindex)
 
-			self.save_lc(SNindex=SNindex,filt=self.filt,overwrite=True,offsetindex=offsetindex)
+        return(MJD_SN,uJy,duJy,Mask)
+        
 
-		return(MJD_SN,uJy,duJy,Mask)
-		
+    def calc_c1c2_stats(self,uJy,duJy,mask):
+        # load main lc
+        self.load_lc(SNindex,controlindex=0)
 
-	def calc_c1c2_stats(self,uJy,duJy,mask):
-		# load main lc
-		self.load_lc(SNindex,offsetindex=0,filt=self.filt)
+        N_MJD = uJy.shape[-1]
 
-		N_MJD = uJy.shape[-1]
-
-		c1_param2columnmapping = self.lc.intializecols4statparams(prefix='c1_',format4outvals='{:.2f}',parammapping={'Ngood':'Nvalid'},skipparams=['converged','i','Nclip','Nmask'])
-		c2_param2columnmapping = self.lc.intializecols4statparams(prefix='c2_',format4outvals='{:.2f}',skipparams=['converged','i'])
+        c1_param2columnmapping = self.lc.intializecols4statparams(prefix='c1_',format4outvals='{:.2f}',parammapping={'Ngood':'Nvalid'},skipparams=['converged','i','Nclip','Nmask'])
+        c2_param2columnmapping = self.lc.intializecols4statparams(prefix='c2_',format4outvals='{:.2f}',skipparams=['converged','i'])
  
-		for index in range(N_MJD):
-			pda4MJD = pdastrostatsclass()
-			pda4MJD.t['uJy']=uJy[1:,index]
-			pda4MJD.t['duJy']=duJy[1:,index]
-			pda4MJD.t['Mask']=np.bitwise_and(mask[1:,index],self.flag_c0_uncertainty|self.flag_c0_X2norm)
-			
-			# c1 stats ...
-			pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',verbose=1,Nsigma=0.0,median_firstiteration=False)
-			# ... and save them into the table
-			self.lc.statresults2table(pda4MJD,c1_param2columnmapping,destindex=index)
+        for index in range(N_MJD):
+            pda4MJD = pdastrostatsclass()
+            pda4MJD.t['uJy']=uJy[1:,index]
+            pda4MJD.t['duJy']=duJy[1:,index]
+            pda4MJD.t['Mask']=np.bitwise_and(mask[1:,index],self.flag_c0_uncertainty|self.flag_c0_X2norm)
+            
+            # c1 stats ...
+            pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',verbose=1,Nsigma=0.0,median_firstiteration=False)
+            # ... and save them into the table
+            self.lc.statresults2table(pda4MJD,c1_param2columnmapping,destindex=index)
 
-			# c2 stats ...
-			pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',maskcol='Mask',maskval=(self.flag_c0_uncertainty|self.flag_c0_X2norm),verbose=1,Nsigma=3.0,median_firstiteration=True)
-			# ... and save them into the table
-			self.lc.statresults2table(pda4MJD,c2_param2columnmapping,destindex=index)            
-			
-		return(0)
-	
-		"""
-		if N_MJD is None:
-			N_MJD = len(self.lc.t['MJD'])
+            # c2 stats ...
+            pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',maskcol='Mask',maskval=(self.flag_c0_uncertainty|self.flag_c0_X2norm),verbose=1,Nsigma=3.0,median_firstiteration=True)
+            # ... and save them into the table
 
-		for index in range(N_MJD):
-			uJy4MJD = uJy[1:,index]
-			duJy4MJD = duJy[1:,index]
-			Mask4MJD = mask[1:,index]
-			# sigmacut and get statistics
-			calcaverage=sigmacut.calcaverageclass()
-			self.lc.t.at[index,'o0_Nmasked'] = np.count_nonzero(Mask4MJD)
+            self.lc.statresults2table(pda4MJD,c2_param2columnmapping,destindex=index)            
 
-			# mask_nan (o1) sigmacut
-			mask1 = np.bitwise_and(Mask4MJD, 0x8)
-			calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=mask1,verbose=2,Nsigma=0.0,median_firstiteration=True,saveused=True)
-			# add columns to self.lc.t
-			self.lc.t.at[index,'o1_mean'] = calcaverage.mean
-			self.lc.t.at[index,'o1_mean_err'] = calcaverage.mean_err
-			self.lc.t.at[index,'o1_stddev'] = calcaverage.stdev
-			self.lc.t.at[index,'o1_X2norm'] = calcaverage.X2norm
-			self.lc.t.at[index,'o1_Nvalid'] = calcaverage.Nused
-			self.lc.t.at[index,'o1_Nnan'] = calcaverage.Nskipped
-			self.lc.t.at[index,'Noffsetlc'] = self.lc.t.at[index,'o1_Nvalid'] + self.lc.t.at[index,'o1_Nnan']
-			
-			# mask4mjd (o2) sigmacut
-			calcaverage.calcaverage_sigmacutloop(uJy4MJD,noise=duJy4MJD,mask=Mask4MJD,verbose=2,Nsigma=3.0,median_firstiteration=True,saveused=True)
-			# add columns to self.lc.t
-			self.lc.t.at[index,'o2_mean'] = calcaverage.mean
-			self.lc.t.at[index,'o2_mean_err'] = calcaverage.mean_err
-			self.lc.t.at[index,'o2_stddev'] = calcaverage.stdev
-			self.lc.t.at[index,'o2_X2norm'] = calcaverage.X2norm
-			self.lc.t.at[index,'o2_Nused'] = calcaverage.Nused
-			self.lc.t.at[index,'o2_Nskipped'] = calcaverage.Nskipped
-			self.lc.t.at[index,'o2_Nin'] = self.lc.t.at[index,'Noffsetlc'] - self.lc.t.at[index,'o0_Nmasked']
-		"""
+        # Save the light curve with cuts in Mask
+        self.save_lc(SNindex=SNindex,overwrite=True,controlindex=0)
+           
+        return(0)
 
-	def make_c1c2_cuts(self):
-		c0max_X2norm = self.cfg.params['cleanlc']['cut0']['PSF_X2norm']['c0max_X2norm']
-		c1max_X2norm = self.cfg.params['cleanlc']['cut1']['c1max_X2norm']
-		c1max_meannorm = self.cfg.params['cleanlc']['cut1']['c1max_meannorm']
-		c2max_Nclipped = self.cfg.params['cleanlc']['cut2']['c2max_Nclipped']
-		c2max_Nused = self.cfg.params['cleanlc']['cut2']['c2max_Nused']
+    def make_c1c2_cuts(self):
+        #c1_X2norm_max = self.cfg.params['cleanlc']['cut1']['c1_X2norm_max']
+        #c1_absmeannorm_max = self.cfg.params['cleanlc']['cut1']['c1_absmeannorm_max']
+        #c2_X2norm_max = self.cfg.params['cleanlc']['cut2']['c2_X2norm_max']
+        #c2_Nclipped_max = self.cfg.params['cleanlc']['cut2']['c2_Nclipped_max']
+        #c2_Nused_max = self.cfg.params['cleanlc']['cut2']['c2_Nused_max']
 
-		for index in self.lc.getindices():
-			# check self.flag_c0_uncertainty = 0x1 and self.flag_c0_X2norm = 0x2. TO DO: CUT0 UNCERTAINTIES
-			if self.lc.t.at[index,'chi/N'] < c0max_X2norm:
-				# if c1_x2norm < 2.5 and c1_mean_err < 3.0 : good. else : c2
-				if (self.lc.t.at[index,'c1_X2norm']<c1max_X2norm) and (self.lc.t.at[index,'c1_mean_err']<c1max_meannorm):
-					self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_c1_good)
-				else:
-					# if c2_Nskipped = 0 and c2_X2norm < 2.5 : ok1.
-					if (self.lc.t.at[index,'c2_Nclip']==0) and (self.lc.t.at[index,'c2_X2norm']<2.5):
-						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_c2_good)
-					# if c2_X2norm < 2.5 and c2_Nskipped <= 1 and c2_Nused >= 3 : ok2.
-					elif (self.lc.t.at[index,'c2_X2norm']<2.5) and (self.lc.t.at[index,'c2_Nclip'].astype(int)<=c2max_Nclipped) and (self.lc.t.at[index,'c2_Ngood'].astype(int)>=c2max_Nused):
-						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_c2_ok)
-					# else: bad.
-					else:
-						self.lc.t.at[index,'Mask'] = np.bitwise_or(self.lc.t.at[index,'Mask'],self.flag_c2_bad)
+        # load main lc
+        self.load_lc(SNindex,controlindex=0)
 
-		# save main lc
-		self.save_lc(SNindex=SNindex,offsetindex=0,filt=self.filt,overwrite=True)
-		
-		print('Copying over SN c2 mask column to control lc mask column...')
-		# get c1 and c2 masks from SN lc and copy to control lc mask column
-		flags_array = np.full(self.lc.t['Mask'].shape,0xff0)
-		omask = np.bitwise_and(self.lc.t['Mask'],flags_array)
-		# loop through control lcs
-		for offsetindex in range(1,len(self.RADECtable.t)):
-			# load control lc
-			self.load_lc(SNindex,offsetindex=offsetindex,filt=self.filt)
-			if self.verbose>1: print('Length of self.lc.t: ',len(self.lc.t))
-			if len(self.lc.t)==0: return(1)
-			# copy over SN c1 and c2 masks to control lc mask column
-			self.lc.t['Mask'] = np.bitwise_or(self.lc.t['Mask'],omask)
-			# save lc
-			print('... done, saving lc')
-			self.save_lc(SNindex=SNindex,offsetindex=offsetindex,filt=self.filt,overwrite=True)
+        for index in self.lc.getindices():
+            # c1 cut!
+            mask = 0
+            if (self.lc.t.loc[index,'c1_X2norm']>=self.cfg.params['cleanlc']['cut1']['c1_X2norm_max']): 
+                mask |= self.flag_c1_X2norm
+            if (np.fabs(self.lc.t.loc[index,'c1_mean']/self.lc.t.loc[index,'c1_mean_err'])>=self.cfg.params['cleanlc']['cut1']['c1_absmeannorm_max']):  
+                mask |= self.flag_c1_absnormmean
+                
+            if mask == 0:
+                self.lc.t.loc[index,'Mask'] |= self.flag_c1_good
+                # if the c1 cut indicates a good measurement, skip c2 cut
+                continue                
+            else:
+                self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],mask)
+                
+                
+            # c2 cut!
+            mask = 0
+            if (self.lc.t.loc[index,'c2_X2norm']>self.cfg.params['cleanlc']['cut2']['c2_X2norm_max']):
+                mask |= self.flag_c2_X2norm
+            if (np.fabs(self.lc.t.loc[index,'c2_mean']/self.lc.t.loc[index,'c2_mean_err'])>self.cfg.params['cleanlc']['cut2']['c2_absmeannorm_max']):
+                mask |= self.flag_c2_absmeanerr
+            if (self.lc.t.loc[index,'c2_Nclip']>self.cfg.params['cleanlc']['cut2']['c2_Nclipped_max']):
+                mask |= self.flag_c2_Nclip
+            if (self.lc.t.loc[index,'c2_Ngood']<self.cfg.params['cleanlc']['cut2']['c2_Ngood_min']):
+                mask |= self.flag_c2_Nused
 
-	def cleanuplcloop(self,args,SNindex):
-		# load main lc
-		self.load_lc(SNindex,offsetindex=0,filt=self.filt)
-		print(self.lc.t.columns)
+            if mask == 0 and self.lc.t.loc[index,'c2_Nclip']==0:
+                self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_good)
+                # all good!!
+                continue         
+            elif mask == 0:
+                self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_ok)
+                # all good!!
+                continue         
+            else:
+                self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],mask|self.flag_c2_bad)
+                
+        if self.verbose>2:
+            self.lc.write()
+        # save main lc
+        self.save_lc(SNindex=SNindex,controlindex=0,filt=self.filt,overwrite=True)
+        
+        print('Copying over SN c2 mask column to control lc mask column...')
+        # get c1 and c2 masks from SN lc and copy to control lc mask column
+        flags_array = np.full(self.lc.t['Mask'].shape,self.flags_c1c2)
+        
+        
+        omask = np.bitwise_and(self.lc.t['Mask'],flags_array)
+        # loop through control lcs
+        for controlindex in range(1,len(self.RADECtable.t)):
+            # load control lc
+            self.load_lc(SNindex,controlindex=controlindex,filt=self.filt)
+            if self.verbose>1: print('Length of self.lc.t: ',len(self.lc.t))
+            if len(self.lc.t)==0: return(1)
+            # copy over SN c1 and c2 masks to control lc mask column
+            self.lc.t['Mask'] = np.bitwise_or(self.lc.t['Mask'],omask)
+            # save lc
+            print('... done, saving lc')
+            self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,overwrite=True)
 
-		# cut0 - mask lcs based on PSF X2norm and uncertainty
-		(MJD_SN,uJy,duJy,Mask) = self.make_c0_cuts(SNindex,prepare_c1c2_cuts = self.cfg.params['cleanlc']['apply_c1c2'])
-			
-		if self.verbose>1:
-			print(self.flux_colname,': ',uJy)
-			print(self.dflux_colname,': ',duJy)
-			print('Mask: ',Mask)
-			
-		# calculate offset stats
-		print('Calculating offset statistics...')
-		self.calc_c1c2_stats(uJy,duJy,Mask)    
-		self.lc.write()
-		
-		# make cuts on good, bad, and ok measurements
-		print('Making cuts based on offset statistics...')
-		self.make_c1c2_cuts()
+    def cleanuplcloop(self,args,SNindex):
+
+        # cut0 - mask lcs based on PSF X2norm and uncertainty
+        (MJD_SN,uJy,duJy,Mask) = self.make_c0_cuts(SNindex,prepare_c1c2_cuts = self.cfg.params['cleanlc']['apply_c1c2'])
+        
+        if not self.cfg.params['cleanlc']['apply_c1c2']:
+            print('Skipping c1c2 cuts since apply_c1c2 is ',self.cfg.params['cleanlc']['apply_c1c2'])
+            return(0)
+        
+        if self.verbose>2:
+            print(self.flux_colname,': ',uJy)
+            print(self.dflux_colname,': ',duJy)
+            print('Mask: ',Mask)
+            
+        # calculate control lc stats
+        print('Calculating control LCs statistics...')
+        self.calc_c1c2_stats(uJy,duJy,Mask)    
+
+        
+        # make cuts on good, bad, and ok measurements
+        print('Making cuts based on control LCs statistics...')
+        self.make_c1c2_cuts()
 
 if __name__ == '__main__':
 
-	cleanuplc = cleanuplcclass()
-	parser = cleanuplc.define_options()
-	args = parser.parse_args()
+    cleanuplc = cleanuplcclass()
+    parser = cleanuplc.define_options()
+    args = parser.parse_args()
 
-	SNindexlist = cleanuplc.initialize(args)
+    SNindexlist = cleanuplc.initialize(args)
 
-	for SNindex in SNindexlist:
-		cleanuplc.loadRADEClist(SNindex=SNindex,filt=cleanuplc.filt)
-		cleanuplc.cleanuplcloop(args,SNindex)
+    for SNindex in SNindexlist:
+        cleanuplc.loadRADEClist(SNindex=SNindex,filt=cleanuplc.filt)
+        cleanuplc.cleanuplcloop(args,SNindex)
 
-	print('\n')
+    print('\n')

@@ -23,20 +23,20 @@ from cleanup_lc import cleanuplcclass
 from plot_lc import plotlcclass, dataPlot
 from verifyMJD import verifyMJDclass
 #from average_lc import averagelcclass
-from offsetstats import offsetstatsclass
+from averageLC import averageLCclass
 import sigmacut
 from pdastro import pdastroclass, AandB
 
-class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDclass):
+class downloadlcloopclass(cleanuplcclass,plotlcclass,averageLCclass,verifyMJDclass):
 	def __init__(self):
 		cleanuplcclass.__init__(self)
 		plotlcclass.__init__(self)
-		offsetstatsclass.__init__(self)
+		averageLCclass.__init__(self)
 		self.download_atlas_lc = download_atlas_lc_class()
 
-	def downloadlc(self, SNindex, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, offsetindex=None):
-		RA = self.RADECtable.t.at[offsetindex,'Ra']
-		Dec = self.RADECtable.t.at[offsetindex,'Dec']
+	def downloadlc(self, SNindex, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, controlindex=None):
+		RA = self.RADECtable.t.at[controlindex,'Ra']
+		Dec = self.RADECtable.t.at[controlindex,'Dec']
 
 		self.download_atlas_lc.verbose = self.verbose
 		self.download_atlas_lc.debug = self.debug
@@ -59,9 +59,9 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDc
 
 		# save the lc file with the output filename
 		if savelc:
-			self.save_lc(SNindex=SNindex,indices=indices,overwrite=overwrite,fileformat=fileformat,offsetindex=offsetindex)
+			self.save_lc(SNindex=SNindex,indices=indices,overwrite=overwrite,fileformat=fileformat,controlindex=controlindex)
 			for filt in ['c','o']:
-				filename = self.lcbasename(SNindex=SNindex,filt=filt, offsetindex=offsetindex)+'.txt'
+				filename = self.lcbasename(SNindex=SNindex,filt=filt, controlindex=controlindex)+'.txt'
 				if fileformat is None: 
 					fileformat = self.cfg.params['output']['fileformat']
 				detections4filt=np.where(self.lc.t['F']==filt)
@@ -79,7 +79,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDc
 		if not(pattern is None):
 			pattern_list = pattern
 			print('Pattern(s) set to ',pattern_list)
-			OffsetID = 1
+			ControlID = 1
 			foundflag = False
 
 			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree) # why not just put in RA var?? lol
@@ -127,10 +127,10 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDc
 				else:
 					raise RuntimeError("Pattern %s is not defined" % pattern)
 
-				# sets up RADECtable, fills in OffsetID, Ra, Dec, RaNew, DecNew for (n*len(radii)) offsets
+				# sets up RADECtable, fills in ControlID, Ra, Dec, RaNew, DecNew for (n*len(radii)) offsets
 				if foundflag is False:
 					foundflag = True
-					df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
+					df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 					self.RADECtable.t = self.RADECtable.t.append(df, ignore_index=True)
 				for radius in radii:
 					R = Angle(radius,u.arcsec)
@@ -164,9 +164,9 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDc
 							offset_sep = c1.separation(c2)
 							offset_sep = offset_sep.arcsecond
 							if offset_sep < mindist:
-								print('Offset with OffsetID %d too close to SN with distance of %f arcsec, skipping...' % (OffsetID, offset_sep))
+								print('Offset with ControlID %d too close to SN with distance of %f arcsec, skipping...' % (ControlID, offset_sep))
 								continue
-						df = pd.DataFrame([[OffsetID,PatternID,RAnew.degree,DECnew.degree,RAdistance.arcsec,DECoffset.arcsec,radius,0,0,0]],columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
+						df = pd.DataFrame([[ControlID,PatternID,RAnew.degree,DECnew.degree,RAdistance.arcsec,DECoffset.arcsec,radius,0,0,0]],columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 						self.RADECtable.t = self.RADECtable.t.append(df,ignore_index=True)
 
 						if self.verbose>1:
@@ -178,17 +178,17 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDc
 							print('#Dec offset: %f arcsec' % DECoffset.arcsec)
 						if self.verbose:
 							print('#Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew.degree, DECnew.degree))
-						OffsetID += 1
+						ControlID += 1
 		else:
 			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree) # just put in RA var
 			Dec = Angle(DecInDeg(self.t.at[SNindex,'dec']),u.degree) # just put in Dec var
-			df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['OffsetID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
+			df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 			self.RADECtable.t = self.RADECtable.t.append(df, ignore_index=True)
 
-	def downloadoffsetlc(self, SNindex, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None,pattern=None):
-		print('Offset status: ',forcedphot_offset)
+	def downloadcontrollc(self, SNindex, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None,pattern=None):
+		print('Control LC status: ',forcedphot_offset)
 		if forcedphot_offset == 'True':
-			#print('Running forcedphot offsets lc for %s...' % self.t.at[SNindex,'tnsname'])
+			#print('Running forcedphot Control lc with offsets for %s...' % self.t.at[SNindex,'tnsname'])
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
 			
@@ -198,7 +198,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDc
 			# add new row for each offset using data from RADECtable
 			for i in range(len(self.RADECtable.t)):
 				if self.verbose:
-					print(self.RADECtable.write(indices=i, columns=['OffsetID','Ra','Dec']))
+					print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
 
 				#RA = self.RADECtable.t.at[i,'Ra']
 				#Dec = self.RADECtable.t.at[i,'Dec']
@@ -207,7 +207,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDc
 							 savelc=savelc,
 							 overwrite=overwrite,
 							 fileformat=fileformat,
-							 offsetindex=i)
+							 controlindex=i)
 				print('Length of lc: ',len(self.lc.t))
 				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
 				ofilt = np.where(self.lc.t['F']=='o')
@@ -219,7 +219,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDc
 				self.saveRADEClist(SNindex,filt='c')
 				self.saveRADEClist(SNindex,filt='o')
 		else:
-			#print('Skipping forcedphot offsets lc for %s...' % self.t.at[SNindex,'tnsname'])
+			#print('Skipping forcedphot control lc for %s...' % self.t.at[SNindex,'tnsname'])
 			# only add SN data in new row without offsets
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
@@ -231,13 +231,13 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,offsetstatsclass,verifyMJDc
 			
 			for i in range(len(self.RADECtable.t)):
 				if self.verbose:
-					print(self.RADECtable.write(indices=i, columns=['OffsetID', 'Ra', 'Dec']))
+					print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
 				self.downloadlc(SNindex,
 							 lookbacktime_days=lookbacktime_days,
 							 savelc=savelc,
 							 overwrite=overwrite,
 							 fileformat=fileformat,
-							 offsetindex=i)
+							 controlindex=i)
 				
 				print('Length of lc: ',len(self.lc.t))
 				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
@@ -277,12 +277,12 @@ if __name__ == '__main__':
 		if not(isinstance(downloadlc.t.at[SNindex,'tnsname'],str)):
 			print('\nnan detected, skipping...')
 		else:
-			downloadlc.downloadoffsetlc(SNindex,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
+			downloadlc.downloadcontrollc(SNindex,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
 			downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
 			downloadlc.verifyMJD(SNindex)
 			downloadlc.cleanuplcloop(args,SNindex)
-			#if args.averagelc: downloadlc.averagelcloop(args,SNindex,offsetindex=offsetindex)
-			if (args.forcedphot_offset) and (args.offsetstats): 
-				downloadlc.offsetstatsloop(SNindex)
+			#if args.averagelc: downloadlc.averagelcloop(args,SNindex,controlindex=controlindex)
+			if (args.forcedphot_offset) and (args.averageLC): 
+				downloadlc.averageLCloop(SNindex)
 			if args.plot: 
 				downloadlc.plotlcloop(args,SNindex)

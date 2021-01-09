@@ -58,16 +58,22 @@ def not_AandB(A,B):
     return(np.setxor1d(A,B))
 
 class pdastroclass:
-    def __init__(self,**kwargs):
+    def __init__(self,hexcols=[],hexcol_formatters={},**kwargs):
         self.t = pd.DataFrame(**kwargs)
    
         self.verbose = 0
         
         # if self.auto_convert_dtypes==True, then before .to_string() is called in self.write, self.t.convert_dtypes() is run 
+        #self.auto_convert_dtypes = True
+
+        # special cases: columns in hexadecimal format. 
+        self.hexcols=hexcols
+        self.hexcol_formatters=hexcol_formatters
+
+
         # if self.default_dtypeMapping != None, then the dtype mapping is applied to the table .to_string() is called in self.write
         # This makes sure that formatters don't throw errors if the type of a column got changed to float or object during
         # one of the table operations
-        self.auto_convert_dtypes = True
         self.default_dtypeMapping = None
         # example:
         # self.default_dtypeMapping = {'counter':np.int64}
@@ -82,19 +88,23 @@ class pdastroclass:
 
 
     def load_spacesep(self,filename,test4commentedheader=True,namesMapping=None,roundingMapping=None,
-                      na_values=['None','-','--'],**kwargs):
+                      hexcols=None,auto_find_hexcols=True,
+                      na_values=['None','-','--'],verbose=False,**kwargs):
         
         kwargs['delim_whitespace']=True
 
         #also test for commented header to make it compatible to old format.
         self.load(filename,na_values=na_values,test4commentedheader=test4commentedheader,
-                  namesMapping=namesMapping,roundingMapping=roundingMapping,**kwargs)
+                  namesMapping=namesMapping,roundingMapping=roundingMapping,
+                  hexcols=hexcols,auto_find_hexcols=auto_find_hexcols,verbose=verbose,**kwargs)
 
         return(0)
 
-    def load(self,filename,raiseError=True,test4commentedheader=False,namesMapping=None,roundingMapping=None,**kwargs):
+    def load(self,filename,raiseError=True,test4commentedheader=False,namesMapping=None,roundingMapping=None,
+             hexcols=None,auto_find_hexcols=True,verbose=False,**kwargs):
         #self.t = ascii.read(filename,format='commented_header',delimiter='\s',fill_values=[('-',0),('--',0)])
         try:
+            if verbose: print('Loading %s' % filename)
             self.t = pd.read_table(filename,**kwargs)
         except Exception as e:
             print('ERROR: could not read %s!' % filename)
@@ -117,13 +127,15 @@ class pdastroclass:
             if self.t.columns[0][0]=='#':
                 self.t = self.t.rename(columns={self.t.columns[0]:self.t.columns[0][1:]})
             
-        self.formattable(namesMapping=namesMapping,roundingMapping=roundingMapping)
+        if hexcols is None: hexcols=[]
+        hexcols.extend(self.hexcols)
+        self.formattable(namesMapping=namesMapping,roundingMapping=roundingMapping,hexcols=hexcols,auto_find_hexcols=auto_find_hexcols)
         
         
         return(0)
 
     def write(self,filename=None,indices=None,columns=None,formatters=None,raiseError=True,overwrite=True,verbose=False, 
-              index=False, makepathFlag=True,**kwargs):
+              index=False, makepathFlag=True,convert_dtypes=False,hexcols=None,**kwargs):
 
         # make sure indices are converted into a valid list
         indices=self.getindices(indices)
@@ -134,7 +146,6 @@ class pdastroclass:
         # make the path to the file if necessary
         if not (filename is None):
             if makepathFlag:
-                if self.verbose: print('Clobbering %s' % filename)
                 if makepath4file(filename,raiseError=False):
                     errorstring='ERROR: could not make directory for %s' % filename
                     if raiseError:
@@ -156,8 +167,11 @@ class pdastroclass:
                     print('Warning: file exists, not deleting it, skipping! if you want to overwrite, use overwrite option!')
                     return(0)
         
-        # Fix the dtypes if wanted
-        if self.auto_convert_dtypes:
+        # Fix the dtypes if wanted. THIS IS DANGEROUS!!!
+        if convert_dtypes:
+            # Using pandas convert_dtypes converts the columns into panda types, e.g. Int64. These types
+            # are different than the numpy types (e.g., int64). The numpy types work with '{}'.format, the panda
+            # int types do not!!! Therefore I set convert_dtype to False by default.
             self.t=self.t.convert_dtypes()
         if not(self.default_dtypeMapping is None):
             self.formattable(dtypeMapping=self.default_dtypeMapping)            
@@ -165,8 +179,22 @@ class pdastroclass:
         # if both formatters and self.defaultformatters are None, then no formatting. formatters supersedes self.defaultformatters
         if formatters is None:
             formatters = self.default_formatters
-        
-        
+
+        # hexcols
+        if hexcols is None: hexcols=[]
+        hexcols.extend(self.hexcols)
+        if len(hexcols)>0:
+            if formatters is None: formatters={}
+            for hexcol in self.hexcols:
+                if not(hexcol in self.t.columns):
+                    #Nothing to do yet!
+                    continue
+                if not (hexcol in formatters):
+                    if isinstance(self.t[hexcol].dtype,np.int64):
+                        formatters[hexcol]='0x{:08x}'.format
+                    else:
+                        formatters[hexcol]='0x{:04x}'.format
+        """
         if indices is None:
             # no indices are passed
             if self.verbose and not(filename is None): print('Saving %d rows into %s' % (len(self.t),filename))
@@ -183,20 +211,22 @@ class pdastroclass:
                 else:
                     self.t.to_string(filename, index=index, columns=columns, formatters=formatters, **kwargs)
         else:
-            if self.verbose and not(filename is None): print('Saving %d rows into %s' % (len(indices),filename))
-            if len(indices)==0:
-                # just save the header
-                if filename is None:
-                    print(' '.join(columns)+'\n')
-                else:
-                    if columns is None:
-                        columns = []
-                    open(filename,'w').writelines(' '.join(columns)+'\n')
+            """
+            
+        if verbose and not(filename is None): print('Saving %d rows into %s' % (len(indices),filename))
+        if len(indices)==0:
+            # just save the header
+            if filename is None:
+                print(' '.join(columns)+'\n')
             else:
-                if filename is None:
-                    print(self.t.loc[indices].to_string(index=index, columns=columns, formatters=formatters, **kwargs))
-                else:
-                    self.t.loc[indices].to_string(filename, index=index, columns=columns, formatters=formatters, **kwargs)
+                if columns is None:
+                    columns = []
+                open(filename,'w').writelines(' '.join(columns)+'\n')
+        else:
+            if filename is None:
+                print(self.t.loc[indices].to_string(index=index, columns=columns, formatters=formatters, **kwargs))
+            else:
+                self.t.loc[indices].to_string(filename, index=index, columns=columns, formatters=formatters, **kwargs)
 
         if not (filename is None):
             # some extra error checking...
@@ -209,8 +239,8 @@ class pdastroclass:
                 
         return(0)
         
-    def formattable(self,namesMapping=None,roundingMapping=None,dtypeMapping=None):
-             
+    def formattable(self,namesMapping=None,roundingMapping=None,dtypeMapping=None,hexcols=None,auto_find_hexcols=False):
+        
         if not(namesMapping is None):
             self.t = self.t.rename(columns=namesMapping)
             
@@ -220,13 +250,44 @@ class pdastroclass:
         if not(dtypeMapping is None):
             for col in dtypeMapping:
                 self.t[col] = self.t[col].astype(dtypeMapping[col])
+        
+
+        # hexadecimal columns
+        hexpattern = re.compile('^0x[a-fA-F0-9]+$')
+        # if wanted, find columns that are in hexadecimal string format, and convert it interger. 
+        # These columns are added to self.hexcols
+        if auto_find_hexcols and len(self.t)>0:
+            for col in self.t.columns:
+                if self.t[col].dtype == object and isinstance(self.t.at[0,col],str):
+                    if not(hexpattern.search(self.t.at[0,col]) is None):
+                        # add column to self.hexcols, so that it stays a hexcol when writing and saving 
+                        if not(col in self.hexcols):
+                            self.hexcols.append(col)
+                        # convert it to int
+                        self.t[col] = self.t[col].apply(int, base=16)
+        # Go through hexcols, and check if they need conversion.
+        # These columns are also added to self.hexcols
+        if not(hexcols is None):
+            for hexcol in hexcols:
+                # add column to self.hexcols, so that it stays a hexcol when writing and saving 
+                if not(hexcol in self.hexcols):
+                    self.hexcols.append(hexcol)
+                if not(hexcol in self.t.columns):
+                    # nothing to do (yet)!
+                    continue
+                # if the column is still a string starting with '0x', convert it to int
+                if self.t[hexcol].dtype == object and isinstance(self.t.at[0,hexcol],str):
+                    if not(hexpattern.search(self.t.at[0,hexcol]) is None):
+                         self.t[hexcol] = self.t[hexcol].apply(int, base=16)
+               
+                
             
         return(0)
     
     def getindices(self,indices=None):
         """make indices conform (input can be None,([list],), int, str, or list). The output is a list """
         
-        #If indices is tuple, return the first entry which is the array list of indicies
+        #If indices is None, return all values
         if indices is None: 
             return(self.t.index.values)
         
@@ -398,9 +459,12 @@ class pdastroclass:
 
     def newrow(self,dicti=None):
         self.t = self.t.append(dicti,ignore_index=True)
-        index = self.t.index.values[-1]
-        return(index)
+        return(self.t.index.values[-1])
         
+    def add2row(self,index,dicti):
+        self.t.loc[index,list(dicti.keys())]=list(dicti.values())
+        return(index)
+
     def fitsheader2table(self,fitsfilecolname,indices=None,requiredfitskeys=None,optionalfitskey=None,raiseError=True,skipcolname=None,headercol=None):
 
         indices = self.getindices(indices)        

@@ -282,6 +282,6 @@ if __name__ == '__main__':
 	SNindexlist = plotlc.initialize(args)
 
 	for SNindex in SNindexlist:
-		SNindex_counter = 0 # delete me
+		print('Plotting lc for ',plotlc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(plotlc.t)))
 		print(SNindex,plotlc.t.at[SNindex,'tnsname']) # delete me
 		plotlc.plotlcloop(args,SNindex)

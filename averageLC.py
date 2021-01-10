@@ -172,5 +172,6 @@ if __name__ == '__main__':
     SNindexlist = averagelc.initialize(args)
 
     for SNindex in SNindexlist:
+        print('Averaging lc for ',averagelc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(averagelc.t)))
         averagelc.loadRADEClist(SNindex,filt=averagelc.filt)
         averagelc.averagelcloop(SNindex)

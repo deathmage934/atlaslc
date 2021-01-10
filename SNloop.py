@@ -123,7 +123,7 @@ class SNloopclass(pdastroclass):
         parser.add_argument('--pp', action='append', default=None, nargs=3, help=('"section param val". change parameters in given section of ''config file (default=%(default)s)'))
         return parser
 
-    def setoutdir(self,outrootdir=None, outsubdir=None):
+    def setoutdir(self,args,outrootdir=None,outsubdir=None):
         if outrootdir is None:
             basedir = self.cfg.params['output']['outrootdir']
         else:
@@ -281,12 +281,12 @@ class SNloopclass(pdastroclass):
 
         snlistfilename = self.cfg.params['snlistfilename']
         if not(args.snlistfilename is None):
-            snlistfilename=args.snlistfilename
+            snlistfilename = self.outrootdir+args.snlistfilename
 
         if not(os.path.isfile(snlistfilename)):
             raise RuntimeError("SN list file %s does not exist, exiting!!" % snlistfilename)
-            
-        self.setoutdir(outrootdir=args.outrootdir, outsubdir=args.outsubdir)
+        
+        self.setoutdir(args,outrootdir=args.outrootdir,outsubdir=args.outsubdir)
         self.verbose = args.verbose
         self.debug = args.debug
         self.flux_colname = self.cfg.params['flux_colname']

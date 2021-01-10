@@ -253,6 +253,7 @@ class plotlcclass(SNloopclass):
 			plt.savefig(plotfilename)
 
 	def plotlcloop(self,args,SNindex):
+		print('###################################\nPlotting LCs...\n###################################')
 		self.plot_lc(args,SNindex)
 		
 		# decide if plotting controlLC stats

@@ -157,7 +157,6 @@ class averageLCclass(SNloopclass):
                 return(1)
 
             # get sigmacut info and flag for 4-day bins
-            print('AAAAAAAAAAAAA',self.averagelc.hexcols)
             self.calcaveragelc(SNindex,controlindex=controlindex)
 
             # save lc

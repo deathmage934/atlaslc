@@ -11,7 +11,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-class averageLCclass(SNloopclass):
+class averagelcclass(SNloopclass):
     def __init__(self):
         SNloopclass.__init__(self)
 
@@ -60,7 +60,7 @@ class averageLCclass(SNloopclass):
             if len(ix2)==0:
                 flag_array = np.full(len(ix1),self.flag_day_bad)
                 self.lc.t.loc[ix1,'Mask'] = np.bitwise_or(self.lc.t.loc[ix1,'Mask'],flag_array)
-                self.averagelc.t.loc[lcaverageindex,'Mask'] = int(self.averagelc.t.loc[lcaverageindex,'Mask']) |  self.flag_day_bad
+                self.averagelc.t.loc[lcaverageindex,'Mask'] = int(self.averagelc.t.loc[lcaverageindex,'Mask']) | self.flag_day_bad
                 if self.verbose>1: 
                     print('Length of good and ok measurements = 0, no average flux values')
 
@@ -136,28 +136,29 @@ class averageLCclass(SNloopclass):
             self.averagelc.t[col] = self.averagelc.t[col].astype(np.int32)
 
         avglcfilename = self.lcbasename(SNindex=SNindex,filt=self.filt,controlindex=controlindex,MJDbinsize=MJDbinsize)+'.txt'
-        if self.verbose: self.averagelc.write()
+        if self.verbose>1: self.averagelc.write()
         self.averagelc.write(avglcfilename,overwrite=True,verbose=True)
 
-    def averageLCloop(self,SNindex):
-        print('###################################\n### Averaging LCs ...\n###################################')
+    def averagelcloop(self,SNindex):
+        print('###################################\nAveraging LCs...\n###################################')
         
         # loop through SN and control lcs
-        for controlindex in range(0,len(self.RADECtable.t)):
-            
+        for controlindex in range(0,len(self.RADECtable.t)):    
             # stop loop if only SN should be done
             if (not self.cfg.params['averageLC']['apply2offsets']) and (controlindex>0):
                 break
-            
             # load control lc
             if self.verbose: print('Averaging lc for controlID %d' % self.RADECtable.t['ControlID'][controlindex])
             self.load_lc(SNindex,controlindex=controlindex,filt=self.filt)
             if len(self.lc.t)==0: 
                 print('WARNING!!! no data in lc')
                 return(1)
-
             # get sigmacut info and flag for 4-day bins
-            self.calcaveragelc(SNindex,controlindex=controlindex)
+            if not(args.MJDbinsize is None):
+                MJDbinsize = args.MJDbinsize
+                self.calcaveragelc(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
+            else:
+                self.calcaveragelc(SNindex,controlindex=controlindex)
 
             # save lc
             self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,overwrite=True)
@@ -165,12 +166,13 @@ class averageLCclass(SNloopclass):
 
 if __name__ == '__main__':
 
-    averageLC = averageLCclass()
-    parser = averageLC.define_options()
+    averagelc = averagelcclass()
+    parser = averagelc.define_options()
     args = parser.parse_args()
 
-    SNindexlist = averageLC.initialize(args)
+    SNindexlist = averagelc.initialize(args)
 
     for SNindex in SNindexlist:
-        averageLC.loadRADEClist(SNindex,filt=averageLC.filt)
-        averageLC.averageLCloop(SNindex)
+        print('Averaging lc for ',averagelc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(averagelc.t)))
+        averagelc.loadRADEClist(SNindex,filt=averagelc.filt)
+        averagelc.averagelcloop(SNindex)

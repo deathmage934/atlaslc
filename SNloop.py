@@ -18,7 +18,7 @@ from tools import DecInDeg
 #from astrotable import astrotableclass
 from download_atlas_lc import download_atlas_lc_class
 import sigmacut
-from pdastro import pdastroclass, pdastrostatsclass
+from pdastro import pdastroclass, pdastrostatsclass, AnotB
 import mastcasjobs
 import pylab
 import json
@@ -38,32 +38,25 @@ class SNloopclass(pdastroclass):
         self.filt = None
         
         # tables
-        #self.lc = pdastrostatsclass(hexcols=['Mask'])
         self.lc = pdastrostatsclass(hexcols=['Mask'])
         self.RADECtable = pdastroclass()
-        #self.averagelctable = pdastroclass()
         self.averagelc = pdastrostatsclass(hexcols=['Mask'])
 
         # flags for cuts
-        self.flag_c0_X2norm      = 0x1 
-        self.flag_c0_uncertainty = 0x2
+        self.flag_c0_X2norm       = 0x1 
+        self.flag_c0_uncertainty  = 0x2
              
         #self.flag_c1_good = 0x20 
-        self.flag_c1_X2norm     = 0x10
-        self.flag_c1_absnormmean= 0x20
+        self.flag_c1_X2norm      = 0x10
+        self.flag_c1_absnormmean = 0x20
         
-        self.flag_c2_X2norm     = 0x100
-        self.flag_c2_absmeanerr = 0x200
-        self.flag_c2_Nclip      = 0x400
-        self.flag_c2_Nused      = 0x800
+        self.flag_c2_X2norm      = 0x100
+        self.flag_c2_absnormmean = 0x200
+        self.flag_c2_Nclip       = 0x400
+        self.flag_c2_Nused       = 0x800
 
-        self.flag_daysigma       = 0x1000 # decimal: 4096
-        self.flag_daysmallnumber = 0x2000 # decimal: 8192
-        #self.flag_daybad         = 0x4000 # decimal: 16384; for averaged and original lcs
-
-        #SOFIA: change this like I did for flag_c0_uncertainty
-        self.flags={'flag_c0_uncertainty':self.flag_c0_uncertainty,
-                    'flag_c0_X2norm':0x2,'flag_c2_ok':0x400,'flag_c2_bad':0x800,'flag_daysigma':0x1000,'flag_daysmallnumber':0x2000,'flag_daybad':0x4000}
+        self.flag_daysigma       = 0x1000
+        self.flag_daysmallnumber = 0x2000
 
         #self.flag_c0_good = 0x10000
         self.flag_c1_good = 0x20000
@@ -74,10 +67,24 @@ class SNloopclass(pdastroclass):
         #self.flag_c1_bad    = 0x200000
         self.flag_c2_bad    = 0x400000
         self.flag_day_bad   = 0x800000
+
+        self.flags={'flag_c0_uncertainty':self.flag_c0_uncertainty,
+                    'flag_c0_X2norm':self.flag_c0_X2norm,
+                    'flag_c1_X2norm':self.flag_c1_X2norm,
+                    'flag_c1_absnormmean':self.flag_c1_absnormmean,
+                    'flag_c2_X2norm':self.flag_c2_X2norm,
+                    'flag_c2_absnormmean':self.flag_c2_absnormmean,
+                    'flag_c2_Nclip':self.flag_c2_Nclip,
+                    'flag_c2_Nused':self.flag_c2_Nused,
+                    'flag_daysigma':self.flag_daysigma,
+                    'flag_daysmallnumber':self.flag_daysmallnumber,
+                    'flag_c0_bad':self.flag_c0_bad,
+                    'flag_c2_bad':self.flag_c2_bad,
+                    'flag_day_bad':self.flag_day_bad}
         
-        self.flags_c1c2= self.flag_c1_X2norm|self.flag_c1_absnormmean|self.flag_c2_X2norm|\
-            self.flag_c2_absmeanerr|self.flag_c2_Nclip|self.flag_c2_Nused|\
-                self.flag_c1_good|self.flag_c2_good|self.flag_c2_ok|self.flag_c2_bad 
+        self.flags_c1c2 = self.flag_c1_X2norm|self.flag_c1_absnormmean|self.flag_c2_X2norm|\
+            self.flag_c2_absnormmean|self.flag_c2_Nclip|self.flag_c2_Nused|\
+            self.flag_c1_good|self.flag_c2_good|self.flag_c2_ok|self.flag_c2_bad 
         
     def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
         if parser is None:
@@ -93,23 +100,16 @@ class SNloopclass(pdastroclass):
 
         # can be a sn name from snlist.txt or 'all' (loops through all sn names in snlist.txt)
         parser.add_argument('SNlist', nargs='+')
-        # set default filter
         parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify default filter'))
-        # set MJD bin size for averagelc.py
-        parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float)
-        # intialize forced photometry offsets
+        parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size for averaging lcs'),type=float)
         parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
-        # set forced photometry offset pattern
-        #parser.add_argument('--pattern', choices=['c','b','l'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
-        # initialize plotlc.py
         parser.add_argument('--plot', default=False, help=('plot lcs'))
         parser.add_argument('--plot_avg', default=False, help=('plot average lcs'))
         parser.add_argument('--xlim_lower', default=None, type=float, help=('set lower x limit when plotting'))
         parser.add_argument('--xlim_upper', default=None, type=float, help=('set upper x limit when plotting'))
         parser.add_argument('--ylim_lower', default=None, type=float, help=('set lower y limit when plotting'))
         parser.add_argument('--ylim_upper', default=None, type=float, help=('set upper y limit when plotting'))
-        # initialize averageLC.py
-        parser.add_argument('--averageLC', default=False, help=('average lcs'))
+        parser.add_argument('--averagelc', default=False, help=('average lcs'))
         parser.add_argument('-v','--verbose', default=0, action='count')
         parser.add_argument('-d', '--debug', action='count', help="debug")
         parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
@@ -123,7 +123,7 @@ class SNloopclass(pdastroclass):
         parser.add_argument('--pp', action='append', default=None, nargs=3, help=('"section param val". change parameters in given section of ''config file (default=%(default)s)'))
         return parser
 
-    def setoutdir(self,outrootdir=None, outsubdir=None):
+    def setoutdir(self,args,outrootdir=None,outsubdir=None):
         if outrootdir is None:
             basedir = self.cfg.params['output']['outrootdir']
         else:
@@ -242,6 +242,8 @@ class SNloopclass(pdastroclass):
         mask=np.bitwise_and(self.lc.t['Mask'], flags)
         cuts_indices = np.where(mask==0)
         cuts_indices = cuts_indices[0]
+        #cuts_indices = self.lc.ix_unmasked('Mask',maskval=flags)
+        #bad_data = self.lc.AnotB(self.lc.getindices(),cuts_indices)
         bad_data = np.where(mask!=0)
         bad_data = bad_data[0]
         datacut = len(self.lc.t)-len(self.lc.t.loc[cuts_indices])
@@ -279,12 +281,12 @@ class SNloopclass(pdastroclass):
 
         snlistfilename = self.cfg.params['snlistfilename']
         if not(args.snlistfilename is None):
-            snlistfilename=args.snlistfilename
+            snlistfilename = self.outrootdir+args.snlistfilename
 
         if not(os.path.isfile(snlistfilename)):
             raise RuntimeError("SN list file %s does not exist, exiting!!" % snlistfilename)
-            
-        self.setoutdir(outrootdir=args.outrootdir, outsubdir=args.outsubdir)
+        
+        self.setoutdir(args,outrootdir=args.outrootdir,outsubdir=args.outsubdir)
         self.verbose = args.verbose
         self.debug = args.debug
         self.flux_colname = self.cfg.params['flux_colname']

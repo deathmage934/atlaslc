@@ -213,7 +213,7 @@ class pdastroclass:
         else:
             """
             
-        if verbose and not(filename is None): print('Saving %d rows into %s' % (len(indices),filename))
+        if verbose>1 and not(filename is None): print('Saving %d rows into %s' % (len(indices),filename))
         if len(indices)==0:
             # just save the header
             if filename is None:

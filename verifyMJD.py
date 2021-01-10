@@ -62,7 +62,7 @@ class verifyMJDclass(SNloopclass):
             # Compare the sorted MJD arrays of the SN and the control LC. 
             # If not in agreement, fix it!
             if (len(MJD_SN) != len(MJD_controllc)) or (np.array_equal(MJD_SN, MJD_controllc) is False):
-                if self.verbose: print('inconsistent MJD array, fixing it !!')
+                if self.verbose: print('Inconsistent MJD array, fixing...')
 
                 # get the MJDs that are only in the SN LC
                 MJDs_onlySN = AnotB(MJD_SN,MJD_controllc)
@@ -74,7 +74,7 @@ class verifyMJDclass(SNloopclass):
                 if len(MJDs_onlySN)>0:
                     if self.verbose: print('MJDs only in SN LC:',MJDs_onlySN)
                     for MJD in MJDs_onlySN:
-                        self.lc.newrow({'MJD':MJD})
+                        self.lc.newrow({'MJD':MJD,'Mask':0})
 
                 # remove the indices of rows in control LC for which there is 
                 # no MJD in the SN LC: not needed!
@@ -94,6 +94,7 @@ class verifyMJDclass(SNloopclass):
                 ix_sorted = self.lc.ix_sort_by_cols('MJD',indices=indices)
                 if not(skip_savelc):
                     if self.verbose: print('Saving control LC sorted by MJD')
+                    self.lc.t['Mask'] = self.lc.t['Mask'].astype(np.int32)
                     self.save_lc(SNindex,controlindex=controlindex,filt=self.filt,indices=ix_sorted)
                 if self.verbose>2:
                     print('control LC sorted by MJD')

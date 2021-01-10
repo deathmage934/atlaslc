@@ -61,7 +61,7 @@ class cleanuplcclass(SNloopclass):
             if self.verbose: print('# No measurements flagged!')
             return(0)
 
-        # update 'Mask' column
+        # update mask column
         flag_c0_X2norm = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_c0_X2norm|self.flag_c0_bad)
         
         ### CHANGE ME BACK!!!!!
@@ -133,7 +133,7 @@ class cleanuplcclass(SNloopclass):
         return(MJD_SN,uJy,duJy,Mask)
         
 
-    def calc_c1c2_stats(self,uJy,duJy,mask):
+    def calc_c1c2_stats(self,SNindex,uJy,duJy,mask):
         # load main lc
         self.load_lc(SNindex,controlindex=0)
 
@@ -161,7 +161,6 @@ class cleanuplcclass(SNloopclass):
 
         # Save the light curve with cuts in Mask
         self.save_lc(SNindex=SNindex,overwrite=True,controlindex=0)
-           
         return(0)
 
     def make_c1c2_cuts(self):
@@ -175,7 +174,7 @@ class cleanuplcclass(SNloopclass):
         self.load_lc(SNindex,controlindex=0)
 
         for index in self.lc.getindices():
-            # c1 cut!
+            # cut1
             mask = 0
             if (self.lc.t.loc[index,'c1_X2norm']>=self.cfg.params['cleanlc']['cut1']['c1_X2norm_max']): 
                 mask |= self.flag_c1_X2norm
@@ -188,14 +187,13 @@ class cleanuplcclass(SNloopclass):
                 continue                
             else:
                 self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],mask)
-                
-                
-            # c2 cut!
+                  
+            # cut2
             mask = 0
             if (self.lc.t.loc[index,'c2_X2norm']>self.cfg.params['cleanlc']['cut2']['c2_X2norm_max']):
                 mask |= self.flag_c2_X2norm
             if (np.fabs(self.lc.t.loc[index,'c2_mean']/self.lc.t.loc[index,'c2_mean_err'])>self.cfg.params['cleanlc']['cut2']['c2_absmeannorm_max']):
-                mask |= self.flag_c2_absmeanerr
+                mask |= self.flag_c2_absnormmean
             if (self.lc.t.loc[index,'c2_Nclip']>self.cfg.params['cleanlc']['cut2']['c2_Nclipped_max']):
                 mask |= self.flag_c2_Nclip
             if (self.lc.t.loc[index,'c2_Ngood']<self.cfg.params['cleanlc']['cut2']['c2_Ngood_min']):
@@ -220,8 +218,6 @@ class cleanuplcclass(SNloopclass):
         print('Copying over SN c2 mask column to control lc mask column...')
         # get c1 and c2 masks from SN lc and copy to control lc mask column
         flags_array = np.full(self.lc.t['Mask'].shape,self.flags_c1c2)
-        
-        
         omask = np.bitwise_and(self.lc.t['Mask'],flags_array)
         # loop through control lcs
         for controlindex in range(1,len(self.RADECtable.t)):
@@ -236,6 +232,7 @@ class cleanuplcclass(SNloopclass):
             self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,overwrite=True)
 
     def cleanuplcloop(self,args,SNindex):
+        print('###################################\nCleaning LCs...\n###################################')
 
         # cut0 - mask lcs based on PSF X2norm and uncertainty
         (MJD_SN,uJy,duJy,Mask) = self.make_c0_cuts(SNindex,prepare_c1c2_cuts = self.cfg.params['cleanlc']['apply_c1c2'])
@@ -251,9 +248,8 @@ class cleanuplcclass(SNloopclass):
             
         # calculate control lc stats
         print('Calculating control LCs statistics...')
-        self.calc_c1c2_stats(uJy,duJy,Mask)    
+        self.calc_c1c2_stats(SNindex,uJy,duJy,Mask)    
 
-        
         # make cuts on good, bad, and ok measurements
         print('Making cuts based on control LCs statistics...')
         self.make_c1c2_cuts()
@@ -267,6 +263,7 @@ if __name__ == '__main__':
     SNindexlist = cleanuplc.initialize(args)
 
     for SNindex in SNindexlist:
+        print('Cleaning lc for ',cleanuplc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(cleanuplc.t)))
         cleanuplc.loadRADEClist(SNindex=SNindex,filt=cleanuplc.filt)
         cleanuplc.cleanuplcloop(args,SNindex)
 

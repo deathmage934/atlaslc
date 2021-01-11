@@ -164,12 +164,6 @@ class cleanuplcclass(SNloopclass):
         return(0)
 
     def make_c1c2_cuts(self):
-        #c1_X2norm_max = self.cfg.params['cleanlc']['cut1']['c1_X2norm_max']
-        #c1_absmeannorm_max = self.cfg.params['cleanlc']['cut1']['c1_absmeannorm_max']
-        #c2_X2norm_max = self.cfg.params['cleanlc']['cut2']['c2_X2norm_max']
-        #c2_Nclipped_max = self.cfg.params['cleanlc']['cut2']['c2_Nclipped_max']
-        #c2_Nused_max = self.cfg.params['cleanlc']['cut2']['c2_Nused_max']
-
         # load main lc
         self.load_lc(SNindex,controlindex=0)
 
@@ -183,7 +177,7 @@ class cleanuplcclass(SNloopclass):
                 
             if mask == 0:
                 self.lc.t.loc[index,'Mask'] |= self.flag_c1_good
-                # if the c1 cut indicates a good measurement, skip c2 cut
+                # if cut1 indicates a good measurement, skip cut2
                 continue                
             else:
                 self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],mask)

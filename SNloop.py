@@ -101,7 +101,7 @@ class SNloopclass(pdastroclass):
         # can be a sn name from snlist.txt or 'all' (loops through all sn names in snlist.txt)
         parser.add_argument('SNlist', nargs='+')
         parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify default filter'))
-        parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size for averaging lcs'),type=float)
+        parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size for averaging lcs'),type=float)
         parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
         parser.add_argument('--plot', default=False, help=('plot lcs'))
         parser.add_argument('--plot_avg', default=False, help=('plot average lcs'))
@@ -145,7 +145,7 @@ class SNloopclass(pdastroclass):
             self.filt=filt
         return(cfgfiles)
 
-    def lcbasename(self, SNindex=None, yse=False, TNSname=None, controlindex=None, filt=None, MJDbinsize=None):
+    def lcbasename(self, SNindex=None, yse=False, TNSname=None, controlindex=None, filt=None, MJDbinsize=None,addsuffix=None):
         # define address and file name of the data table
         if yse is True:
             SNID = TNSname
@@ -173,6 +173,8 @@ class SNloopclass(pdastroclass):
                 basename += '.%.2fdays' % int(MJDbinsize)
         
         basename += '.lc'
+        if not(addsuffix is None):
+            basename += addsuffix
         return(basename)
 
     def getSNlist(self, SNlist):
@@ -186,18 +188,18 @@ class SNloopclass(pdastroclass):
                     SNindexlist.append(index)
         return(SNindexlist)
 
-    def load_lc(self, SNindex, filt=None, controlindex=None, MJDbinsize=None,hexcols=None):
+    def load_lc(self, SNindex, filt=None, controlindex=None, MJDbinsize=None,addsuffix=None,hexcols=None):
         # get lc from already existing file
-        filename = self.lcbasename(SNindex=SNindex,filt=filt,controlindex=controlindex,MJDbinsize=MJDbinsize)+'.txt' 
+        filename = self.lcbasename(SNindex=SNindex,filt=filt,controlindex=controlindex,MJDbinsize=MJDbinsize,addsuffix=addsuffix)+'.txt' 
         self.lc.load_spacesep(filename, delim_whitespace=True, hexcols=hexcols,verbose=(self.verbose>1))
         if self.lc.default_formatters is None: self.lc.default_formatters = {}
         self.lc.default_formatters['Mask']='0x{:06x}'.format
             
         return(0)
 
-    def save_lc(self, SNindex=None, yse=False, TNSname=None, indices=None, filt=None, overwrite=False, controlindex=None, MJDbinsize=None):
+    def save_lc(self, SNindex=None, yse=False, TNSname=None, indices=None, filt=None, overwrite=False, controlindex=None, MJDbinsize=None,addsuffix=None):
         # write table and save lc as file
-        filename = self.lcbasename(SNindex=SNindex, yse=False, filt=filt, controlindex=controlindex, MJDbinsize=MJDbinsize)+'.txt'
+        filename = self.lcbasename(SNindex=SNindex, yse=False, filt=filt, controlindex=controlindex, MJDbinsize=MJDbinsize,addsuffix=addsuffix)+'.txt'
         self.lc.write(filename, indices=indices,overwrite=True,verbose=self.verbose)
         #self.lc.write(filename,format=fileformat, overwrite=overwrite,verbose=(self.verbose>0))
         return(0)

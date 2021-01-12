@@ -19,7 +19,14 @@ class averagelcclass(SNloopclass):
         Nclip_max = self.cfg.params['averageLC']['Nclip_max']
         Ngood_min = self.cfg.params['averageLC']['Ngood_min']
         X2norm_max = self.cfg.params['averageLC']['X2norm_max']
+        keepNaNrows = self.cfg.params['averageLC']['keepNaNrows']
         if self.verbose>1:print('Max Nskipped: %d, min Nused: %d, max X2norm: %f' % (Nclip_max,Ngood_min,X2norm_max))
+        
+
+        # load lc
+        if self.verbose: print('Averaging lc for controlID %d' % self.RADECtable.t['ControlID'][controlindex])
+        self.load_lc(SNindex,controlindex=controlindex,filt=self.filt)
+
 
         MJD = int(np.amin(self.lc.t['MJD']))
         MJDmax = int(np.amax(self.lc.t['MJD']))+1
@@ -38,23 +45,42 @@ class averagelcclass(SNloopclass):
         self.averagelc.t['Nexcluded'] = pd.Series([], dtype=np.int64)
         self.averagelc.t['Mask'] = pd.Series([], dtype=np.int32)
 
+
+        avglcfilename = self.lcbasename(SNindex=SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)+'.txt'
+
+        if len(self.lc.t)==0: 
+            print('WARNING!!! no data in lc')
+            # make sure old data is overwritten!
+            self.averagelc.write(avglcfilename,overwrite=True,verbose=True)
+            return(1)
+
+
         while MJD <= MJDmax:
-            # get 4 measurements
+            # get measurements for MJD range
             if self.verbose>1: 
                 print('MJD range: ',MJD,' to ',MJD+MJDbinsize)
             ix1 = self.lc.ix_inrange(colnames=['MJD'],lowlim=MJD,uplim=MJD+MJDbinsize,exclude_uplim=True)
+
+            # get good and ok measurements
+            ix2 = self.lc.ix_unmasked('Mask',maskval=self.flag_c2_bad|self.flag_c0_X2norm|self.flag_c0_uncertainty,indices=ix1)
+                
+            # if keepNaN rows or any measurements, keep the row!
+            if keepNaNrows or len(ix1)>0:
+                # add row to averagelc table
+                df = {'ControlID':controlindex,'MJDbin':MJD+0.5*MJDbinsize,'Nclip':0,'Ngood':0,'Nexcluded':len(ix1)-len(ix2),'Mask':0}
+                lcaverageindex = self.averagelc.newrow(df)
+                
             if len(ix1)==0:
-                if self.verbose>1: 
-                    print('Length of MJD range = 0, skipping MJD range...')
+                if keepNaNrows:
+                    self.averagelc.t.loc[lcaverageindex,'Mask'] = int(self.averagelc.t.loc[lcaverageindex,'Mask']) | self.flag_day_bad
+                    if self.verbose>1: 
+                        print('No data in MJD range = 0, added row with NaNs...')
+                else:  
+                    if self.verbose>1: 
+                        print('No data in MJD range = 0, skipping MJD range...')
                 MJD += MJDbinsize
                 continue
             
-            # get good and ok measurements out of 4
-            ix2 = self.lc.ix_unmasked('Mask',maskval=self.flag_c2_bad|self.flag_c0_X2norm|self.flag_c0_uncertainty,indices=ix1)
-
-            # add row to averagelc table
-            df = {'ControlID':controlindex,'MJDbin':MJD+0.5*MJDbinsize,'Nclip':0,'Ngood':0,'Nexcluded':len(ix1)-len(ix2),'Mask':0}
-            lcaverageindex = self.averagelc.newrow(df)
 
             # No good measurements?
             if len(ix2)==0:
@@ -135,11 +161,15 @@ class averagelcclass(SNloopclass):
         for col in ['ControlID','Nclip','Ngood','Nexcluded','Mask']: 
             self.averagelc.t[col] = self.averagelc.t[col].astype(np.int32)
 
-        avglcfilename = self.lcbasename(SNindex=SNindex,filt=self.filt,controlindex=controlindex,MJDbinsize=MJDbinsize)+'.txt'
+        # save average lc
         if self.verbose>1: self.averagelc.write()
-        self.averagelc.write(avglcfilename,overwrite=True,verbose=True)
+        self.averagelc.write(avglcfilename,overwrite=True,verbose=self.verbose)
 
-    def averagelcloop(self,SNindex):
+        # save lc
+        self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,overwrite=True)
+
+
+    def averagelcloop(self,SNindex,MJDbinsize=1.0):
         print('###################################\nAveraging LCs...\n###################################')
         
         # loop through SN and control lcs
@@ -147,21 +177,10 @@ class averagelcclass(SNloopclass):
             # stop loop if only SN should be done
             if (not self.cfg.params['averageLC']['apply2offsets']) and (controlindex>0):
                 break
-            # load control lc
-            if self.verbose: print('Averaging lc for controlID %d' % self.RADECtable.t['ControlID'][controlindex])
-            self.load_lc(SNindex,controlindex=controlindex,filt=self.filt)
-            if len(self.lc.t)==0: 
-                print('WARNING!!! no data in lc')
-                return(1)
-            # get sigmacut info and flag for 4-day bins
-            if not(args.MJDbinsize is None):
-                MJDbinsize = args.MJDbinsize
-                self.calcaveragelc(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
-            else:
-                self.calcaveragelc(SNindex,controlindex=controlindex)
 
-            # save lc
-            self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,overwrite=True)
+            # average the light curve by MJDbinszie
+            self.calcaveragelc(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
+
         print('### Averaging LCs done')
 
 if __name__ == '__main__':
@@ -175,4 +194,4 @@ if __name__ == '__main__':
     for SNindex in SNindexlist:
         print('Averaging lc for ',averagelc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(averagelc.t)))
         averagelc.loadRADEClist(SNindex,filt=averagelc.filt)
-        averagelc.averagelcloop(SNindex)
+        averagelc.averagelcloop(SNindex,MJDbinsize=args.MJDbinsize)

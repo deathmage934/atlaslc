@@ -541,6 +541,12 @@ class pdastroclass:
             raise RuntimeError('Spline for column %s is not defined!' % ycol)
         return(self.spline[ycol](xval))
     
+    def plot(self,indices=None,*args,**kwargs):
+        indices = self.getindices(indices)
+        ax = self.t.loc[indices].plot(*args,**kwargs)        
+        return(ax)
+
+    
 class pdastrostatsclass(pdastroclass):
     def __init__(self,**kwargs):
         pdastroclass.__init__(self,**kwargs)

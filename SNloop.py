@@ -256,6 +256,34 @@ class SNloopclass(pdastroclass):
         lc_MJD = self.lc.t.loc[cuts_indices, 'MJD']
         return(lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data)
 
+    def addnanrows(self,indices=None):
+        # make new lc
+        lc2 = pdastroclass(hexcols='Mask')
+        lc2.t = pd.DataFrame(columns=self.lc.t.columns)
+        print(lc2.t)
+        # get indices
+        if indices is None:
+            indices = self.lc.getindices()
+        print('Indices: ',indices)
+        # get MJD and mjd range
+        MJD = int(np.amin(self.lc.t['MJD']))
+        print('MJD range: ',MJD,' to ',MJD+1)
+        
+        MJDbin = self.lc.t.loc[0,'MJDbin'] # get first MJD bin
+        index = min(indices)
+        while index < max(indices):
+            if (self.lc.t.loc[index,'MJDbin']==MJDbin): # check to see if MJD bin matches
+                # add row with MJDbin and other columns
+                lc2.t = lc2.t.append(self.lc.t.loc[index],ignore_index=True)
+                index += 1
+            else:
+                # add row with MJDbin and nans
+                row = pd.DataFrame([[self.lc.t.loc[index,'ControlID'],np.nan,MJDbin,np.nan,np.nan,np.nan,np.nan,0,0,0,0x800000]],columns=self.lc.t.columns)
+                lc2.t = lc2.t.append(row,ignore_index=True)
+            MJDbin += 1 
+        lc2.t['Mask'] = lc2.t['Mask'].astype(np.int32)
+        return(lc2.t)
+
     def autosearch(self, ra, dec, search_size):
         os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])
         print('Casjobs WSID set to %s in precursor.cfg...' % self.cfg.params['casjobs_wsid'])

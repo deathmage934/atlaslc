@@ -168,7 +168,7 @@ class detectbumpsclass(SNloopclass):
         plt.savefig(outfile)
 
     def detectbumpsloop(self,SNindex,MJDbinsize=1.0,simparams=None):
-        print('###################################\Detecting Bumps ...\n###################################')
+        print('###################################\nDetecting Bumps ...\n###################################')
         
         # loop through SN and control lcs
         for controlindex in range(0,len(self.RADECtable.t)):    

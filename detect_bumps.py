@@ -182,8 +182,8 @@ class detectbumpsclass(SNloopclass):
         sp, plot_uJy, dplot_uJy = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJy'],dy=self.lc.t.loc[indices,'duJy'],fmt='ro',ecolor='r')
         matlib.setp(plot_uJy,ms=3,alpha=1)
         sp, plot, dplot = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['simLC'],fmt='c')
-        plt.title('SN 2019vxm and Simulated Eruptions (2 Gaussians of width = 30 days)')
-        plt.legend((plot_uJysim,plot_uJy,plot),('SN 2019vxm + Simulated Gaussian','SN 2019vxm','Gaussian Models'))
+        plt.title('SN %s and Simulated Eruptions (2 Gaussians of width = 30 days)' % self.t[SNindex,'tnsname'])
+        plt.legend((plot_uJysim,plot_uJy,plot),('SN %s + Simulated Gaussian'% self.t[SNindex,'tnsname'],'SN %s' % self.t[SNindex,'tnsname'],'Gaussian Models'))
         plt.xlabel('MJD')
         plt.ylabel('Flux ($\mu$Jy)')
         outfile='%s.simLC.png' % outbasefilename
@@ -197,8 +197,8 @@ class detectbumpsclass(SNloopclass):
         matlib.setp(plot_SNR,ms=3,alpha=1)
         sp, plot_simsum, dplot_simsum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsimsum'],fmt='c')
         sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r')
-        plt.title('SN 2019vxm S/N and Gaussian Weighted Rolling Sum of S/N')
-        plt.legend((plot_SNRsim,plot_simsum,plot_SNR,plot_sum),('SN 2019vxm + Eruption Model S/N','Gaussian Weighted Rolling Sum','SN 2019vxm S/N','Gaussian Weighted Rolling Sum'))
+        plt.title('SN %s S/N and Gaussian Weighted Rolling Sum of S/N' % self.t[SNindex,'tnsname'])
+        plt.legend((plot_SNRsim,plot_simsum,plot_SNR,plot_sum),('SN %s + Eruption Model S/N' % self.t[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum','SN %s S/N' % self.t[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum'))
         plt.xlabel('MJD')
         plt.ylabel('S/N')
         outfile='%s.simSNR.png' % outbasefilename

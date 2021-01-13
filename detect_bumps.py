@@ -10,7 +10,9 @@ import numpy as np
 import pandas as pd
 from astropy.time import Time
 import matplotlib.pyplot as plt
+import pylab as matlib
 from asym_gaussian import gauss2lc
+from plot_lc import dataPlot
 
 class detectbumpsclass(SNloopclass):
     def __init__(self):
@@ -166,6 +168,43 @@ class detectbumpsclass(SNloopclass):
         outfile='%s.simSNR.png' % outbasefilename
         print('Saving ',outfile)
         plt.savefig(outfile)
+
+        """
+        Updated version by Sofia for refining later:
+
+        plt.close("all")
+        plt.rcParams['font.family'] = 'serif'
+        plt.rcParams["font.serif"] = 'times'
+        
+        sp, plot_uJysim, dplot_uJysim = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJysim'],dy=self.lc.t.loc[indices,'duJy'],fmt='co',ecolor='c')
+        matlib.setp(plot_uJysim,ms=3,alpha=1)
+        #matlib.setp(dplot_uJysim,color='c',alpha=1)
+        sp, plot_uJy, dplot_uJy = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJy'],dy=self.lc.t.loc[indices,'duJy'],fmt='ro',ecolor='r')
+        matlib.setp(plot_uJy,ms=3,alpha=1)
+        sp, plot, dplot = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['simLC'],fmt='c')
+        plt.title('SN 2019vxm and Simulated Eruptions (2 Gaussians of width = 30 days)')
+        plt.legend((plot_uJysim,plot_uJy,plot),('SN 2019vxm + Simulated Gaussian','SN 2019vxm','Gaussian Models'))
+        plt.xlabel('MJD')
+        plt.ylabel('Flux ($\mu$Jy)')
+        outfile='%s.simLC.png' % outbasefilename
+        print('Saving ',outfile)
+        plt.savefig(outfile,dpi=200)
+        
+        plt.close("all")
+        sp, plot_SNRsim, dplot_SNRsim = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNRsim'],fmt='co')
+        matlib.setp(plot_SNRsim,ms=3,alpha=1)
+        sp, plot_SNR, dplot_SNR = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNR'],fmt='ro')
+        matlib.setp(plot_SNR,ms=3,alpha=1)
+        sp, plot_simsum, dplot_simsum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsimsum'],fmt='c')
+        sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r')
+        plt.title('SN 2019vxm S/N and Gaussian Weighted Rolling Sum of S/N')
+        plt.legend((plot_SNRsim,plot_simsum,plot_SNR,plot_sum),('SN 2019vxm + Eruption Model S/N','Gaussian Weighted Rolling Sum','SN 2019vxm S/N','Gaussian Weighted Rolling Sum'))
+        plt.xlabel('MJD')
+        plt.ylabel('S/N')
+        outfile='%s.simSNR.png' % outbasefilename
+        print('Saving ',outfile)
+        plt.savefig(outfile,dpi=200)
+        """
 
     def detectbumpsloop(self,SNindex,MJDbinsize=1.0,simparams=None):
         print('###################################\nDetecting Bumps ...\n###################################')

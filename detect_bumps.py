@@ -144,6 +144,7 @@ class detectbumpsclass(SNloopclass):
             self.lc.t['SNRsimsum']=list(SNRsimsum.loc[dataindices])
             
         # maginfo is to add to filenames!
+        print('d,dkd',simparams)
         maginfo='.sim%.0fmag' % (simparams['sim_appmag'])
 
         # save lc
@@ -243,6 +244,6 @@ if __name__ == '__main__':
         simparams=None
 
     for SNindex in SNindexlist:
-        print('Averaging lc for ',detectbumps.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(detectbumps.t)))
+        print('Detecting bumps for ',detectbumps.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(detectbumps.t)))
         detectbumps.loadRADEClist(SNindex)
         detectbumps.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=simparams)

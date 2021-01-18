@@ -239,14 +239,15 @@ class cleanuplcclass(SNloopclass):
             print(self.flux_colname,': ',uJy)
             print(self.dflux_colname,': ',duJy)
             print('Mask: ',Mask)
-            
-        # calculate control lc stats
-        print('Calculating control LCs statistics...')
-        self.calc_c1c2_stats(SNindex,uJy,duJy,Mask)    
+        
+        if len(self.RADECtable.t) > 1:
+            # calculate control lc stats
+            print('Calculating control LCs statistics...')
+            self.calc_c1c2_stats(SNindex,uJy,duJy,Mask)    
 
-        # make cuts on good, bad, and ok measurements
-        print('Making cuts based on control LCs statistics...')
-        self.make_c1c2_cuts()
+            # make cuts on good, bad, and ok measurements
+            print('Making cuts based on control LCs statistics...')
+            self.make_c1c2_cuts()
 
 if __name__ == '__main__':
 

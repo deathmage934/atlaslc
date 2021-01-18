@@ -144,7 +144,6 @@ class detectbumpsclass(SNloopclass):
             self.lc.t['SNRsimsum']=list(SNRsimsum.loc[dataindices])
             
         # maginfo is to add to filenames!
-        print('d,dkd',simparams)
         maginfo='.sim%.0fmag' % (simparams['sim_appmag'])
 
         # save lc

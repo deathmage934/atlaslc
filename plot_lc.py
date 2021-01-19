@@ -8,7 +8,7 @@ import pylab as matlib
 import matplotlib.pyplot as plt
 import sys,os
 
-def dataPlot(x, y, dx=None, dy=None, sp=None, label=None, fmt='bo', ecolor='k', elinewidth=None, barsabove = False, capsize=1, logx=False, logy=False):
+def dataPlot(x, y, dx=None, dy=None, sp=None, label=None, fmt='bo', ecolor='k', elinewidth=None, barsabove = False, capsize=1, logx=False, logy=False, zorder=None):
 	if sp == None:
 		sp = matlib.subplot(111)
 	if dx is None and dy is None:
@@ -30,7 +30,7 @@ def dataPlot(x, y, dx=None, dy=None, sp=None, label=None, fmt='bo', ecolor='k', 
 			sp.set_yscale("log", nonposx='clip')
 		if logx:
 			sp.set_xscale("log", nonposx='clip')
-		plot, dplot,dummy = sp.errorbar(x, y, xerr=dx, yerr=dy, label=label, fmt=fmt, ecolor=ecolor, elinewidth=elinewidth, capsize=capsize, barsabove=barsabove)
+		plot, dplot,dummy = sp.errorbar(x, y, xerr=dx, yerr=dy, label=label, fmt=fmt, ecolor=ecolor, elinewidth=elinewidth, capsize=capsize, barsabove=barsabove, zorder=zorder)
 		return sp, plot, dplot
 
 class plotlcclass(SNloopclass):

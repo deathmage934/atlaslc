@@ -282,7 +282,7 @@ if __name__ == '__main__':
 			downloadlc.verifyMJD(SNindex)
 			downloadlc.cleanuplcloop(args,SNindex)
 			#if args.averagelc: downloadlc.averagelcloop(args,SNindex,controlindex=controlindex)
-			if (args.forcedphot_offset) and (args.averageLC): 
+			if (args.forcedphot_offset) and (args.averagelc): 
 				downloadlc.averagelcloop(SNindex)
 			if args.plot: 
 				downloadlc.plotlcloop(args,SNindex)

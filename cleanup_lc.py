@@ -163,7 +163,7 @@ class cleanuplcclass(SNloopclass):
         self.save_lc(SNindex=SNindex,overwrite=True,controlindex=0)
         return(0)
 
-    def make_c1c2_cuts(self):
+    def make_c1c2_cuts(self,SNindex):
         # load main lc
         self.load_lc(SNindex,controlindex=0)
 
@@ -247,7 +247,7 @@ class cleanuplcclass(SNloopclass):
 
             # make cuts on good, bad, and ok measurements
             print('Making cuts based on control LCs statistics...')
-            self.make_c1c2_cuts()
+            self.make_c1c2_cuts(SNindex)
 
 if __name__ == '__main__':
 

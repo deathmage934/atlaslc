@@ -187,7 +187,7 @@ class detectbumpsclass(SNloopclass):
         plt.savefig(outfile)
         """
 
-        """
+        
         # Updated version by Sofia
 
         plt.figure(0)
@@ -232,10 +232,10 @@ class detectbumpsclass(SNloopclass):
         outfile='%s.simSNR.png' % outbasefilename
         print('Saving ',outfile)
         plt.savefig(outfile,dpi=200)
-        """
+        
 
         # TEMPORARY - DELETE -----------------------------
-        
+        """
         plt.figure(0)
         plt.rcParams['font.family'] = 'serif'
         plt.rcParams["font.serif"] = 'times'
@@ -255,7 +255,7 @@ class detectbumpsclass(SNloopclass):
             matlib.setp(plot_SNR,ms=3,alpha=1)
             sp, plot_simsum, dplot_simsum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsimsum'],fmt='b')
             sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r')
-        
+        """
         # TEMPORARY - DELETE -----------------------------
 
     def detectbumpsloop(self,SNindex,MJDbinsize=1.0,simparams=None):
@@ -271,7 +271,7 @@ class detectbumpsclass(SNloopclass):
             self.applyrolling_gaussian(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize,gaussian_sigma_days=self.cfg.params['detectBumps']['gaussian_sigma'],simparams=simparams)
 
         # TEMPORARY - DELETE -----------------------------
-        
+        """
         outbasefilename = self.lcbasename(SNindex=SNindex,MJDbinsize=MJDbinsize)
 
         plt.figure(0)
@@ -293,7 +293,7 @@ class detectbumpsclass(SNloopclass):
         outfile='%s.simSNR000000.png' % outbasefilename
         print('Saving ',outfile)
         plt.savefig(outfile,dpi=200)
-        
+        """
         # TEMPORARY - DELETE -----------------------------
 
         print('### Averaging LCs done')
@@ -306,18 +306,21 @@ if __name__ == '__main__':
 
     SNindexlist = detectbumps.initialize(args)
 
-    appmags = args.sim_gaussian[1].split(',')
-
-    for appmag in appmags:
-        if not(args.sim_gaussian is None):
-            simparams = {'sim_peakMJD':args.sim_gaussian[0],
-                         'sim_appmag':float(appmag),
-                         'sim_sigma_minus':float(args.sim_gaussian[2]),
-                         'sim_sigma_plus':float(args.sim_gaussian[2])}
-        else:
-            simparams=None
-
+    if args.sim_gaussian is None:
+        simparams=None
         for SNindex in SNindexlist:
             print('Detecting bumps for ',detectbumps.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(detectbumps.t)))
             detectbumps.loadRADEClist(SNindex)
             detectbumps.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=simparams)
+    else:
+        if ',' in args.sim_gaussian[1]:
+            appmags = args.sim_gaussian[1].split(',')
+        else:
+            appmags = args.sim_gaussian[1]
+
+        for appmag in appmags:
+            simparams = {'sim_peakMJD':args.sim_gaussian[0],'sim_appmag':float(appmag),'sim_sigma_minus':float(args.sim_gaussian[2]),'sim_sigma_plus':float(args.sim_gaussian[2])}
+            for SNindex in SNindexlist:
+                print('Detecting bumps for ',detectbumps.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(detectbumps.t)))
+                detectbumps.loadRADEClist(SNindex)
+                detectbumps.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=simparams)

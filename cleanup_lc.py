@@ -163,7 +163,7 @@ class cleanuplcclass(SNloopclass):
         self.save_lc(SNindex=SNindex,overwrite=True,controlindex=0)
         return(0)
 
-    def make_c1c2_cuts(self):
+    def make_c1c2_cuts(self,SNindex):
         # load main lc
         self.load_lc(SNindex,controlindex=0)
 
@@ -239,14 +239,15 @@ class cleanuplcclass(SNloopclass):
             print(self.flux_colname,': ',uJy)
             print(self.dflux_colname,': ',duJy)
             print('Mask: ',Mask)
-            
-        # calculate control lc stats
-        print('Calculating control LCs statistics...')
-        self.calc_c1c2_stats(SNindex,uJy,duJy,Mask)    
+        
+        if len(self.RADECtable.t) > 1:
+            # calculate control lc stats
+            print('Calculating control LCs statistics...')
+            self.calc_c1c2_stats(SNindex,uJy,duJy,Mask)    
 
-        # make cuts on good, bad, and ok measurements
-        print('Making cuts based on control LCs statistics...')
-        self.make_c1c2_cuts()
+            # make cuts on good, bad, and ok measurements
+            print('Making cuts based on control LCs statistics...')
+            self.make_c1c2_cuts(SNindex)
 
 if __name__ == '__main__':
 

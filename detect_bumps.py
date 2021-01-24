@@ -76,6 +76,7 @@ class detectbumpsclass(SNloopclass):
         self.load_lc(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
 
         indices = self.lc.ix_unmasked('Mask',self.flag_day_bad)
+    
         #badindices = self.lc.ix_masked('Mask',self.flag_day_bad)
         
         # make sure there are no lingering simulations!
@@ -168,7 +169,7 @@ class detectbumpsclass(SNloopclass):
         plt.savefig(outfile)
 
     def detectbumpsloop(self,SNindex,MJDbinsize=1.0,simparams=None):
-        print('###################################\nDetecting Bumps ...\n###################################')
+        print('###################################\Detecting Bumps ...\n###################################')
         
         # loop through SN and control lcs
         for controlindex in range(0,len(self.RADECtable.t)):    

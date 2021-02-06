@@ -22,6 +22,8 @@ class detectbumpsclass(SNloopclass):
     def __init__(self):
         SNloopclass.__init__(self)
 
+        self.filt_dict = None
+
     def applyrollingDATETIME_OLDNOTUSED(self,SNindex,controlindex=0,MJDbinsize=1,gaussian_sigma_days=30.0,rolling_win_type='gaussian'):
         self.load_lc(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
 
@@ -150,7 +152,7 @@ class detectbumpsclass(SNloopclass):
             
         if not(simparams is None):
             # maginfo is to add to filenames!
-            maginfo='.sim%.0fmag' % (simparams['sim_appmag'])
+            maginfo='.sim%.1fmag' % (simparams['sim_appmag'])
             if args.savelc is True:
                 self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,MJDbinsize=MJDbinsize,addsuffix=maginfo,overwrite=True)
             outbasefilename = self.lcbasename(SNindex=SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize,addsuffix=maginfo)
@@ -223,6 +225,7 @@ class detectbumpsclass(SNloopclass):
             outfile = '%s.png' % outbasefilename
         print('Saving ',outfile)
         plt.savefig(outfile,dpi=200)
+        plt.close()
         
         # plot snr
         plt.figure()
@@ -255,13 +258,15 @@ class detectbumpsclass(SNloopclass):
             outfile = '%s.snr.png' % outbasefilename
         print('Saving ',outfile)
         plt.savefig(outfile,dpi=200)
+        plt.close()
 
         # make plot of all SNR
-        plt.figure(0)
+        plt.figure(self.filt_dict[self.filt])
         if controlindex == 0:
             sp, plotn_sum, dplotn_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r')
         else:
             sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='c')
+        #plt.close(self.filt_dict[self.filt])
         
         # TEMPORARY - DELETE -----------------------------
         """
@@ -299,17 +304,17 @@ class detectbumpsclass(SNloopclass):
         print('###################################\nDetecting Bumps ...\n###################################')
         
         # loop through SN and control lcs
-        for controlindex in range(0,len(self.RADECtable.t)):    
+        #for controlindex in range(0,len(self.RADECtable.t)):
+        for controlindex in range(len(self.RADECtable.t)-1,-1,-1):
             # stop loop if only SN should be done
             if (not self.cfg.params['detectBumps']['apply2offsets']) and (controlindex>0):
                 break
-
-            # average the light curve by MJDbinszie
+            # average the light curve by MJDbinsize
             self.applyrolling_gaussian(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize,gaussian_sigma_days=self.cfg.params['detectBumps']['gaussian_sigma'],simparams=simparams)
 
         # save allsnr plot
         outbasefilename = self.lcbasename(SNindex=SNindex,MJDbinsize=MJDbinsize)
-        plt.figure(0)
+        plt.figure(self.filt_dict[self.filt])
         plt.title('%s Gaussian Weighted Rolling Sum of S/N' % self.t.loc[SNindex,'tnsname'])
         plt.xlabel('MJD')
         plt.ylabel('S/N')
@@ -355,7 +360,8 @@ if __name__ == '__main__':
 
     if args.filt is None:
         print('Looping through c and o filters...')
-        for filt in ['o','c']:
+        detectbumps.filt_dict = {'o':1,'c':2}
+        for filt in detectbumps.filt_dict:
             detectbumps.filt = filt
             if args.sim_gaussian is None:
                 simparams=None

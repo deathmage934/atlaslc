@@ -176,7 +176,7 @@ class cleanuplcclass(SNloopclass):
                 mask |= self.flag_c1_absnormmean
                 
             if mask == 0:
-                self.lc.t.loc[index,'Mask'] |= self.flag_c1_good
+                #self.lc.t.loc[index,'Mask'] |= self.flag_c1_good
                 # if cut1 indicates a good measurement, skip cut2
                 continue                
             else:
@@ -194,11 +194,11 @@ class cleanuplcclass(SNloopclass):
                 mask |= self.flag_c2_Nused
 
             if mask == 0 and self.lc.t.loc[index,'c2_Nclip']==0:
-                self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_good)
+                #self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_good)
                 # all good!!
                 continue         
             elif mask == 0:
-                self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_ok)
+                #self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_ok)
                 # all good!!
                 continue         
             else:

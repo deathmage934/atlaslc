@@ -61,7 +61,7 @@ class SNloopclass(pdastroclass):
         #self.flag_c0_good = 0x10000
         #self.flag_c1_good        = 0x20000
         #self.flag_c2_good        = 0x40000
-        #self.flag_c2_ok          = 0x80000
+        self.flag_c2_ok          = 0x80000
 
         self.flag_c0_bad         = 0x100000
         #self.flag_c1_bad    = 0x200000
@@ -82,7 +82,7 @@ class SNloopclass(pdastroclass):
                     'flag_c2_bad':self.flag_c2_bad,
                     'flag_day_bad':self.flag_day_bad}
         
-        self.flags_c1c2 = self.flag_c1_X2norm|self.flag_c1_absnormmean|self.flag_c2_X2norm|self.flag_c2_absnormmean|self.flag_c2_Nclip|self.flag_c2_Nused|self.flag_c2_bad#|self.flag_c1_good|self.flag_c2_good|self.flag_c2_ok
+        self.flags_c1c2 = self.flag_c1_X2norm|self.flag_c1_absnormmean|self.flag_c2_X2norm|self.flag_c2_absnormmean|self.flag_c2_Nclip|self.flag_c2_Nused|self.flag_c2_bad|self.flag_c2_ok#|self.flag_c1_good|self.flag_c2_good
         
     def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
         if parser is None:

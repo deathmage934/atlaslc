@@ -198,8 +198,7 @@ class cleanuplcclass(SNloopclass):
                 # all good!!
                 continue         
             elif mask == 0:
-                #self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_ok)
-                # all good!!
+                self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_ok)
                 continue         
             else:
                 self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],mask|self.flag_c2_bad)

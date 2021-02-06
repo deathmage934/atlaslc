@@ -294,7 +294,7 @@ if __name__ == '__main__':
 						downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)
 					print('Finished with filter %s!' % filt)
 			else:
-				print('FILTER SET: %s' % args.filt)
+				print('### FILTER SET: %s' % args.filt)
 				downloadlc.filt = args.filt
 				downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
 				downloadlc.verifyMJD(SNindex)

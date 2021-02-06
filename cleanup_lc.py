@@ -267,7 +267,7 @@ if __name__ == '__main__':
                 cleanuplc.cleanuplcloop(args,SNindex)
             print('Finished with filter %s!' % filt)
     else:
-        print('FILTER SET: %s' % args.filt)
+        print('### FILTER SET: %s' % args.filt)
         cleanuplc.filt = args.filt
         for SNindex in SNindexlist:
             print('Cleaning lc for ',cleanuplc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(cleanuplc.t)))

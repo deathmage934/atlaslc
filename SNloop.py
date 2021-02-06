@@ -28,6 +28,8 @@ class SNloopclass(pdastroclass):
     def __init__(self):
         pdastroclass.__init__(self)
 
+        self.lctype = None # can be 'avg' or 'single'
+
         # config file
         self.cfg = yamlcfgclass()
 
@@ -83,7 +85,7 @@ class SNloopclass(pdastroclass):
                     'flag_day_bad':self.flag_day_bad}
         
         self.flags_c1c2 = self.flag_c1_X2norm|self.flag_c1_absnormmean|self.flag_c2_X2norm|self.flag_c2_absnormmean|self.flag_c2_Nclip|self.flag_c2_Nused|self.flag_c2_bad|self.flag_c2_ok#|self.flag_c1_good|self.flag_c2_good
-        
+
     def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
         if parser is None:
             parser = argparse.ArgumentParser(usage=usage, conflict_handler=conflict_handler)
@@ -189,6 +191,10 @@ class SNloopclass(pdastroclass):
 
     def load_lc(self, SNindex, filt=None, controlindex=None, MJDbinsize=None,addsuffix=None,hexcols=None):
         # get lc from already existing file
+        if MJDbinsize is None:
+            self.lctype = 'og'
+        else:
+            self.lctype = 'avg'
         filename = self.lcbasename(SNindex=SNindex,filt=filt,controlindex=controlindex,MJDbinsize=MJDbinsize,addsuffix=addsuffix)+'.txt' 
         self.lc.load_spacesep(filename, delim_whitespace=True, hexcols=hexcols,verbose=(self.verbose>1))
         if self.lc.default_formatters is None: self.lc.default_formatters = {}
@@ -231,7 +237,7 @@ class SNloopclass(pdastroclass):
             maskval = 0
             for key in self.cfg.params['plotlc']['flags2apply']:
                 if not (key in self.flags):
-                    raise RuntimeError('bad flag name %s' % key)
+                    raise RuntimeError('Bad flag name: %s' % key)
                 maskval |= self.flags[key]
             flags = maskval
         elif procedure1 =='upltoyse':
@@ -254,6 +260,104 @@ class SNloopclass(pdastroclass):
         lc_duJy = self.lc.t.loc[cuts_indices, self.dflux_colname]
         lc_MJD = self.lc.t.loc[cuts_indices, 'MJD']
         return(lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data)
+
+    # get all measurements that have not been flagged as bad or questionable
+    def getgoodindices(self,indices=None):
+        if self.lctype is None:
+            if 'ControlID' in self.lc.columns:
+                self.lctype = 'avg'
+            else:
+                self.lctype = 'og'
+        masks = 0 #self.flag_c2_bad|self.flag_c0_X2norm|self.flag_c0_uncertainty
+        if self.lctype == 'og':
+            flagslist = self.cfg.params['cleanlc']['questionable_flags_og']
+            flagslist = flagslist.append(self.cfg.params['cleanlc']['exclude_flags_og'])
+            print('Excluding flags: ',flagslist)
+            for key in flagslist:
+                if not(key in self.flags):
+                    raise RuntimeError('Bad flag name: %s' % key)
+                masks |= self.flags[key]
+        elif self.lctype == 'avg':
+            flagslist = self.cfg.params['cleanlc']['questionable_flags_avg']
+            flagslist = flagslist.append(self.cfg.params['cleanlc']['exclude_flags_avg'])
+            print('Excluding flags: ',flagslist)
+            for key in flagslist:
+                if not(key in self.flags):
+                    raise RuntimeError('Bad flag name: %s' % key)
+                masks |= self.flags[key]
+        else:
+            raise RuntimeError('lc type must be og or avg!')
+        indices = self.lc.ix_unmasked('Mask',maskval=masks)
+        return(indices)
+
+    # get all measurements that have been flagged as questionable
+    def getquestionableindices(self):
+        if self.lctype is None:
+            if 'ControlID' in self.lc.columns:
+                self.lctype = 'avg'
+            else:
+                self.lctype = 'og'
+        masks = 0 #self.flag_c2_bad|self.flag_c0_X2norm|self.flag_c0_uncertainty
+        if self.lctype == 'og':
+            for key in self.cfg.params['cleanlc']['questionable_flags_og']:
+                if not(key in self.flags):
+                    raise RuntimeError('Bad flag name: %s' % key)
+                masks |= self.flags[key]
+        elif self.lctype == 'avg':
+            for key in self.cfg.params['cleanlc']['questionable_flags_avg']:
+                if not(key in self.flags):
+                    raise RuntimeError('Bad flag name: %s' % key)
+                masks |= self.flags[key]
+        else:
+            raise RuntimeError('lc type must be og or avg!')
+        indices = self.lc.ix_masked('Mask',maskval=masks)
+        return(indices)
+
+    # get all measurements that have not been flagged as bad
+    def getusableindices(self):
+        if self.lctype is None:
+            if 'ControlID' in self.lc.columns:
+                self.lctype = 'avg'
+            else:
+                self.lctype = 'og'
+        masks = 0 #self.flag_c2_bad|self.flag_c0_X2norm|self.flag_c0_uncertainty
+        if self.lctype == 'og':
+            for key in self.cfg.params['cleanlc']['exclude_flags_og']:
+                if not(key in self.flags):
+                    raise RuntimeError('Bad flag name: %s' % key)
+                masks |= self.flags[key]
+        elif self.lctype == 'avg':
+            for key in self.cfg.params['cleanlc']['exclude_flags_avg']:
+                if not(key in self.flags):
+                    raise RuntimeError('Bad flag name: %s' % key)
+                masks |= self.flags[key]
+        else:
+            raise RuntimeError('lc type must be og or avg!')
+        indices = self.lc.ix_unmasked('Mask',maskval=masks)
+        return(indices)
+
+    # get all measurements that have been flagged as bad
+    def getbadindices(self):
+        if self.lctype is None:
+            if 'ControlID' in self.lc.columns:
+                self.lctype = 'avg'
+            else:
+                self.lctype = 'og'
+        masks = 0 #self.flag_c2_bad|self.flag_c0_X2norm|self.flag_c0_uncertainty
+        if self.lctype == 'og':
+            for key in self.cfg.params['cleanlc']['exclude_flags_og']:
+                if not(key in self.flags):
+                    raise RuntimeError('Bad flag name: %s' % key)
+                masks |= self.flags[key]
+        elif self.lctype == 'avg':
+            for key in self.cfg.params['cleanlc']['exclude_flags_avg']:
+                if not(key in self.flags):
+                    raise RuntimeError('Bad flag name: %s' % key)
+                masks |= self.flags[key]
+        else:
+            raise RuntimeError('lc type must be og or avg!')
+        indices = self.lc.ix_masked('Mask',maskval=masks)
+        return(indices)
 
     def addnanrows(self,indices=None):
         # make new lc

@@ -121,7 +121,7 @@ if __name__ == '__main__':
                 verifyMJD.verifyMJD(SNindex)
             print('Finished with filter %s!' % filt)
     else:
-        print('FILTER SET: %s' % args.filt)
+        print('### FILTER SET: %s' % args.filt)
         verifyMJD.filt = args.filt
         for SNindex in SNindexlist:
             verifyMJD.loadRADEClist(SNindex,filt=verifyMJD.filt)

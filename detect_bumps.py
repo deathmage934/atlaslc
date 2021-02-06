@@ -385,7 +385,7 @@ if __name__ == '__main__':
                         detectbumps.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=simparams)
             print('Finished with filter %s!' % filt)
     else:
-        print('FILTER SET: %s' % args.filt)
+        print('### FILTER SET: %s' % args.filt)
         detectbumps.filt = args.filt
         if args.sim_gaussian is None:
             simparams=None

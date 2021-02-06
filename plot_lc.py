@@ -292,7 +292,7 @@ if __name__ == '__main__':
 				plotlc.plotlcloop(args,SNindex)
 			print('Finished with filter %s!' % filt)
 	else:
-		print('FILTER SET: %s' % args.filt)
+		print('### FILTER SET: %s' % args.filt)
 		plotlc.filt = args.filt
 		for SNindex in SNindexlist:
 			print('Plotting lc for ',plotlc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(plotlc.t)))

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# detect_bumps.py 2010zzz -vv --sim_gaussian 57800,58100 21 30
+# detect_bumps.py 2010zzz --sim_gaussian 58000,58325 20 30
 
 from SNloop import SNloopclass
 from statistics import median
@@ -151,10 +151,10 @@ class detectbumpsclass(SNloopclass):
         if not(simparams is None):
             # maginfo is to add to filenames!
             maginfo='.sim%.0fmag' % (simparams['sim_appmag'])
-            self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,MJDbinsize=MJDbinsize,addsuffix=maginfo,overwrite=True)
+            if args.savelc is True:
+                self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,MJDbinsize=MJDbinsize,addsuffix=maginfo,overwrite=True)
             outbasefilename = self.lcbasename(SNindex=SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize,addsuffix=maginfo)
         else:
-            #self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,MJDbinsize=MJDbinsize,overwrite=True)
             outbasefilename = self.lcbasename(SNindex=SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
 
         """
@@ -187,13 +187,11 @@ class detectbumpsclass(SNloopclass):
         plt.savefig(outfile)
         """
 
-        
         # Updated version by Sofia
-
-        plt.figure(0)
+        
+        plt.figure()
         plt.rcParams['font.family'] = 'serif'
         plt.rcParams["font.serif"] = 'times'
-        
         if not(simparams is None):
             sp, plot_uJysim, dplot_uJysim = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJysim'],dy=self.lc.t.loc[indices,'duJy'],fmt='co',ecolor='c')
             matlib.setp(plot_uJysim,ms=3,alpha=1)
@@ -201,19 +199,30 @@ class detectbumpsclass(SNloopclass):
         matlib.setp(plot_uJy,ms=3,alpha=1)
         if not(simparams is None):
             sp, plot, dplot = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['simLC'],fmt='c')
-        if not(simparams is None):
-            plt.title('SN %s and Simulated Eruptions (2 Gaussians of width = 30 days)' % self.t.loc[SNindex,'tnsname'])
+        if controlindex == 0:
+            if not(simparams is None):
+                plt.title('SN %s and Simulated Eruptions (2 Gaussians of width = 30 days)' % self.t.loc[SNindex,'tnsname'])
+            else:
+                plt.title('SN %s' % self.t.loc[SNindex,'tnsname'])
+            if not(simparams is None):
+                plt.legend((plot_uJysim,plot_uJy,plot),('SN %s + Simulated Gaussian'% self.t.loc[SNindex,'tnsname'],'SN %s' % self.t.loc[SNindex,'tnsname'],'Gaussian Models'))
         else:
-            plt.title('SN %s' % self.t.loc[SNindex,'tnsname'])
-        if not(simparams is None):
-            plt.legend((plot_uJysim,plot_uJy,plot),('SN %s + Simulated Gaussian'% self.t.loc[SNindex,'tnsname'],'SN %s' % self.t.loc[SNindex,'tnsname'],'Gaussian Models'))
+            if not(simparams is None):
+                plt.title('Control LC %d and Simulated Eruptions (2 Gaussians of width = 30 days)' % controlindex)
+            else:
+                plt.title('Control LC %d' % controlindex)
+            if not(simparams is None):
+                plt.legend((plot_uJysim,plot_uJy,plot),('Control LC %d + Simulated Gaussian'% controlindex,'Control LC %d' % controlindex,'Gaussian Models'))
         plt.xlabel('MJD')
         plt.ylabel('Flux ($\mu$Jy)')
-        outfile='%s.simLC.png' % outbasefilename
+        if not(simparams is None):
+            outfile = '%s.simLC.png' % outbasefilename
+        else:
+            outfile = '%s.png' % outbasefilename
         print('Saving ',outfile)
         plt.savefig(outfile,dpi=200)
         
-        plt.figure(1)
+        plt.figure()
         if not(simparams is None):
             sp, plot_SNRsim, dplot_SNRsim = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNRsim'],fmt='co')
             matlib.setp(plot_SNRsim,ms=3,alpha=1)
@@ -222,39 +231,56 @@ class detectbumpsclass(SNloopclass):
         if not(simparams is None):
             sp, plot_simsum, dplot_simsum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsimsum'],fmt='c')
         sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r')
-        plt.title('SN %s S/N and Gaussian Weighted Rolling Sum of S/N' % self.t.loc[SNindex,'tnsname'])
-        if not(simparams is None):
-            plt.legend((plot_SNRsim,plot_simsum,plot_SNR,plot_sum),('SN %s + Eruption Model S/N' % self.t.loc[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum','SN %s S/N' % self.t.loc[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum'))
+        if controlindex == 0:
+            plt.title('SN %s S/N and Gaussian Weighted Rolling Sum of S/N' % self.t.loc[SNindex,'tnsname'])
+            if not(simparams is None):
+                plt.legend((plot_SNRsim,plot_simsum,plot_SNR,plot_sum),('SN %s + Eruption Model S/N' % self.t.loc[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum','SN %s S/N' % self.t.loc[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum'))
+            else:
+                plt.legend((plot_SNR,plot_sum),('SN %s S/N' % self.t.loc[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum'))
         else:
-            plt.legend((plot_SNR,plot_sum),('SN %s S/N' % self.t.loc[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum'))
+            plt.title('Control LC %d S/N and Gaussian Weighted Rolling Sum of S/N' % controlindex)
+            if not(simparams is None):
+                plt.legend((plot_SNRsim,plot_simsum,plot_SNR,plot_sum),('Control LC %d + Eruption Model S/N' % controlindex,'Gaussian Weighted Rolling Sum','Control LC %d S/N' % controlindex,'Gaussian Weighted Rolling Sum'))
+            else:
+                plt.legend((plot_SNR,plot_sum),('Control LC %d S/N' % controlindex,'Gaussian Weighted Rolling Sum'))
         plt.xlabel('MJD')
         plt.ylabel('S/N')
-        outfile='%s.simSNR.png' % outbasefilename
+        if not(simparams is None):
+            outfile = '%s.simSNR.png' % outbasefilename
+        else:
+            outfile = '%s.snr.png' % outbasefilename
         print('Saving ',outfile)
         plt.savefig(outfile,dpi=200)
         
-
         # TEMPORARY - DELETE -----------------------------
         """
         plt.figure(0)
         plt.rcParams['font.family'] = 'serif'
         plt.rcParams["font.serif"] = 'times'
         
-        if (controlindex==0):
-            sp, plot_uJysim, dplot_uJysim = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJysim'],dy=self.lc.t.loc[indices,'duJy'],fmt='co',ecolor='c',zorder=0)
-            matlib.setp(plot_uJysim,ms=3,alpha=1)
-            sp, plot_uJy, dplot_uJy = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJy'],dy=self.lc.t.loc[indices,'duJy'],fmt='ro',ecolor='r',zorder=1)
-            matlib.setp(plot_uJy,ms=3,alpha=1)
-            sp, plot, dplot = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['simLC'],fmt='b',zorder=20)
+        sp, plot_uJy, dplot_uJy = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJy'],dy=self.lc.t.loc[indices,'duJy'],fmt='ro',ecolor='r')
+        matlib.setp(plot_uJy,ms=3,alpha=1)
+        plt.title('%s' % self.t.loc[SNindex,'tnsname'])
+        plt.xlabel('MJD')
+        plt.ylabel('Flux ($\mu$Jy)')
+        outfile = '%s.lc.png' % outbasefilename
+        print('Saving ',outfile)
+        plt.savefig(outfile,dpi=200)
         
-        if (controlindex==0):
-            plt.figure(1)
-            sp, plot_SNRsim, dplot_SNRsim = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNRsim'],fmt='co')
-            matlib.setp(plot_SNRsim,ms=3,alpha=1)
-            sp, plot_SNR, dplot_SNR = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNR'],fmt='ro')
-            matlib.setp(plot_SNR,ms=3,alpha=1)
-            sp, plot_simsum, dplot_simsum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsimsum'],fmt='b')
-            sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r')
+        plt.figure(1)
+        #sp, plot_SNR, dplot_SNR = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNR'],fmt='ro')
+        #matlib.setp(plot_SNR,ms=3,alpha=1)
+        if controlindex == 0:
+            sp, plotn_sum, dplotn_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r')
+        else:
+            sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='c')
+            #plt.legend((plotn_sum,plot_sum),('%s S/N Gaussian Weighted Rolling Sum' % self.t.loc[SNindex,'tnsname'],'Control LCs Gaussian Weighted Rolling Sum'))
+        plt.title('%s Gaussian Weighted Rolling Sum of S/N' % self.t.loc[SNindex,'tnsname'])
+        plt.xlabel('MJD')
+        plt.ylabel('S/N')
+        outfile = '%s.snr.png' % outbasefilename
+        print('Saving ',outfile)
+        plt.savefig(outfile,dpi=200)
         """
         # TEMPORARY - DELETE -----------------------------
 
@@ -296,7 +322,7 @@ class detectbumpsclass(SNloopclass):
         """
         # TEMPORARY - DELETE -----------------------------
 
-        print('### Averaging LCs done')
+        print('### Detecting bumps in LCs done')
 
 if __name__ == '__main__':
 
@@ -315,10 +341,12 @@ if __name__ == '__main__':
     else:
         if ',' in args.sim_gaussian[1]:
             appmags = args.sim_gaussian[1].split(',')
+            print('Multiple mags input: ',appmags)
         else:
-            appmags = args.sim_gaussian[1]
-
+            appmags = [args.sim_gaussian[1]]
+            print('Only 1 mag input: ',appmags)
         for appmag in appmags:
+            print('Mag set to: ',appmag)
             simparams = {'sim_peakMJD':args.sim_gaussian[0],'sim_appmag':float(appmag),'sim_sigma_minus':float(args.sim_gaussian[2]),'sim_sigma_plus':float(args.sim_gaussian[2])}
             for SNindex in SNindexlist:
                 print('Detecting bumps for ',detectbumps.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(detectbumps.t)))

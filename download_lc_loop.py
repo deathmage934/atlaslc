@@ -278,11 +278,30 @@ if __name__ == '__main__':
 			print('\nnan detected, skipping...')
 		else:
 			downloadlc.downloadcontrollc(SNindex,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
-			downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
-			downloadlc.verifyMJD(SNindex)
-			downloadlc.cleanuplcloop(args,SNindex)
-			#if args.averagelc: downloadlc.averagelcloop(args,SNindex,controlindex=controlindex)
-			if (args.forcedphot_offset) and (args.averagelc): 
-				downloadlc.averagelcloop(SNindex)
-			if args.plot: 
-				downloadlc.plotlcloop(args,SNindex)
+			if args.filt is None:
+				print('Looping through c and o filters...')
+				for filt in ['o','c']:
+					print('### FILTER SET: %s' % filt)
+					downloadlc.filt = filt
+					downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+					downloadlc.verifyMJD(SNindex)
+					downloadlc.cleanuplcloop(args,SNindex)
+					if (args.forcedphot_offset) and (args.averagelc): 
+						downloadlc.averagelcloop(SNindex)
+					if args.plot: 
+						downloadlc.plotlcloop(args,SNindex)
+					if args.detectbumps:
+						downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)
+					print('Finished with filter %s!' % filt)
+			else:
+				print('FILTER SET: %s' % args.filt)
+				downloadlc.filt = args.filt
+				downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+				downloadlc.verifyMJD(SNindex)
+				downloadlc.cleanuplcloop(args,SNindex)
+				if (args.forcedphot_offset) and (args.averagelc): 
+					downloadlc.averagelcloop(SNindex)
+				if args.plot: 
+					downloadlc.plotlcloop(args,SNindex)
+				if args.detectbumps:
+					downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)

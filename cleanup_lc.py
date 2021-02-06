@@ -135,7 +135,7 @@ class cleanuplcclass(SNloopclass):
 
     def calc_c1c2_stats(self,SNindex,uJy,duJy,mask):
         # load main lc
-        self.load_lc(SNindex,controlindex=0)
+        self.load_lc(SNindex,controlindex=0,filt=self.filt)
 
         N_MJD = uJy.shape[-1]
 
@@ -165,7 +165,7 @@ class cleanuplcclass(SNloopclass):
 
     def make_c1c2_cuts(self,SNindex):
         # load main lc
-        self.load_lc(SNindex,controlindex=0)
+        self.load_lc(SNindex,controlindex=0,filt=self.filt)
 
         for index in self.lc.getindices():
             # cut1

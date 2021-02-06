@@ -110,6 +110,7 @@ class SNloopclass(pdastroclass):
         parser.add_argument('--ylim_lower', default=None, type=float, help=('set lower y limit when plotting'))
         parser.add_argument('--ylim_upper', default=None, type=float, help=('set upper y limit when plotting'))
         parser.add_argument('--averagelc', default=False, help=('average lcs'))
+        parser.add_argument('--detectbumps', default=False, help=('detect bumps in lcs'))
         parser.add_argument('-v','--verbose', default=0, action='count')
         parser.add_argument('-d', '--debug', action='count', help="debug")
         parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))

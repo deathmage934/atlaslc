@@ -42,10 +42,10 @@ class SNloopclass(pdastroclass):
         self.RADECtable = pdastroclass()
         self.averagelc = pdastrostatsclass(hexcols=['Mask'])
 
-        # flags for cuts
-        self.flag_c0_X2norm       = 0x1 
-        self.flag_c0_uncertainty  = 0x2
-             
+        # FLAGS
+        self.flag_c0_X2norm      = 0x1 
+        self.flag_c0_uncertainty = 0x2
+        
         #self.flag_c1_good = 0x20 
         self.flag_c1_X2norm      = 0x10
         self.flag_c1_absnormmean = 0x20
@@ -59,14 +59,14 @@ class SNloopclass(pdastroclass):
         self.flag_daysmallnumber = 0x2000
 
         #self.flag_c0_good = 0x10000
-        self.flag_c1_good = 0x20000
-        self.flag_c2_good = 0x40000
-        self.flag_c2_ok   = 0x80000
+        self.flag_c1_good        = 0x20000
+        self.flag_c2_good        = 0x40000
+        self.flag_c2_ok          = 0x80000
 
-        self.flag_c0_bad    = 0x100000
+        self.flag_c0_bad         = 0x100000
         #self.flag_c1_bad    = 0x200000
-        self.flag_c2_bad    = 0x400000
-        self.flag_day_bad   = 0x800000
+        self.flag_c2_bad         = 0x400000
+        self.flag_day_bad        = 0x800000
 
         self.flags={'flag_c0_uncertainty':self.flag_c0_uncertainty,
                     'flag_c0_X2norm':self.flag_c0_X2norm,

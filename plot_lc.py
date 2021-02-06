@@ -281,7 +281,20 @@ if __name__ == '__main__':
 
 	SNindexlist = plotlc.initialize(args)
 
-	for SNindex in SNindexlist:
-		print('Plotting lc for ',plotlc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(plotlc.t)))
-		print(SNindex,plotlc.t.at[SNindex,'tnsname']) # delete me
-		plotlc.plotlcloop(args,SNindex)
+	if args.filt is None:
+		print('Looping through c and o filters...')
+		for filt in ['o','c']:
+			print('### FILTER SET: %s' % filt)
+			plotlc.filt = filt
+			for SNindex in SNindexlist:
+				print('Plotting lc for ',plotlc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(plotlc.t)))
+				print(SNindex,plotlc.t.at[SNindex,'tnsname']) # delete me
+				plotlc.plotlcloop(args,SNindex)
+			print('Finished with filter %s!' % filt)
+	else:
+		print('FILTER SET: %s' % args.filt)
+		plotlc.filt = args.filt
+		for SNindex in SNindexlist:
+			print('Plotting lc for ',plotlc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(plotlc.t)))
+			print(SNindex,plotlc.t.at[SNindex,'tnsname']) # delete me
+			plotlc.plotlcloop(args,SNindex)

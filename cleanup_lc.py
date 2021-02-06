@@ -257,9 +257,22 @@ if __name__ == '__main__':
 
     SNindexlist = cleanuplc.initialize(args)
 
-    for SNindex in SNindexlist:
-        print('Cleaning lc for ',cleanuplc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(cleanuplc.t)))
-        cleanuplc.loadRADEClist(SNindex=SNindex,filt=cleanuplc.filt)
-        cleanuplc.cleanuplcloop(args,SNindex)
+    if args.filt is None:
+        print('Looping through c and o filters...')
+        for filt in ['o','c']:
+            print('### FILTER SET: %s' % filt)
+            cleanuplc.filt = filt
+            for SNindex in SNindexlist:
+                print('Cleaning lc for ',cleanuplc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(cleanuplc.t)))
+                cleanuplc.loadRADEClist(SNindex=SNindex,filt=cleanuplc.filt)
+                cleanuplc.cleanuplcloop(args,SNindex)
+            print('Finished with filter %s!' % filt)
+    else:
+        print('FILTER SET: %s' % args.filt)
+        cleanuplc.filt = args.filt
+        for SNindex in SNindexlist:
+            print('Cleaning lc for ',cleanuplc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(cleanuplc.t)))
+            cleanuplc.loadRADEClist(SNindex=SNindex,filt=cleanuplc.filt)
+            cleanuplc.cleanuplcloop(args,SNindex)
 
     print('\n')

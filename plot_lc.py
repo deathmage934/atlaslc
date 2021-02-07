@@ -45,6 +45,9 @@ class plotlcclass(SNloopclass):
 
 		# plot SN in red first, then loop through control lcs to plot in blue
 		for controlindex in range(len(self.RADECtable.t)-1,-1,-1):
+			plt.rcParams['font.family'] = 'serif'
+			plt.rcParams["font.serif"] = 'times'
+
 			self.load_lc(SNindex, filt=self.filt, controlindex=self.RADECtable.t.at[controlindex,'ControlID'])
 			if self.verbose>2: print('control index: ',controlindex)
 
@@ -72,6 +75,7 @@ class plotlcclass(SNloopclass):
 				lc_MJD = self.lc.t['MJD']
 
 			if controlindex==0:
+				
 				if plot_bad_data is True:
 					# plot bad data with open red circles
 					sp, plotbad, dplotbad = dataPlot(lc_MJD_bad,lc_uJy_bad,dy=lc_duJy_bad,sp=sp)
@@ -81,16 +85,17 @@ class plotlcclass(SNloopclass):
 				matlib.setp(plotSN,ms=4,color='r')
 				maxlc = max(lc_uJy)
 				minlc = min(lc_uJy)
+				
 			else: 
 				if plot_controllc_data is True:
 					if plot_bad_data is True:
-						# plot bad data with open red circles
+						# plot bad data with open blue circles
 						sp, plotControlLCBad, dplotControlLCBad = dataPlot(lc_MJD_bad,lc_uJy_bad,dy=lc_duJy_bad,sp=sp)
 						matlib.setp(plotControlLCBad,mfc='white',ms=4,color='b')
-					# plot good data in closed red circles
+					# plot good data in closed blue circles
 					sp, plotControlLC, dplotControlLC = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
 					matlib.setp(plotControlLC,ms=4,color='b')
-
+		
 		# determine legend and check if control lc data plotted
 		# if control lcs
 		if len(self.RADECtable.t)>1:
@@ -112,8 +117,9 @@ class plotlcclass(SNloopclass):
 		# if only sn
 		else:
 			plt.legend(('SN %s cleaned' % self.t.at[SNindex,'tnsname']))
-
+		
 		plt.title('SN %s' % self.t.at[SNindex,'tnsname'])
+		#plt.title('8 Control Light Curves around SN 2021pb, 17" Radius')
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
@@ -144,9 +150,12 @@ class plotlcclass(SNloopclass):
 		# save plot
 		plotfilename = self.lcbasename(SNindex=SNindex)+'.png'
 		print('Plot file name: ',plotfilename)
-		plt.savefig(plotfilename)
+		plt.savefig(plotfilename,dpi=200)
 
 	def plot_lc_controlLC(self,args,SNindex,sp=None,c1_flag=False,c2_flag=False):
+		plt.rcParams['font.family'] = 'serif'
+		plt.rcParams["font.serif"] = 'times'
+
 		if sp is None:
 			sp = matlib.subplot(111)
 		self.load_lc(SNindex, filt=self.filt, controlindex=0)

@@ -30,7 +30,7 @@ Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and
 * After `username`, add your ATLAS machine username.
 * Change any other values you wish (for example, the filter to be used).
 
-### Usage:
+### Usage (NEEDS UPDATING):
 This code allows you to download SN light curves. There are many options to configure. You can view the list of arguments in the `SNloop.py` file in the source directory. To summarize:
 * `download_lc_loop.py` initializes the program.
 * Add the SN name(s) that you want light curves for (or use 'all' if you want to use all SNe in the `snlist.txt` file) to the command.

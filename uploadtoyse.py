@@ -291,8 +291,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		Dec = dec
 		if args.forcedphot_offset == 'True':
 			self.defineRADECtable(RA,Dec,pattern=pattern)
-			#print(self.RADECtable.write(index=True,overwrite=False)) # delete me
-
 			for i in range(len(self.RADECtable.t)):
 				print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
 				if self.RADECtable.t.at[i,'ControlID']==0:
@@ -314,7 +312,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
 					cfilt = np.where(self.lc.t['F']=='c')
 					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
-
 			self.saveRADECtable(TNSname,'c')
 			self.saveRADECtable(TNSname,'o')
 		else:

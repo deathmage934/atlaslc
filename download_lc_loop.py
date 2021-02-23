@@ -188,39 +188,51 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 	def downloadcontrollc(self, SNindex, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None,pattern=None):
 		print('Control LC status: ',forcedphot_offset)
 		if forcedphot_offset == 'True':
-			#print('Running forcedphot Control lc with offsets for %s...' % self.t.at[SNindex,'tnsname'])
+			# get control lc data
+
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
 			
 			self.defineRADEClist(RA,Dec,SNindex,pattern=pattern)
 			print(self.RADECtable.write(index=True,overwrite=False))
 			
-			# add new row for each offset using data from RADECtable
-			for i in range(len(self.RADECtable.t)):
-				if self.verbose:
-					print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
+			if args.api:
+				# API IMPLEMENTATION IS A WORK IN PROGRESS AND IS NOT FUNCTIONAL YET
+				token_header = self.download_atlas_lc.connect_atlas(username,password)
+				for i in range(len(self.RADECtable.t)):
+					if self.verbose: print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
+					data = self.download_atlas_lc.get_result(RA, Dec, token_header)
+					# FIX!!!!!!!! maybe something like this will work: 
+					#self.lc.t = pd.read_csv(io.StringIO('\n'.join(data)),delim_whitespace=True,skipinitialspace=True)
+					ascii.write(data, name+'.csv', format='csv', overwrite=True)
+					# now that data is converted from csv to pd df, should I change downloadlc so that if args.api, don't do all the download stuff but do clean up the MJDs and rest of file, etc.? downloadlc would save file with correct lcbasename
+					#self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i)
 
-				#RA = self.RADECtable.t.at[i,'Ra']
-				#Dec = self.RADECtable.t.at[i,'Dec']
-				self.downloadlc(SNindex,
-							 lookbacktime_days=lookbacktime_days,
-							 savelc=savelc,
-							 overwrite=overwrite,
-							 fileformat=fileformat,
-							 controlindex=i)
-				print('Length of lc: ',len(self.lc.t))
-				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
-				ofilt = np.where(self.lc.t['F']=='o')
-				self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
-				cfilt = np.where(self.lc.t['F']=='c')
-				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
-			
+					print('Length of lc: ',len(self.lc.t))
+					self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
+					ofilt = np.where(self.lc.t['F']=='o')
+					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
+					cfilt = np.where(self.lc.t['F']=='c')
+					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+			else:
+				downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
+				for i in range(len(self.RADECtable.t)):
+					if self.verbose: print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
+					self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i)
+					
+					print('Length of lc: ',len(self.lc.t))
+					self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
+					ofilt = np.where(self.lc.t['F']=='o')
+					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
+					cfilt = np.where(self.lc.t['F']=='c')
+					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+				
 			if savelc:
 				self.saveRADEClist(SNindex,filt='c')
 				self.saveRADEClist(SNindex,filt='o')
 		else:
-			#print('Skipping forcedphot control lc for %s...' % self.t.at[SNindex,'tnsname'])
-			# only add SN data in new row without offsets
+			# only get SN data
+
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
 
@@ -269,7 +281,10 @@ if __name__ == '__main__':
 	password=args.passwd
 	print('ATLAS password length: ',len(password))
 
-	downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
+	#if args.api:
+		#token_header = downloadlc.download_atlas_lc.connect_atlas(username,password)
+	#else:
+		#downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
 
 	pattern = downloadlc.cfg.params['forcedphotpatterns']['patterns_to_use']
 

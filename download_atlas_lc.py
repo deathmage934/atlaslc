@@ -18,7 +18,8 @@ class download_atlas_lc_class:
 		self.verbose = 0
 		self.outputbasedir = '.'
 		self.remote_session = None
-		self.lcraw=None
+		self.lcraw = None
+		self.baseurl = 'https://fallingstar-data.com/forcedphot'
 		
 	def define_args(self, parser=None, usage=None,conflict_handler='resolve'):
 		if parser is None:
@@ -127,7 +128,96 @@ class download_atlas_lc_class:
 
 	def save_lc(self, filename, overwrite=False, fileformat='fixed_width_two_line'):
 		self.lc.write(filename, format=fileformat, overwrite=overwrite, verbose=(self.verbose>0))
-			
+
+	"""
+	def connect_api(self,username,password):
+		#ra, dec, name = sys.argv[1:]
+		token_header = connect_atlas(username,password)
+		data = get_result(ra, dec, token_header)
+		#ascii.write(data, name + '.csv', format = 'csv', overwrite = True)
+	"""
+
+	def connect_atlas(self,username,password):
+		resp = requests.post(url=f"{self.baseurl}/api-token-auth/",data={'username':username,'password':password})
+		if resp.status_code == 200:
+			token = resp.json()['token']
+			print(f'Your token is {token}')
+			headers = {'Authorization':f'Token {token}','Accept':'application/json'}
+		else:
+			print(f'ERROR {resp.status_code}')
+			print(resp.json())
+		return headers
+
+	def get_result(self,ra,dec,headers,lookbacktime_days=None,mjd_max=None):
+		today = dt.today()
+		con = sqlite3.connect(":memory:")
+		# !!!!!! what is even going on here
+		if not(lookbacktime_days is None):
+			#lookbacktime_days = int(time.now().mjd - lookbacktime_days)
+		#else:
+			lookbacktime_days = '  '+str(list(con.execute("select julianday('"+today.strftime("%Y-%m-%d")+"')"))[0][0]-lookbacktime_days-2400000)
+		# !!!!!!
+		task_url = None
+		while not task_url:
+			with requests.Session() as s:
+				resp = s.post(f"{self.baseurl}/queue/",headers=headers,data={'ra':ra,'dec':dec,'send_email':False,"mjd_min":lookbacktime_days,"mjd_max":mjd_max})
+				if resp.status_code == 201:  # success
+					task_url = resp.json()['url']
+					print(f'The task URL is {task_url}')
+				elif resp.status_code == 429:  # throttled
+					message = resp.json()["detail"]
+					print(f'{resp.status_code} {message}')
+					t_sec = re.findall(r'available in (\d+) seconds', message)
+					t_min = re.findall(r'available in (\d+) minutes', message)
+					if t_sec:
+						waittime = int(t_sec[0])
+					elif t_min:
+						waittime = int(t_min[0]) * 60
+					else:
+						waittime = 10
+					print(f'Waiting {waittime} seconds')
+					time.sleep(waittime)
+				else:
+					print(f'ERROR {resp.status_code}')
+					print(resp.json())
+					sys.exit()
+		result_url = None
+		
+		while not result_url:
+			with requests.Session() as s:
+				resp = s.get(task_url, headers=headers)
+				if resp.status_code == 200:  # HTTP OK
+					if resp.json()['finishtimestamp']:
+						result_url = resp.json()['result_url']
+						print(f"Task is complete with results available at {result_url}")
+						break
+					elif resp.json()['starttimestamp']:
+						print(f"Task is running (started at {resp.json()['starttimestamp']})")
+					else:
+						print("Waiting for job to start. Checking again in 10 seconds...")
+					time.sleep(10)
+				else:
+					print(f'ERROR {resp.status_code}')
+					print(resp.json())
+					sys.exit()
+		
+		with requests.Session() as s:
+			result = s.get(result_url, headers=headers).text
+		
+		#dfresult = at.Table(names=('jd','mag','mag_err','flux','fluxerr','filter','maj','min','apfit','sky'), dtype=('f8','f8','f8','f8','f8','S1','f8','f8','f8','f8'))
+		# DO I NEED TO CONVERT JD TO MJD??
+		dfresult = at.Table(names=('jd','m','dm','uJy','duJy','F','maj','min','apfit','sky'), dtype=('f8','f8','f8','f8','f8','S1','f8','f8','f8','f8'))
+
+		split = result.split('\n')
+		print(split)
+		for i in split[1:]:
+			if len(i)>2:
+				k = i.split()
+				dfresult.add_row([float(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), k[5], float(k[12]), float(k[13]), float(k[15]), float(k[16])])
+		return dfresult
+
+# don't need the following main:
+"""
 if __name__ == "__main__":
 	download_atlas_lc = download_atlas_lc_class()
 	parser = download_atlas_lc.define_args()
@@ -145,3 +235,4 @@ if __name__ == "__main__":
 	
 	if not(args.savefile is None):
 		download_atlas_lc.save_lc(args.savelc, overwrite=args.overwrite, fileformat=args.fileformat)
+"""

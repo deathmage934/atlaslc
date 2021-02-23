@@ -103,6 +103,7 @@ class SNloopclass(pdastroclass):
         parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify default filter'))
         parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size for averaging lcs'),type=float)
         parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
+        parser.add_argument('--api', default=False, help=('use API instead of SSH to get light curves from ATLAS'))
         parser.add_argument('--plot', default=False, help=('plot lcs'))
         parser.add_argument('--plot_avg', default=False, help=('plot average lcs'))
         parser.add_argument('--xlim_lower', default=None, type=float, help=('set lower x limit when plotting'))

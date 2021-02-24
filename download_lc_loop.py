@@ -45,8 +45,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			if token_header is None:
 				raise RuntimeError('No token header!')
 			self.lc.t = self.download_atlas_lc.get_result(RA, Dec, token_header, lookbacktime_days=lookbacktime_days)
-			#ascii.write(data, name+'.csv', format='csv', overwrite=True)
-			#self.lc.t = pd.read_csv(io.StringIO('\n'.join(data)),delim_whitespace=True,skipinitialspace=True)
+			#print self.lc.t
+			#sys.exit(0)
 		else:
 			self.download_atlas_lc.get_lc(RA,Dec,lookbacktime_days=lookbacktime_days)
 			self.lc.t = pd.read_csv(io.StringIO('\n'.join(self.download_atlas_lc.lcraw)),delim_whitespace=True,skipinitialspace=True)

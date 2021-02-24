@@ -152,14 +152,9 @@ class download_atlas_lc_class:
 	def get_result(self,ra,dec,headers,lookbacktime_days=None,mjd_max=None):
 		today = dt.today()
 		con = sqlite3.connect(":memory:")
-		# !!!!!! what is even going on here
-		if not(lookbacktime_days is None):
-			#lookbacktime_days = int(time.now().mjd - lookbacktime_days)
-			lookbacktime_days = '  '+str(list(con.execute("select julianday('"+today.strftime("%Y-%m-%d")+"')"))[0][0]-lookbacktime_days-2400000)
-		#else:
-			#??
-		# !!!!!!
 		task_url = None
+		if not(lookbacktime_days is None):
+			lookbacktime_days = int(time.now().mjd - lookbacktime_days)
 		while not task_url:
 			with requests.Session() as s:
 				resp = s.post(f"{self.baseurl}/queue/",headers=headers,data={'ra':ra,'dec':dec,'send_email':False,"mjd_min":lookbacktime_days,"mjd_max":mjd_max})

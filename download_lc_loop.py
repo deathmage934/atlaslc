@@ -187,7 +187,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 			self.RADECtable.t = self.RADECtable.t.append(df, ignore_index=True)
 
-	def downloadcontrollc(self, SNindex, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None,pattern=None):
+	def downloadcontrollc(self, SNindex, username, password, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, pattern=None):
 		print('Control LC status: ',forcedphot_offset)
 		if forcedphot_offset == 'True':
 			# get control lc data
@@ -256,7 +256,6 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
 
 			if savelc:
-				#self.saveRADEClist(SNindex)
 				self.saveRADEClist(SNindex,filt='c')
 				self.saveRADEClist(SNindex,filt='o')
 
@@ -268,7 +267,7 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	SNindexlist = downloadlc.initialize(args)
-
+	
 	username = downloadlc.cfg.params['username']
 	if username is False:
 		username = os.environ['USER']
@@ -277,11 +276,8 @@ if __name__ == '__main__':
 	print('ATLAS username: ', username)
 	password=args.passwd
 	print('ATLAS password length: ',len(password))
-
-	#if args.api:
-		#token_header = downloadlc.download_atlas_lc.connect_atlas(username,password)
-	#else:
-		#downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
+	
+	#downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
 
 	pattern = downloadlc.cfg.params['forcedphotpatterns']['patterns_to_use']
 
@@ -289,7 +285,26 @@ if __name__ == '__main__':
 		if not(isinstance(downloadlc.t.at[SNindex,'tnsname'],str)):
 			print('\nnan detected, skipping...')
 		else:
-			downloadlc.downloadcontrollc(SNindex,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
+			downloadlc.downloadcontrollc(SNindex,username,password,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
+			if args.filt is None:
+				filtlist = ['o','c']
+				print('Looping through c and o filters...')
+			else:
+				filtlist = [args.filt]
+			for filt in filtlist:
+				print('### FILTER SET: %s' % filt)
+				downloadlc.filt = filt
+				downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+				downloadlc.verifyMJD(SNindex)
+				downloadlc.cleanuplcloop(args,SNindex)
+				if (args.forcedphot_offset) and (args.averagelc): 
+					downloadlc.averagelcloop(SNindex)
+				if args.plot: 
+					downloadlc.plotlcloop(args,SNindex)
+				if args.detectbumps:
+					downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)
+				print('Finished with filter %s!' % filt)
+			"""
 			if args.filt is None:
 				print('Looping through c and o filters...')
 				for filt in ['o','c']:
@@ -317,3 +332,4 @@ if __name__ == '__main__':
 					downloadlc.plotlcloop(args,SNindex)
 				if args.detectbumps:
 					downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)
+			"""

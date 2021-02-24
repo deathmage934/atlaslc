@@ -35,15 +35,17 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 		self.download_atlas_lc = download_atlas_lc_class()
 
 	def downloadlc(self, SNindex, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, controlindex=None):
-		RA = self.RADECtable.t.at[controlindex,'Ra']
-		Dec = self.RADECtable.t.at[controlindex,'Dec']
-
 		self.download_atlas_lc.verbose = self.verbose
 		self.download_atlas_lc.debug = self.debug
-		self.download_atlas_lc.get_lc(RA,Dec,lookbacktime_days=lookbacktime_days)
 
-		# read the lc into a pandas table
-		self.lc.t = pd.read_csv(io.StringIO('\n'.join(self.download_atlas_lc.lcraw)),delim_whitespace=True,skipinitialspace=True)
+		if not(args.api):
+			RA = self.RADECtable.t.at[controlindex,'Ra']
+			Dec = self.RADECtable.t.at[controlindex,'Dec']
+			self.download_atlas_lc.get_lc(RA,Dec,lookbacktime_days=lookbacktime_days)
+			# read the lc into a pandas table
+			self.lc.t = pd.read_csv(io.StringIO('\n'.join(self.download_atlas_lc.lcraw)),delim_whitespace=True,skipinitialspace=True)
+		
+		# add mask column
 		mask = np.zeros((len(self.lc.t)), dtype=int)
 		self.lc.t = self.lc.t.assign(Mask=mask)
 		
@@ -82,8 +84,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			ControlID = 1
 			foundflag = False
 
-			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree) # why not just put in RA var?? lol
-			Dec = Angle(DecInDeg(self.t.at[SNindex,'dec']),u.degree)
+			RA = Angle(RaInDeg(RA),u.degree)
+			Dec = Angle(DecInDeg(Dec),u.degree)
 			#print('RA,Dec: %s %s %f %f' % (self.t.at[SNindex,'ra'],self.t.at[SNindex,'dec'],RA.degree,Dec.degree)) # delete me
 
 			for pattern in pattern_list: 
@@ -180,8 +182,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 							print('#Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew.degree, DECnew.degree))
 						ControlID += 1
 		else:
-			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree) # just put in RA var
-			Dec = Angle(DecInDeg(self.t.at[SNindex,'dec']),u.degree) # just put in Dec var
+			RA = Angle(RaInDeg(RA),u.degree)
+			Dec = Angle(DecInDeg(Dec),u.degree)
 			df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 			self.RADECtable.t = self.RADECtable.t.append(df, ignore_index=True)
 
@@ -206,7 +208,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 					#self.lc.t = pd.read_csv(io.StringIO('\n'.join(data)),delim_whitespace=True,skipinitialspace=True)
 					ascii.write(data, name+'.csv', format='csv', overwrite=True)
 					# now that data is converted from csv to pd df, should I change downloadlc so that if args.api, don't do all the download stuff but do clean up the MJDs and rest of file, etc.? downloadlc would save file with correct lcbasename
-					#self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i)
+					self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i)
 
 					print('Length of lc: ',len(self.lc.t))
 					self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
@@ -219,7 +221,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 				for i in range(len(self.RADECtable.t)):
 					if self.verbose: print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
 					self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i)
-					
+
 					print('Length of lc: ',len(self.lc.t))
 					self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
 					ofilt = np.where(self.lc.t['F']=='o')
@@ -244,12 +246,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			for i in range(len(self.RADECtable.t)):
 				if self.verbose:
 					print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
-				self.downloadlc(SNindex,
-							 lookbacktime_days=lookbacktime_days,
-							 savelc=savelc,
-							 overwrite=overwrite,
-							 fileformat=fileformat,
-							 controlindex=i)
+				self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i)
 				
 				print('Length of lc: ',len(self.lc.t))
 				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)

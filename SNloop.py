@@ -262,6 +262,8 @@ class SNloopclass(pdastroclass):
         lc_MJD = self.lc.t.loc[cuts_indices, 'MJD']
         return(lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data)
 
+    # for the following indices methods: idea to create another definition just for getting masks list because right now it's a little redundant
+
     # get all measurements that have not been flagged as bad or questionable
     def getgoodindices(self,indices=None):
         if self.lctype is None:
@@ -360,6 +362,7 @@ class SNloopclass(pdastroclass):
         indices = self.lc.ix_masked('Mask',maskval=masks)
         return(indices)
 
+    # to do: implement nan adding (this method) but not changing lc for detect_bumps.py
     def addnanrows(self,indices=None):
         # make new lc
         lc2 = pdastroclass(hexcols='Mask')
@@ -388,6 +391,7 @@ class SNloopclass(pdastroclass):
         lc2.t['Mask'] = lc2.t['Mask'].astype(np.int32)
         return(lc2.t)
 
+    # to do: still have to make sure this works
     def autosearch(self, ra, dec, search_size):
         os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])
         print('Casjobs WSID set to %s in precursor.cfg...' % self.cfg.params['casjobs_wsid'])

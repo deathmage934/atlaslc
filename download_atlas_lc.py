@@ -148,14 +148,16 @@ class download_atlas_lc_class:
 			print(resp.json())
 		return headers
 
+	# API GUIDE: https://fallingstar-data.com/forcedphot/apiguide/
 	def get_result(self,ra,dec,headers,lookbacktime_days=None,mjd_max=None):
 		today = dt.today()
 		con = sqlite3.connect(":memory:")
 		# !!!!!! what is even going on here
 		if not(lookbacktime_days is None):
 			#lookbacktime_days = int(time.now().mjd - lookbacktime_days)
-		#else:
 			lookbacktime_days = '  '+str(list(con.execute("select julianday('"+today.strftime("%Y-%m-%d")+"')"))[0][0]-lookbacktime_days-2400000)
+		#else:
+			#??
 		# !!!!!!
 		task_url = None
 		while not task_url:
@@ -204,8 +206,11 @@ class download_atlas_lc_class:
 		with requests.Session() as s:
 			result = s.get(result_url, headers=headers).text
 		
-		#dfresult = at.Table(names=('jd','mag','mag_err','flux','fluxerr','filter','maj','min','apfit','sky'), dtype=('f8','f8','f8','f8','f8','S1','f8','f8','f8','f8'))
 		# DO I NEED TO CONVERT JD TO MJD??
+		#dfresult = at.Table(names=('jd','mag','mag_err','flux','fluxerr','filter','maj','min','apfit','sky'), dtype=('f8','f8','f8','f8','f8','S1','f8','f8','f8','f8'))
+		dfresult = pd.read_csv(io.StringIO(result.replace("###", "")), delim_whitespace=True)
+
+		"""
 		dfresult = at.Table(names=('jd','m','dm','uJy','duJy','F','maj','min','apfit','sky'), dtype=('f8','f8','f8','f8','f8','S1','f8','f8','f8','f8'))
 
 		split = result.split('\n')
@@ -214,6 +219,8 @@ class download_atlas_lc_class:
 			if len(i)>2:
 				k = i.split()
 				dfresult.add_row([float(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), k[5], float(k[12]), float(k[13]), float(k[15]), float(k[16])])
+		"""
+
 		return dfresult
 
 # don't need the following main:

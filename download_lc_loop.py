@@ -34,15 +34,21 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 		averagelcclass.__init__(self)
 		self.download_atlas_lc = download_atlas_lc_class()
 
-	def downloadlc(self, SNindex, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, controlindex=None):
+	def downloadlc(self, SNindex, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, controlindex=None, token_header=None):
 		self.download_atlas_lc.verbose = self.verbose
 		self.download_atlas_lc.debug = self.debug
 
-		if not(args.api):
-			RA = self.RADECtable.t.at[controlindex,'Ra']
-			Dec = self.RADECtable.t.at[controlindex,'Dec']
+		RA = self.RADECtable.t.at[controlindex,'Ra']
+		Dec = self.RADECtable.t.at[controlindex,'Dec']
+
+		if self.api:
+			if token_header is None:
+				raise RuntimeError('No token header!')
+			data = self.download_atlas_lc.get_result(RA, Dec, token_header)
+			#ascii.write(data, name+'.csv', format='csv', overwrite=True)
+			self.lc.t = pd.read_csv(io.StringIO('\n'.join(data)),delim_whitespace=True,skipinitialspace=True)
+		else:
 			self.download_atlas_lc.get_lc(RA,Dec,lookbacktime_days=lookbacktime_days)
-			# read the lc into a pandas table
 			self.lc.t = pd.read_csv(io.StringIO('\n'.join(self.download_atlas_lc.lcraw)),delim_whitespace=True,skipinitialspace=True)
 		
 		# add mask column
@@ -198,36 +204,23 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			self.defineRADEClist(RA,Dec,SNindex,pattern=pattern)
 			print(self.RADECtable.write(index=True,overwrite=False))
 			
-			if args.api:
+			if self.api:
 				# API IMPLEMENTATION IS A WORK IN PROGRESS AND IS NOT FUNCTIONAL YET
 				token_header = self.download_atlas_lc.connect_atlas(username,password)
-				for i in range(len(self.RADECtable.t)):
-					if self.verbose: print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
-					data = self.download_atlas_lc.get_result(RA, Dec, token_header)
-					# FIX!!!!!!!! maybe something like this will work: 
-					#self.lc.t = pd.read_csv(io.StringIO('\n'.join(data)),delim_whitespace=True,skipinitialspace=True)
-					ascii.write(data, name+'.csv', format='csv', overwrite=True)
-					# now that data is converted from csv to pd df, should I change downloadlc so that if args.api, don't do all the download stuff but do clean up the MJDs and rest of file, etc.? downloadlc would save file with correct lcbasename
-					self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i)
-
-					print('Length of lc: ',len(self.lc.t))
-					self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
-					ofilt = np.where(self.lc.t['F']=='o')
-					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
-					cfilt = np.where(self.lc.t['F']=='c')
-					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
 			else:
 				downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
-				for i in range(len(self.RADECtable.t)):
-					if self.verbose: print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
-					self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i)
+				token_header = None
+			
+			for i in range(len(self.RADECtable.t)):
+				if self.verbose: print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
+				self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i,token_header=token_header)
 
-					print('Length of lc: ',len(self.lc.t))
-					self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
-					ofilt = np.where(self.lc.t['F']=='o')
-					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
-					cfilt = np.where(self.lc.t['F']=='c')
-					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+				print('Length of lc: ',len(self.lc.t))
+				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
+				ofilt = np.where(self.lc.t['F']=='o')
+				self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
+				cfilt = np.where(self.lc.t['F']=='c')
+				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
 				
 			if savelc:
 				self.saveRADEClist(SNindex,filt='c')
@@ -241,7 +234,6 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			self.defineRADEClist(RA,Dec,SNindex,pattern=None)
 			if self.verbose>1:
 				print(self.RADECtable.write(index=True,overwrite=False))
-
 			
 			for i in range(len(self.RADECtable.t)):
 				if self.verbose:

@@ -262,14 +262,10 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		mask = np.zeros((len(self.lc.t)), dtype=int)
 		self.lc.t = self.lc.t.assign(Mask=mask)
 
-		#self.lc.write()
-		#sys.exit(0)
-
 		self.lc.t = self.lc.t.sort_values(by=['MJD'],ignore_index=True)
 		indices = self.lc.ix_remove_null(colnames='uJy')
 
 		# save the lc file with the output filename
-		#oindex = '%03d' % controlindex
 		self.saveyselc(TNSname,controlindex,indices=indices)
 
 		# split the lc file into 2 separate files by filter

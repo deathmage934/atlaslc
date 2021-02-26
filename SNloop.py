@@ -38,7 +38,7 @@ class SNloopclass(pdastroclass):
         self.debug = False
         self.outrootdir = None
         self.filt = None
-        self.api = None
+        self.api = False
         
         # tables
         self.lc = pdastrostatsclass(hexcols=['Mask'])
@@ -431,8 +431,8 @@ class SNloopclass(pdastroclass):
         self.flux_colname = self.cfg.params['flux_colname']
         self.dflux_colname = self.cfg.params['dflux_colname']
         self.api = self.cfg.params['api']
-        if not(args.api is None):
-            self.api = args.api
+        if args.api is True:
+            self.api = True
 
         self.RADECtable = pdastroclass(columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
         self.RADECtable.default_formatters = {'ControlID':'{:3d}'.format,

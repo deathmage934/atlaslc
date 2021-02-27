@@ -106,13 +106,11 @@ class SNloopclass(pdastroclass):
         parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
         parser.add_argument('--api', default=False, help=('use API instead of SSH to get light curves from ATLAS'))
         parser.add_argument('--plot', default=False, help=('plot lcs'))
-        parser.add_argument('--plot_avg', default=False, help=('plot average lcs'))
-        """
+        #parser.add_argument('--plot_avg', default=False, help=('plot average lcs'))
         parser.add_argument('--xlim_lower', default=None, type=float, help=('set lower x limit when plotting'))
         parser.add_argument('--xlim_upper', default=None, type=float, help=('set upper x limit when plotting'))
         parser.add_argument('--ylim_lower', default=None, type=float, help=('set lower y limit when plotting'))
         parser.add_argument('--ylim_upper', default=None, type=float, help=('set upper y limit when plotting'))
-        """
         parser.add_argument('--averagelc', default=False, help=('average lcs'))
         parser.add_argument('--detectbumps', default=False, help=('detect bumps in lcs'))
         parser.add_argument('-v','--verbose', default=0, action='count')

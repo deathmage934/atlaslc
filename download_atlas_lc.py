@@ -10,10 +10,10 @@ import requests,re,io,sys
 import sqlite3
 from jumpssh import SSHSession
 import argparse
+import time
 from astropy.time import Time
 #from astrotable import astrotableclass
 from tools import DecInDeg,RaInDeg
-import time
 import pandas as pd
 
 class download_atlas_lc_class:
@@ -157,9 +157,11 @@ class download_atlas_lc_class:
 		con = sqlite3.connect(":memory:")
 
 		if not(lookbacktime_days is None):
-			#lookbacktime_days = int(time.now().mjd - lookbacktime_days)
-			lookbacktime_days = '  '+str(list(con.execute("select julianday('"+today.strftime("%Y-%m-%d")+"')"))[0][0]-lookbacktime_days-2400000)
-		
+			lookbacktime_days = int(Time.now().mjd - lookbacktime_days)
+			#lookbacktime_days = '  '+str(list(con.execute("select julianday('"+today.strftime("%Y-%m-%d")+"')"))[0][0]-lookbacktime_days-2400000)
+		else:
+			lookbacktime_days = int(Time.now().mjd - 1900)
+
 		task_url = None
 		while not task_url:
 			with requests.Session() as s:
@@ -207,19 +209,7 @@ class download_atlas_lc_class:
 		with requests.Session() as s:
 			result = s.get(result_url, headers=headers).text
 		
-		#dfresult = at.Table(names=('jd','mag','mag_err','flux','fluxerr','filter','maj','min','apfit','sky'), dtype=('f8','f8','f8','f8','f8','S1','f8','f8','f8','f8'))
 		dfresult = pd.read_csv(io.StringIO(result.replace("###", "")), delim_whitespace=True)
-
-		"""
-		dfresult = at.Table(names=('jd','m','dm','uJy','duJy','F','maj','min','apfit','sky'), dtype=('f8','f8','f8','f8','f8','S1','f8','f8','f8','f8'))
-
-		split = result.split('\n')
-		print(split)
-		for i in split[1:]:
-			if len(i)>2:
-				k = i.split()
-				dfresult.add_row([float(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), k[5], float(k[12]), float(k[13]), float(k[15]), float(k[16])])
-		"""
 		return dfresult
 
 # don't need the following main:

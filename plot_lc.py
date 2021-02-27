@@ -281,6 +281,14 @@ class plotlcclass(SNloopclass):
 		elif c2_flag is True:
 			print('Plotting mask_nan control LC...')
 			self.plot_lc_controlLC(args,SNindex,c2_flag=True)
+
+	def define_options(self, **kwargs):
+		parser = SNloopclass.define_options(self, **kwargs)
+		parser.add_argument('--xlim_lower', default=None, type=float, help=('set lower x limit when plotting'))
+		parser.add_argument('--xlim_upper', default=None, type=float, help=('set upper x limit when plotting'))
+		parser.add_argument('--ylim_lower', default=None, type=float, help=('set lower y limit when plotting'))
+		parser.add_argument('--ylim_upper', default=None, type=float, help=('set upper y limit when plotting'))
+		return(parser)
 		
 if __name__ == '__main__':
 

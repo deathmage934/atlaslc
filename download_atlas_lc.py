@@ -160,7 +160,7 @@ class download_atlas_lc_class:
 			lookbacktime_days = int(Time.now().mjd - lookbacktime_days)
 			#lookbacktime_days = '  '+str(list(con.execute("select julianday('"+today.strftime("%Y-%m-%d")+"')"))[0][0]-lookbacktime_days-2400000)
 		else:
-			lookbacktime_days = int(Time.now().mjd - 1900)
+			lookbacktime_days = int(Time.now().mjd - 1890)
 
 		task_url = None
 		while not task_url:

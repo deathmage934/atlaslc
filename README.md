@@ -30,14 +30,15 @@ Using a table of SN names, RA, and Dec, atlaslc logs into the ATLAS machines and
 * After `username`, add your ATLAS machine username.
 * Change any other values you wish (for example, the filter to be used).
 
-### Usage:
+### Usage (NEEDS UPDATING):
 This code allows you to download SN light curves. There are many options to configure. You can view the list of arguments in the `SNloop.py` file in the source directory. To summarize:
 * `download_lc_loop.py` initializes the program.
 * Add the SN name(s) that you want light curves for (or use 'all' if you want to use all SNe in the `snlist.txt` file) to the command.
-* `--passwd` specifies your password for the ATLAS machines (**required**). It is recommended to put your password in 'quotation marks' to avoid any errors with symbols.
+* `--passwd` specifies your password for the ATLAS machines (**required**). It is recommended to put your password in `'quotation marks'` to avoid any errors with symbols.
 * `-s` will make sure all files you download are saved (**recommended; should be added to the command every time you run the code**).
 * `-v` specifies verbose level (**recommended**).
 * `-l` specifies the lookback time in days.
+* `--api` lets you download light curves using the ATLAS API instead of SSH. You may have to change your username in the `precursor.cfg` file to match your API credentials.  
 * `--snlistfilename` gives you the option to read a different text file that houses a SN list instead of using the address in the `precursor.cfg` file.
 * `--user` specifies your username. If you use this argument, it will override the username you set in `<precursor.cfg>`.
 * `--outrootdir` and `--outsubdir` give you the option to specify different output directories and sub-directories instead of the ones you specified in the `atlaslc.sourceme` file.
@@ -48,13 +49,14 @@ This code allows you to download SN light curves. There are many options to conf
 #### Additional usage:
 You can also use forced photometry to get offset light curves, plot each SN's light curve, and average the light curve data. To do any of these, follow the following instructions.
 * **To get forced photometry offsets automatically**, add `--forcedphot_offset True` to the command. In the `precursor.cfg` file, specify the `radii` to be used (you can add multiple) and the `n` number of offsets per radius.
-* **To plot each SN's light curve automatically**, add `--plot True` to the command.
-* **To average the light curve data automatically**, add `--offsetstats True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
+* **To plot each SN's light curve automatically**, add `--plot True` to the command. You can also specify the x and y limits using the following arguments: `--xlim_lower`, `--xlim_upper`, `--ylim_lower`, and `--ylim_upper`.
+* **To average the light curve data automatically**, add `--averagelc True` to the command. In the `precursor.cfg` file, specify the `MJDbinsize` to be used, OR add `--MJDbinsize` to the command.
+* **To detect precursor bumps in the data**, add `--detectbumps True` to the command. You can also simulate bumps using Gaussian models by using the argument `--sim_gaussian` and specifying the MJDs to insert a bump, the peak magnitude, and the length. For example, `--sim_gaussian 58000,58325 19,20,20.5,21 30` would add simulated bumps at the MJDs 58000 and 58325. These bumps would have peak magnitudes of 19, 20, 20.5, and 21, all shown in different plots. They would also have lengths of 30.
 
 Additional functionality enables you to do these tasks using existing data that has already been downloaded.
-* **To plot each SN's light curve using existing data**, initialize the program using `plot_lc.py`, then add to the command the SN name(s) you want plotted.
+* **To plot each SN's light curve using existing data**, initialize the program using `plot_lc.py`, then add to the command the SN name(s) you want plotted. Again, you can also specify the x and y limits using the following arguments: `--xlim_lower`, `--xlim_upper`, `--ylim_lower`, and `--ylim_upper`.
 * **To clean up existing SN data and flag in the Mask column**, run `cleanup_lc.py`, then add to the command the SN name(s) you want plotted.
-* **To average the light curves using existing data**, initialize the program using `offsetstats.py`, then add to the command the SN name(s) you want plotted. You can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
+* **To average the light curves using existing data**, initialize the program using `averageLC.py`, then add to the command the SN name(s) you want plotted. You can also override the MJDbinsize you set in `precursor.cfg` by adding `--MJDbinsize` to the command.
 
 #### Using autoadd.py with your snlist.txt
 Given a TNS name, `autoadd.py` can automatically retrieve the RA and Dec coordinates from the TNS and add the TNS name, RA, and Dec to `snlist.txt`. To run the script, follow the following instructions:

@@ -4,8 +4,8 @@
 '''
 
 import numpy as np
-import math
-import sys,socket,os,re,io
+import pandas as pd
+import math,requests,sys,socket,os,re,io
 from astropy.io import ascii
 from astropy import units as u
 from astropy.coordinates import Angle
@@ -15,7 +15,6 @@ import argparse
 from tools import rmfile
 from tools import RaInDeg
 from tools import DecInDeg
-import pandas as pd
 #from astrotable import astrotableclass
 from download_atlas_lc import download_atlas_lc_class
 from SNloop import SNloopclass
@@ -34,16 +33,22 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 		averagelcclass.__init__(self)
 		self.download_atlas_lc = download_atlas_lc_class()
 
-	def downloadlc(self, SNindex, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, controlindex=None):
+	def downloadlc(self, SNindex, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, controlindex=None, token_header=None):
+		self.download_atlas_lc.verbose = self.verbose
+		self.download_atlas_lc.debug = self.debug
+
 		RA = self.RADECtable.t.at[controlindex,'Ra']
 		Dec = self.RADECtable.t.at[controlindex,'Dec']
 
-		self.download_atlas_lc.verbose = self.verbose
-		self.download_atlas_lc.debug = self.debug
-		self.download_atlas_lc.get_lc(RA,Dec,lookbacktime_days=lookbacktime_days)
-
-		# read the lc into a pandas table
-		self.lc.t = pd.read_csv(io.StringIO('\n'.join(self.download_atlas_lc.lcraw)),delim_whitespace=True,skipinitialspace=True)
+		if self.api is True:
+			if token_header is None:
+				raise RuntimeError('No token header!')
+			self.lc.t = self.download_atlas_lc.get_result(RA, Dec, token_header, lookbacktime_days=lookbacktime_days)
+		else:
+			self.download_atlas_lc.get_lc(RA,Dec,lookbacktime_days=lookbacktime_days)
+			self.lc.t = pd.read_csv(io.StringIO('\n'.join(self.download_atlas_lc.lcraw)),delim_whitespace=True,skipinitialspace=True)
+		
+		# add mask column
 		mask = np.zeros((len(self.lc.t)), dtype=int)
 		self.lc.t = self.lc.t.assign(Mask=mask)
 		
@@ -82,8 +87,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			ControlID = 1
 			foundflag = False
 
-			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree) # why not just put in RA var?? lol
-			Dec = Angle(DecInDeg(self.t.at[SNindex,'dec']),u.degree)
+			RA = Angle(RaInDeg(RA),u.degree)
+			Dec = Angle(DecInDeg(Dec),u.degree)
 			#print('RA,Dec: %s %s %f %f' % (self.t.at[SNindex,'ra'],self.t.at[SNindex,'dec'],RA.degree,Dec.degree)) # delete me
 
 			for pattern in pattern_list: 
@@ -180,47 +185,49 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 							print('#Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew.degree, DECnew.degree))
 						ControlID += 1
 		else:
-			RA = Angle(RaInDeg(self.t.at[SNindex,'ra']),u.degree) # just put in RA var
-			Dec = Angle(DecInDeg(self.t.at[SNindex,'dec']),u.degree) # just put in Dec var
+			RA = Angle(RaInDeg(RA),u.degree)
+			Dec = Angle(DecInDeg(Dec),u.degree)
 			df = pd.DataFrame([[0,0,RA.degree,Dec.degree,0,0,0,0,0,0]], columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 			self.RADECtable.t = self.RADECtable.t.append(df, ignore_index=True)
 
-	def downloadcontrollc(self, SNindex, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None,pattern=None):
+	def downloadcontrollc(self, args, SNindex, username, password, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, pattern=None):
 		print('Control LC status: ',forcedphot_offset)
 		if forcedphot_offset == 'True':
-			#print('Running forcedphot Control lc with offsets for %s...' % self.t.at[SNindex,'tnsname'])
+			# get control lc data
+
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
 			
 			self.defineRADEClist(RA,Dec,SNindex,pattern=pattern)
 			print(self.RADECtable.write(index=True,overwrite=False))
 			
-			# add new row for each offset using data from RADECtable
+			if self.api:
+				print('Connecting to API...')
+				# API IMPLEMENTATION IS A WORK IN PROGRESS AND IS NOT FUNCTIONAL YET
+				token_header = self.download_atlas_lc.connect_atlas(username,password)
+				print('TOKEN HEADER: ',token_header)
+			else:
+				print('Connecting to SSH...')
+				self.download_atlas_lc.connect(args.atlasmachine,username,password)
+				token_header = None
+			
 			for i in range(len(self.RADECtable.t)):
-				if self.verbose:
-					print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
+				if self.verbose: print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
+				self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i,token_header=token_header)
 
-				#RA = self.RADECtable.t.at[i,'Ra']
-				#Dec = self.RADECtable.t.at[i,'Dec']
-				self.downloadlc(SNindex,
-							 lookbacktime_days=lookbacktime_days,
-							 savelc=savelc,
-							 overwrite=overwrite,
-							 fileformat=fileformat,
-							 controlindex=i)
 				print('Length of lc: ',len(self.lc.t))
 				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
 				ofilt = np.where(self.lc.t['F']=='o')
 				self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
 				cfilt = np.where(self.lc.t['F']=='c')
 				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
-			
+				
 			if savelc:
 				self.saveRADEClist(SNindex,filt='c')
 				self.saveRADEClist(SNindex,filt='o')
 		else:
-			#print('Skipping forcedphot control lc for %s...' % self.t.at[SNindex,'tnsname'])
-			# only add SN data in new row without offsets
+			# only get SN data
+
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
 
@@ -228,16 +235,19 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			if self.verbose>1:
 				print(self.RADECtable.write(index=True,overwrite=False))
 
+			if self.api:
+				print('Connecting to API...')
+				# API IMPLEMENTATION IS A WORK IN PROGRESS AND IS NOT FUNCTIONAL YET
+				token_header = self.download_atlas_lc.connect_atlas(username,password)
+				print('TOKEN HEADER: ',token_header)
+			else:
+				print('Connecting to SSH...')
+				self.download_atlas_lc.connect(args.atlasmachine,username,password)
+				token_header = None
 			
 			for i in range(len(self.RADECtable.t)):
-				if self.verbose:
-					print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
-				self.downloadlc(SNindex,
-							 lookbacktime_days=lookbacktime_days,
-							 savelc=savelc,
-							 overwrite=overwrite,
-							 fileformat=fileformat,
-							 controlindex=i)
+				if self.verbose: print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
+				self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i,token_header=token_header)
 				
 				print('Length of lc: ',len(self.lc.t))
 				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
@@ -247,7 +257,6 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
 
 			if savelc:
-				#self.saveRADEClist(SNindex)
 				self.saveRADEClist(SNindex,filt='c')
 				self.saveRADEClist(SNindex,filt='o')
 
@@ -259,7 +268,7 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	SNindexlist = downloadlc.initialize(args)
-
+	
 	username = downloadlc.cfg.params['username']
 	if username is False:
 		username = os.environ['USER']
@@ -268,8 +277,8 @@ if __name__ == '__main__':
 	print('ATLAS username: ', username)
 	password=args.passwd
 	print('ATLAS password length: ',len(password))
-
-	downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
+	
+	#downloadlc.download_atlas_lc.connect(args.atlasmachine,username,password)
 
 	pattern = downloadlc.cfg.params['forcedphotpatterns']['patterns_to_use']
 
@@ -277,12 +286,51 @@ if __name__ == '__main__':
 		if not(isinstance(downloadlc.t.at[SNindex,'tnsname'],str)):
 			print('\nnan detected, skipping...')
 		else:
-			downloadlc.downloadcontrollc(SNindex,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
-			downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
-			downloadlc.verifyMJD(SNindex)
-			downloadlc.cleanuplcloop(args,SNindex)
-			#if args.averagelc: downloadlc.averagelcloop(args,SNindex,controlindex=controlindex)
-			if (args.forcedphot_offset) and (args.averagelc): 
-				downloadlc.averagelcloop(SNindex)
-			if args.plot: 
-				downloadlc.plotlcloop(args,SNindex)
+			downloadlc.downloadcontrollc(args,SNindex,username,password,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
+			if args.filt is None:
+				filtlist = ['o','c']
+				print('Looping through c and o filters...')
+			else:
+				filtlist = [args.filt]
+			for filt in filtlist:
+				print('### FILTER SET: %s' % filt)
+				downloadlc.filt = filt
+				downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+				downloadlc.verifyMJD(SNindex)
+				downloadlc.cleanuplcloop(args,SNindex)
+				if (args.forcedphot_offset) and (args.averagelc): 
+					downloadlc.averagelcloop(SNindex)
+				if args.plot: 
+					downloadlc.plotlcloop(args,SNindex)
+				if args.detectbumps:
+					downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)
+				print('Finished with filter %s!' % filt)
+			"""
+			if args.filt is None:
+				print('Looping through c and o filters...')
+				for filt in ['o','c']:
+					print('### FILTER SET: %s' % filt)
+					downloadlc.filt = filt
+					downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+					downloadlc.verifyMJD(SNindex)
+					downloadlc.cleanuplcloop(args,SNindex)
+					if (args.forcedphot_offset) and (args.averagelc): 
+						downloadlc.averagelcloop(SNindex)
+					if args.plot: 
+						downloadlc.plotlcloop(args,SNindex)
+					if args.detectbumps:
+						downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)
+					print('Finished with filter %s!' % filt)
+			else:
+				print('### FILTER SET: %s' % args.filt)
+				downloadlc.filt = args.filt
+				downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+				downloadlc.verifyMJD(SNindex)
+				downloadlc.cleanuplcloop(args,SNindex)
+				if (args.forcedphot_offset) and (args.averagelc): 
+					downloadlc.averagelcloop(SNindex)
+				if args.plot: 
+					downloadlc.plotlcloop(args,SNindex)
+				if args.detectbumps:
+					downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)
+			"""

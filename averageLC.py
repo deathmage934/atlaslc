@@ -178,7 +178,7 @@ class averagelcclass(SNloopclass):
             if (not self.cfg.params['averageLC']['apply2offsets']) and (controlindex>0):
                 break
 
-            # average the light curve by MJDbinszie
+            # average the light curve by MJDbinsize
             self.calcaveragelc(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
 
         print('### Averaging LCs done')
@@ -191,7 +191,20 @@ if __name__ == '__main__':
 
     SNindexlist = averagelc.initialize(args)
 
-    for SNindex in SNindexlist:
-        print('Averaging lc for ',averagelc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(averagelc.t)))
-        averagelc.loadRADEClist(SNindex,filt=averagelc.filt)
-        averagelc.averagelcloop(SNindex,MJDbinsize=args.MJDbinsize)
+    if args.filt is None:
+        print('Looping through c and o filters...')
+        for filt in ['o','c']:
+            print('### FILTER SET: %s' % filt)
+            averagelc.filt = filt
+            for SNindex in SNindexlist:
+                print('Averaging lc for ',averagelc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(averagelc.t)))
+                averagelc.loadRADEClist(SNindex,filt=averagelc.filt)
+                averagelc.averagelcloop(SNindex,MJDbinsize=args.MJDbinsize)
+            print('Finished with filter %s!' % filt)
+    else:
+        print('### FILTER SET: %s' % args.filt)
+        averagelc.filt = args.filt
+        for SNindex in SNindexlist:
+            print('Averaging lc for ',averagelc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(averagelc.t)))
+            averagelc.loadRADEClist(SNindex,filt=averagelc.filt)
+            averagelc.averagelcloop(SNindex,MJDbinsize=args.MJDbinsize)

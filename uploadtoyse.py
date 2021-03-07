@@ -58,6 +58,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		self.TNSlistfilename = None
 		self.TNSlistfile = pdastroclass(columns=['TNSname','ra','dec'])
 		self.lc = pdastroclass()
+		self.api = False
 
 	def YSE_list(self):
 		all_cand = pd.read_csv('https://ziggy.ucolick.org/yse/explorer/147/download?format=csv')
@@ -254,22 +255,26 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
 	def downloadyselc(self,args,ra,dec,controlindex,lookbacktime_days=None):
 		self.download_atlas_lc.verbose = 1
-		self.download_atlas_lc.connect(args.atlasmachine,args.user,args.passwd)
-		self.download_atlas_lc.get_lc(ra,dec,lookbacktime_days=lookbacktime_days)
 
-		# read the lc into a pandas table, sort by MJD, and remove nans
-		self.lc.t = pd.read_csv(io.StringIO('\n'.join(self.download_atlas_lc.lcraw)),delim_whitespace=True,skipinitialspace=True)
+		if self.api is True:
+			print('Connecting to API...')
+			# API IMPLEMENTATION IS A WORK IN PROGRESS AND IS NOT FUNCTIONAL YET
+			token_header = self.download_atlas_lc.connect_atlas(args.user,args.passwd)
+			print('TOKEN HEADER: ',token_header)
+			self.lc.t = self.download_atlas_lc.get_result(ra, dec, token_header, lookbacktime_days=lookbacktime_days)
+		else:
+			print('Connecting to SSH...')
+			self.download_atlas_lc.connect(args.atlasmachine,args.user,args.passwd)
+			self.download_atlas_lc.get_lc(ra,dec,lookbacktime_days=lookbacktime_days)
+			self.lc.t = pd.read_csv(io.StringIO('\n'.join(self.download_atlas_lc.lcraw)),delim_whitespace=True,skipinitialspace=True)
+		
 		mask = np.zeros((len(self.lc.t)), dtype=int)
 		self.lc.t = self.lc.t.assign(Mask=mask)
-
-		#self.lc.write()
-		#sys.exit(0)
 
 		self.lc.t = self.lc.t.sort_values(by=['MJD'],ignore_index=True)
 		indices = self.lc.ix_remove_null(colnames='uJy')
 
 		# save the lc file with the output filename
-		#oindex = '%03d' % controlindex
 		self.saveyselc(TNSname,controlindex,indices=indices)
 
 		# split the lc file into 2 separate files by filter
@@ -291,8 +296,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		Dec = dec
 		if args.forcedphot_offset == 'True':
 			self.defineRADECtable(RA,Dec,pattern=pattern)
-			#print(self.RADECtable.write(index=True,overwrite=False)) # delete me
-
 			for i in range(len(self.RADECtable.t)):
 				print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
 				if self.RADECtable.t.at[i,'ControlID']==0:
@@ -314,7 +317,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
 					cfilt = np.where(self.lc.t['F']=='c')
 					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
-
 			self.saveRADECtable(TNSname,'c')
 			self.saveRADECtable(TNSname,'o')
 		else:
@@ -337,6 +339,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			self.saveRADECtable(TNSname,'c')
 			self.saveRADECtable(TNSname,'o')
 
+	# NEEDS UPDATING
+	"""
 	def cleanupYSEcontrollc(self,args,TNSname):
 		self.loadRADECtable(TNSname)
 		for controlindex in range(len(self.RADECtable.t)):
@@ -385,7 +389,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
 				# save lc with additional mask column
 				self.saveyselc(TNSname,controlindex,filt,overwrite=True)
-	'''
+	"""
+	"""
 	def getcleanlc(self,args):
 		flags = self.cfg.params['upltoyse']['flags']
 		print('Setting indices using flags: %x' % flags)
@@ -403,7 +408,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		lc_dm = self.lc.t.loc[cuts_indices,'dm']
 		lc_mjd = self.lc.t.loc[cuts_indices,'MJD']
 		#return(lc_m, lc_dm, lc_mjd, cuts_indices)
-	'''
+	"""
 	def averageYSElc(self,args,TNSname):
 		self.loadRADECtable(TNSname)
 
@@ -498,8 +503,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
 		
 		# clean up lc using chi square and uncertainty cuts
-		if args.cleanlc is True:
-			self.cleanupYSEcontrollc(args,TNSname)
+		#if args.cleanlc is True:
+			#self.cleanupYSEcontrollc(args,TNSname)
 			#self.getcleanlc(args,TNSname)
 
 		#if args.plotlc is True:
@@ -526,13 +531,14 @@ if __name__ == '__main__':
 	parser.add_argument('--sourcedir', default=None, help='source code directory')
 	parser.add_argument('--outrootdir', default=None, help='output root directory')
 	parser.add_argument('--outsubdir', default=None, help='output subdirectory')
+	parser.add_argument('--api', default=False, help=('use API instead of SSH to get light curves from ATLAS'))
 	parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
 	parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
-	parser.add_argument('--plotlc', default=False, help=('plot lcs')) # to add
-	parser.add_argument('--cleanlc', default=False, help=('upload only clean data to yse')) # in progress
-	parser.add_argument('--averagelc', default=False, help=('average lcs')) # to add
-	parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
-	parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
+	#parser.add_argument('--plotlc', default=False, help=('plot lcs')) # to add
+	#parser.add_argument('--cleanlc', default=False, help=('upload only clean data to yse')) # in progress
+	#parser.add_argument('--averagelc', default=False, help=('average lcs')) # to add
+	#parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
+	#parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
 	parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float) # to add
 
 	# add config file and atlaslc arguments
@@ -574,8 +580,6 @@ if __name__ == '__main__':
 		print("TNSlistfilename: ",upltoyse.TNSlistfilename)
 	else:
 		upltoyse.YSEtable.t = upltoyse.YSE_list()
-		#filename =
-		#upltoyse.YSEtable.write(,overwrite=True)
 		# TNSnamelist set to ojects in YSE list
 		upltoyse.TNSnamelist = upltoyse.YSEtable.t['Name'].values
 		print("TNSnamelist from YSE: ",upltoyse.TNSnamelist) # change me
@@ -587,6 +591,10 @@ if __name__ == '__main__':
 	upltoyse.averagelctable = pdastroclass(columns=['ControlID','MJD',upltoyse.flux_colname,upltoyse.dflux_colname,'stdev','X2norm','Nused','Nclipped','MJDNused','MJDNskipped'])
 	upltoyse.RADECtable.default_formatters = {'ControlID':'{:3d}'.format,'PatternID':'{:2d}'.format,'Ra':'{:.8f}'.format,'Dec':'{:.8f}'.format,'RaOffset':'{:.2f}'.format,'DecOffset':'{:.2f}'.format,'Radius':'{:.2f}'.format,'Ndet':'{:4d}'.format,'Ndet_c':'{:4d}'.format,'Ndet_o':'{:4d}'.format}
 	upltoyse.averagelctable.default_formatters = {'ControlID':'{:3d}'.format,'MJD':'{:.5f}'.format,upltoyse.flux_colname:'{:.2f}'.format,upltoyse.dflux_colname:'{:.2f}'.format,'stdev':'{:.2f}'.format,'X2norm':'{:.3f}'.format,'Nused':'{:4d}'.format,'Nclipped':'{:4d}'.format,'MJDNused':'{:4d}'.format,'MJDNskipped':'{:4d}'.format}
+
+	# api
+	upltoyse.api = upltoyse.cfg.params['api']
+	if args.api is True: upltoyse.api = True
 
 	for TNSname in upltoyse.TNSnamelist:
 		index = np.where(upltoyse.TNSnamelist==TNSname)

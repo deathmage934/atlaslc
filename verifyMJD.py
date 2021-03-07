@@ -111,7 +111,19 @@ if __name__ == '__main__':
 
     SNindexlist = verifyMJD.initialize(args)
 
-    for SNindex in SNindexlist:
-        verifyMJD.loadRADEClist(SNindex,filt=verifyMJD.filt)
-        verifyMJD.verifyMJD(SNindex)
+    if args.filt is None:
+        print('Looping through c and o filters...')
+        for filt in ['o','c']:
+            print('### FILTER SET: %s' % filt)
+            verifyMJD.filt = filt
+            for SNindex in SNindexlist:
+                verifyMJD.loadRADEClist(SNindex,filt=verifyMJD.filt)
+                verifyMJD.verifyMJD(SNindex)
+            print('Finished with filter %s!' % filt)
+    else:
+        print('### FILTER SET: %s' % args.filt)
+        verifyMJD.filt = args.filt
+        for SNindex in SNindexlist:
+            verifyMJD.loadRADEClist(SNindex,filt=verifyMJD.filt)
+            verifyMJD.verifyMJD(SNindex)
  

@@ -135,7 +135,7 @@ class cleanuplcclass(SNloopclass):
 
     def calc_c1c2_stats(self,SNindex,uJy,duJy,mask):
         # load main lc
-        self.load_lc(SNindex,controlindex=0)
+        self.load_lc(SNindex,controlindex=0,filt=self.filt)
 
         N_MJD = uJy.shape[-1]
 
@@ -165,7 +165,7 @@ class cleanuplcclass(SNloopclass):
 
     def make_c1c2_cuts(self,SNindex):
         # load main lc
-        self.load_lc(SNindex,controlindex=0)
+        self.load_lc(SNindex,controlindex=0,filt=self.filt)
 
         for index in self.lc.getindices():
             # cut1
@@ -176,7 +176,7 @@ class cleanuplcclass(SNloopclass):
                 mask |= self.flag_c1_absnormmean
                 
             if mask == 0:
-                self.lc.t.loc[index,'Mask'] |= self.flag_c1_good
+                #self.lc.t.loc[index,'Mask'] |= self.flag_c1_good
                 # if cut1 indicates a good measurement, skip cut2
                 continue                
             else:
@@ -194,12 +194,11 @@ class cleanuplcclass(SNloopclass):
                 mask |= self.flag_c2_Nused
 
             if mask == 0 and self.lc.t.loc[index,'c2_Nclip']==0:
-                self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_good)
+                #self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_good)
                 # all good!!
                 continue         
             elif mask == 0:
                 self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],self.flag_c2_ok)
-                # all good!!
                 continue         
             else:
                 self.lc.t.loc[index,'Mask'] = np.bitwise_or(self.lc.t.loc[index,'Mask'],mask|self.flag_c2_bad)
@@ -257,9 +256,22 @@ if __name__ == '__main__':
 
     SNindexlist = cleanuplc.initialize(args)
 
-    for SNindex in SNindexlist:
-        print('Cleaning lc for ',cleanuplc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(cleanuplc.t)))
-        cleanuplc.loadRADEClist(SNindex=SNindex,filt=cleanuplc.filt)
-        cleanuplc.cleanuplcloop(args,SNindex)
+    if args.filt is None:
+        print('Looping through c and o filters...')
+        for filt in ['o','c']:
+            print('### FILTER SET: %s' % filt)
+            cleanuplc.filt = filt
+            for SNindex in SNindexlist:
+                print('Cleaning lc for ',cleanuplc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(cleanuplc.t)))
+                cleanuplc.loadRADEClist(SNindex=SNindex,filt=cleanuplc.filt)
+                cleanuplc.cleanuplcloop(args,SNindex)
+            print('Finished with filter %s!' % filt)
+    else:
+        print('### FILTER SET: %s' % args.filt)
+        cleanuplc.filt = args.filt
+        for SNindex in SNindexlist:
+            print('Cleaning lc for ',cleanuplc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(cleanuplc.t)))
+            cleanuplc.loadRADEClist(SNindex=SNindex,filt=cleanuplc.filt)
+            cleanuplc.cleanuplcloop(args,SNindex)
 
     print('\n')

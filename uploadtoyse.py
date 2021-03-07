@@ -25,15 +25,17 @@ from astropy.coordinates import Angle
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 
-# for command input: uploadtoyse.py -t 2020lse --user USERNAME --passwd 'PASSWORD'
-# for TNSlistfile input: uploadtoyse.py -n tnslist.txt --user USERNAME --passwd 'PASSWORD'
-# for YSE list input: uploadtoyse.py --user USERNAME --passwd 'PASSWORD'
+"""
+for command input: uploadtoyse.py -t 2020lse --user USERNAME --passwd 'PASSWORD'
+for TNSlistfile input: uploadtoyse.py -n tnslist.txt --user USERNAME --passwd 'PASSWORD'
+for YSE list input: uploadtoyse.py --user USERNAME --passwd 'PASSWORD'
 
-# you must specify source directory, output root directory (has tnslist.txt if you want to use it), and output subdirectory (has all the downloaded data)
-# you can specify these in the commandline using --sourcedir, --outrootdir, and --outsubdir
-# OR
-# 1. you can set the source directory and the output root directory in atlaslc.sourceme
-# 2. then set the output subdirectory in precursor.cfg next to 'yse_outsubdir' (currently set to default 'ysetest')
+you must specify source directory, output root directory (has tnslist.txt if you want to use it), and output subdirectory (has all the downloaded data).
+you can specify these in the commandline using --sourcedir, --outrootdir, and --outsubdir
+OR
+1. you can set the source directory and the output root directory in atlaslc.sourceme
+2. then set the output subdirectory in precursor.cfg next to 'yse_outsubdir' (currently set to default 'ysetest')
+"""
 
 class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 	def __init__(self):
@@ -81,11 +83,10 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 	def yselcfilename(self,TNSname,controlindex,filt):
 		oindex = '%03d' % controlindex
 		SNID = TNSname
-		filt = filt
-		if not(filt is None):
-			filename = '%s/%s/%s/%s_i%s.%s.lc.txt' % (self.outrootdir,self.outsubdir,SNID,SNID,oindex,filt)
-		else:
-			filename = '%s/%s/%s/%s_i%s.lc.txt' % (self.outrootdir,self.outsubdir,SNID,SNID,oindex)
+		#if not(filt is None):
+		filename = '%s/%s/%s/%s_i%s.%s.lc.txt' % (self.outrootdir,self.outsubdir,SNID,SNID,oindex,filt)
+		#else:
+			#filename = '%s/%s/%s/%s_i%s.lc.txt' % (self.outrootdir,self.outsubdir,SNID,SNID,oindex)
 		return(filename)
 
 	def saveyselc(self,TNSname,controlindex,filt=None,indices=None,overwrite=False):
@@ -298,16 +299,17 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			self.defineRADECtable(RA,Dec,pattern=pattern)
 			for i in range(len(self.RADECtable.t)):
 				print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
-				if self.RADECtable.t.at[i,'ControlID']==0:
-					if self.existflag is False:
-						self.downloadyselc(args,RA,Dec,i,lookbacktime_days=lookbacktime_days)
-						print('Length of lc: ',len(self.lc.t))
+				#if self.RADECtable.t.at[i,'ControlID']==0:
+				if self.existflag is False:
+					self.downloadyselc(args,RA,Dec,i,lookbacktime_days=lookbacktime_days)
+					print('Length of lc: ',len(self.lc.t))
 
-						self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
-						ofilt = np.where(self.lc.t['F']=='o')
-						self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
-						cfilt = np.where(self.lc.t['F']=='c')
-						self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+					self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
+					ofilt = np.where(self.lc.t['F']=='o')
+					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
+					cfilt = np.where(self.lc.t['F']=='c')
+					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+				"""
 				else:
 					self.downloadyselc(args,RA,Dec,i,lookbacktime_days=lookbacktime_days)
 					print('Length of lc: ',len(self.lc.t))
@@ -317,6 +319,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
 					cfilt = np.where(self.lc.t['F']=='c')
 					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+				"""
 			self.saveRADECtable(TNSname,'c')
 			self.saveRADECtable(TNSname,'o')
 		else:
@@ -409,6 +412,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		lc_mjd = self.lc.t.loc[cuts_indices,'MJD']
 		#return(lc_m, lc_dm, lc_mjd, cuts_indices)
 	"""
+	"""
 	def averageYSElc(self,args,TNSname):
 		self.loadRADECtable(TNSname)
 
@@ -430,7 +434,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			if len(self.lc.t) == 0: return(1)
 
 			# AHHHHHHHHHHHHH 
-			'''
 			if makecuts_apply == True:
 				if not('Mask' in self.lc.t.columns):
 					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
@@ -446,6 +449,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 				print('Calculating average_lc table for offset index %d' % controlindex) 
 				self.averagelcs(args, SNindex, controlindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=MJDbinsize)
 			'''
+	"""
 	def uploadloop(self,args,TNSname,overwrite=False):
 		# GET RA AND DEC
 		if args.tnsnamelist:
@@ -477,17 +481,17 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
 		# check if sn already has lc downloaded
 		self.existflag = False
-		'''
-		for filt in ['c','o']:
-			#oindex = '%03d' % 0
-			filename = self.yselcfilename(TNSname,0,filt)
-			if os.path.exists(filename):
-				print("Data for %s with filter %s already exists" % (TNSname,filt))
-				self.existflag = True
-			else:
-				print("Found no data for %s with filter %s, downloading full lc..." % (TNSname,filt))
-				self.existflag = False
-		'''
+		
+		if args.overwrite is False:
+			for filt in ['c','o']:
+				#oindex = '%03d' % 0
+				filename = self.yselcfilename(TNSname,0,filt)
+				if os.path.exists(filename):
+					print("Data for %s with filter %s already exists" % (TNSname,filt))
+					self.existflag = True
+				else:
+					print("Found no data for %s with filter %s, downloading full lc..." % (TNSname,filt))
+					self.existflag = False
 
 		# set offset pattern
 		if not(args.pattern is None):
@@ -528,6 +532,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(conflict_handler='resolve')
 	parser.add_argument('-t','--tnsnamelist', default=None, nargs='+', help='name of transients to download and upload')
 	parser.add_argument('-n','--tnslistfilename', default=None, help='address of file containing TNS names, ra, and dec')
+	parser.add_argument('-o','--overwrite',default=True,help='overwrite existing files')
 	parser.add_argument('--sourcedir', default=None, help='source code directory')
 	parser.add_argument('--outrootdir', default=None, help='output root directory')
 	parser.add_argument('--outsubdir', default=None, help='output subdirectory')

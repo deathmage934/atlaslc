@@ -406,7 +406,7 @@ class SNloopclass(pdastroclass):
         """
         jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
         results = jobs.quick(query, task_name="python cone search")
-        return(results)
+        return(results)a
 
     def initialize(self,args):
         # load config files

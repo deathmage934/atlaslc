@@ -507,7 +507,7 @@ class pdastroclass:
                     else:
                         self.t[fitskey][index]=None
 
-    def dateobs2mjd(self,dateobscol,mjdcol,timeobscol=None):
+    def dateobs2mjd(self,dateobscol,mjdcol,timeobscol=None,tformat='isot'):
         if not (mjdcol in self.t.columns):
             self.t[mjdcol]=None
 
@@ -516,7 +516,7 @@ class pdastroclass:
         else:
             dateobslist = list(self.t[dateobscol])
 
-        dateobjects = Time(dateobslist,  format='isot', scale='utc')
+        dateobjects = Time(dateobslist,  format=tformat, scale='utc')
         mjds = dateobjects.mjd
 
         self.t[mjdcol]=mjds

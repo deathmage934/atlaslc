@@ -24,53 +24,6 @@ class detectbumpsclass(SNloopclass):
 
 		self.filt_dict = None
 
-	def applyrollingDATETIME_OLDNOTUSED(self,SNindex,controlindex=0,MJDbinsize=1,gaussian_sigma_days=30.0,rolling_win_type='gaussian'):
-		self.load_lc(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
-
-		indices = self.lc.ix_unmasked('Mask',self.flag_day_bad)
-
-		# DELME!!!!!!!!!
-		self.lc.t.loc[indices,self.flux_colname]=0.0
-		
-		self.lc.t.loc[indices,'SNR']=self.lc.t.loc[indices,self.flux_colname]/self.lc.t.loc[indices,self.dflux_colname]
-
-		# DELME!!!!!!!!!
-		self.lc.t.loc[indices[20:30],'SNR']=1.0
-		self.lc.t.loc[indices[50:90],'SNR']=2.0
-
-		mjds = self.lc.t.loc[indices,'MJD']
-		datelist = Time(mjds,format='mjd', scale='utc')
-		
-		temp = pd.DataFrame({'SNR':list(self.lc.t.loc[indices,'SNR'])},index=pd.to_datetime(datelist.iso))
-		#temp = pd.DataFrame(self.lc.t['SNR'])
-
-		windowsize = gaussian_sigma_days*24*3600
-		windowsize_sec = 5*24*3600
-		windowsize_days = gaussian_sigma_days
-		print(temp)
-		SNRsum = temp.rolling('%dd' % windowsize_days).sum()
-		self.lc.t.loc[indices,'SNRsum']=list(SNRsum['SNR'])
-		print('bbb',list(SNRsum['SNR']))
-		#sys.exit(0)
-		self.lc.write(indices = indices)
-		
-		plt.close("all")
-		#self.lc.plot(indices = indices, x='MJD',y=['SNR','SNRsum'], kind="scatter")
-		ax = self.lc.plot(indices = indices, x='MJD',y='SNR',kind='scatter',color='blue')
-		self.lc.plot(indices = indices, x='MJD',y='SNRsum',kind='scatter',color='red',ax=ax)
-		plt.show()
-		sys.exit(0)
-		if gaussian_sigma_days is None:
-			SNRsum = temp.rolling('%ds' % windowsize, win_type=rolling_win_type).sum()
-		else:
-			SNRsum = temp.rolling('%ds' % windowsize, win_type=rolling_win_type).sum(std=gaussian_sigma_days)
-			#SNRsum = temp.rolling('%ds' % windowsize, win_type=rolling_win_type).sum()
-		#SNRsum = temp.rolling('2s').sum()
-		print('cccc')
-		print(SNRsum)
-		temp['SNRsum']=SNRsum
-		sys.exit(0)
-
 	def define_options(self, **kwargs):
 		parser = SNloopclass.define_options(self, **kwargs)
 		parser.add_argument('--sim_gaussian', nargs=3, default=None, help=('Comma-separated peakMJD list, peak_appmag, gaussian_sigma: add a Gaussian at peakMJD with a peak apparent magnitude of peak_appmag and a sigma of gaussian_sigma in days.'))
@@ -120,7 +73,7 @@ class detectbumpsclass(SNloopclass):
 				simflux_all = gauss2lc(self.lc.t['MJDbin'],peakMJD,simparams['sim_sigma_minus'],simparams['sim_sigma_plus'],app_mag=simparams['sim_appmag'])
 				self.lc.t['simLC'] += simflux_all
 
-				title += ' %.0f' % peakMJD
+				title += ' %.1f' % peakMJD
 
 			# Make sure all bad rows have SNRsim=0.0, so that they have no impact on the rolling SNRsum
 			self.lc.t['SNRsim']=0.0

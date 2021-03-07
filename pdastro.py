@@ -3,12 +3,10 @@
 wrapper around pandas with convenience functions to ease handling of tables
 A. Rest
 '''
-import sys,os,re,types,copy
+import sys,os,re,types,copy,io
 import numpy as np
 from astropy.time import Time
 import astropy.io.fits as fits
-import astropy
-#import scipy
 import pandas as pd
 from astropy.nddata import bitmask
 
@@ -87,6 +85,32 @@ class pdastroclass:
         self.spline={}
 
 
+    def load_cmpfile(self,filename,**kwargs):
+        """
+        load old frankenstein format of cmp file 
+
+        Parameters
+        ----------
+        filename : 
+            cmp filename.
+
+        Returns
+        -------
+        errorflag and fits header
+
+        """
+        cmphdr = fits.getheader(filename)
+        s = ''
+        for i in range(1,int(cmphdr['NCOLTBL'])+1):
+            s+=' %s' % cmphdr['COLTBL%d' % i]
+        s = re.sub('Xpos','X',s)
+        s = re.sub('Ypos','Y',s)
+        print(s)
+        lines = open(filename,'r').readlines()
+        lines[0]=s
+        errorflag = self.load_spacesep(io.StringIO('\n'.join(lines)))
+        return(errorflag,cmphdr)
+        
     def load_spacesep(self,filename,test4commentedheader=True,namesMapping=None,roundingMapping=None,
                       hexcols=None,auto_find_hexcols=True,
                       na_values=['None','-','--'],verbose=False,**kwargs):
@@ -103,6 +127,7 @@ class pdastroclass:
     def load(self,filename,raiseError=True,test4commentedheader=False,namesMapping=None,roundingMapping=None,
              hexcols=None,auto_find_hexcols=True,verbose=False,**kwargs):
         #self.t = ascii.read(filename,format='commented_header',delimiter='\s',fill_values=[('-',0),('--',0)])
+
         try:
             if verbose: print('Loading %s' % filename)
             self.t = pd.read_table(filename,**kwargs)
@@ -465,7 +490,7 @@ class pdastroclass:
         self.t.loc[index,list(dicti.keys())]=list(dicti.values())
         return(index)
 
-    def fitsheader2table(self,fitsfilecolname,indices=None,requiredfitskeys=None,optionalfitskey=None,raiseError=True,skipcolname=None,headercol=None):
+    def fitsheader2table(self,fitsfilecolname,indices=None,requiredfitskeys=None,optionalfitskey=None,raiseError=True,skipcolname=None,headercol=None,ext=None,extname=None):
 
         indices = self.getindices(indices)        
 
@@ -484,43 +509,134 @@ class pdastroclass:
 
         # loop through the images
         for index in indices:
-            header = fits.getheader(self.t[fitsfilecolname][index])
+            header = fits.getheader(self.t.loc[index,fitsfilecolname],ext=ext,extname=extname)
             if headercol!=None:
                 self.t[headercol]=header
                 
+            if skipcolname!=None:
+                self.t.loc[index,skipcolname]=False
             if requiredfitskeys!=None:
                 for fitskey in requiredfitskeys:
                     if fitskey in header:
-                        self.t[fitskey][index]=header[fitskey]
+                        self.t.loc[index,fitskey]=header[fitskey]
                     else:
                         if raiseError:
                             raise RuntimeError("fits key %s does not exist in file %s" % (fitskey,self.t[fitsfilecolname][index]))
                         else:
-                            self.t[fitskey][index]=None
+                            self.t.loc[index,fitskey]=None
                             if skipcolname!=None:
-                                 self.t[skipcolname][index]=True
+                                 self.t.loc[index,skipcolname]=True
                                  
             if optionalfitskey!=None:
                 for fitskey in optionalfitskey:
                     if fitskey in header:
-                        self.t[fitskey][index]=header[fitskey]
+                        self.t.loc[index,fitskey]=header[fitskey]
                     else:
-                        self.t[fitskey][index]=None
+                        self.t.loc[index,fitskey]=None
 
+    def dateobs2mjd(self,dateobscol,mjdcol,timeobscol=None,indices=None):
+        indices = self.getindices(indices)  
+        if len(indices)==0:
+            return(0)
+
+<<<<<<< HEAD
     def dateobs2mjd(self,dateobscol,mjdcol,timeobscol=None,tformat='isot'):
+=======
+>>>>>>> d3c723bbe2860e7c018bd309ff75aab756dafc03
         if not (mjdcol in self.t.columns):
-            self.t[mjdcol]=None
+            self.t.loc[indices,mjdcol]=None
 
         if timeobscol!=None:
-            dateobslist = list(self.t[dateobscol]+'T'+self.t[timeobscol])
+            dateobslist = list(self.t.loc[indices,dateobscol]+'T'+self.t.loc[indices,timeobscol])
         else:
-            dateobslist = list(self.t[dateobscol])
+            dateobslist = list(self.t.loc[indices,dateobscol])
 
         dateobjects = Time(dateobslist,  format=tformat, scale='utc')
         mjds = dateobjects.mjd
-
-        self.t[mjdcol]=mjds
+        self.t.loc[indices,mjdcol]=mjds
         
+    def calc_color(self,f1,df1,f2,df2,outcolor=None,outcolor_err_nameformat='e(%s)',indices=None,color_formatter='{:.3f}'.format):
+        indices = self.getindices(indices)  
+        if len(indices)==0:
+            return(0)
+        
+        # get color and uncertainty column names
+        if outcolor is None: outcolor = '%s-%s' % (f1,f2)
+        outcolor_err = outcolor_err_nameformat % outcolor
+        # delete all previous results
+        self.t.loc[indices,outcolor]= np.nan
+        self.t.loc[indices,outcolor_err]= np.nan
+
+        # Only use indices for which both filters have uncertainties, i.e. they are not upper limits
+        ix_good = self.ix_remove_null(df1,indices=indices)
+        ix_good = self.ix_remove_null(df2,indices=ix_good)
+
+        self.t[outcolor] = self.t.loc[ix_good,f1] - self.t.loc[ix_good,f2]
+        self.t[outcolor_err] = np.sqrt(np.square(self.t.loc[ix_good,df1]) + np.square(self.t.loc[ix_good,df2]))
+        
+        if not(color_formatter is None):
+            if self.default_formatters is None:
+                self.default_formatters = {}
+            self.default_formatters[outcolor]=color_formatter
+            self.default_formatters[outcolor_err]=color_formatter
+        
+        return(0)
+
+    
+    def flux2mag(self,fluxcol,dfluxcol,magcol,dmagcol,indices=None,
+                 zpt=None,zptcol=None, upperlim_Nsigma=None):
+
+        indices = self.getindices(indices)  
+        if len(indices)==0:
+            return(0)
+        
+        # delete all previous results
+        self.t.loc[indices,magcol]= np.nan
+        self.t.loc[indices,dmagcol]= np.nan
+
+        # if upperlim_Nsigma is not None, then upper limits are calculated. 
+        if upperlim_Nsigma is None:
+            indices_mag = indices
+            # no upper limits
+            indices_ul = indices_ul_negative = []
+        else:
+           # calculate the S/N
+            self.t.loc[indices,'__tmp_SN']=self.t.loc[indices,fluxcol]/self.t.loc[indices,dfluxcol]
+            # Get the indices with valid S/N
+            indices_validSN = self.ix_remove_null('__tmp_SN',indices=indices)
+ 
+            # get the indices for which the S/N>=upperlim_Nsigma
+            indices_mag = self.ix_inrange(['__tmp_SN'],upperlim_Nsigma,indices=indices_validSN)
+            # all the other indices can only be used for upper limits
+            indices_ul = AnotB(indices_validSN,indices_mag) 
+            # get the indices for which the S/N is negative
+            indices_ul_negative = self.ix_inrange(['__tmp_SN'],None,0.0,indices=indices_ul)
+            #self.t = self.t.drop(columns=['__tmp_SN'])
+            
+        # Calculate the mags and uncertainties
+        self.t.loc[indices_mag,magcol]= -2.5*np.log10(self.t.loc[indices_mag,fluxcol])
+        self.t.loc[indices_mag,dmagcol] = 2.5 / np.log(10.0) * self.t.loc[indices_mag,dfluxcol]/self.t.loc[indices_mag,fluxcol]
+
+        # Are there upper limits to be calculated? 
+        if len(indices_ul)>0:
+            # just to be sure, set dmags to nan
+            self.t.loc[indices_ul,dmagcol] = np.nan
+            
+            indices_ul_positive = AnotB(indices_ul,indices_ul_negative) 
+            if len(indices_ul_positive)>0:
+                # If flux is positive: upper limit = flux + Nsigma * dflux
+                self.t.loc[indices_ul_positive,magcol] = -2.5*np.log10(self.t.loc[indices_ul_positive,fluxcol]+upperlim_Nsigma*self.t.loc[indices_ul_positive,dfluxcol])
+
+            if len(indices_ul_negative)>0:
+                # If flux is negative: upper limit = Nsigma * dflux
+                self.t.loc[indices_ul_negative,magcol] = -2.5*np.log10(upperlim_Nsigma*self.t.loc[indices_ul_negative,dfluxcol])
+        
+        if not(zpt is None):        
+            self.t.loc[indices,magcol]+=zpt
+        if not(zptcol is None):        
+            self.t.loc[indices,magcol]+=self.t.loc[indices,zptcol]
+
+
     def initspline(self,xcol,ycol,indices=None,
                    kind='cubic',bounds_error=False,fill_value='extrapolate', 
                    **kwargs):
@@ -755,7 +871,10 @@ class pdastrostatsclass(pdastroclass):
         else:
             if Ngood==1:
                 mean = self.t.loc[ix_good[0],datacol]*1.0
-                mean_err = self.t.loc[ix_good[0],noisecol]*1.0
+                if noisecol is None:
+                    mean_err = None
+                else:
+                    mean_err = self.t.loc[ix_good[0],noisecol]*1.0
             else:
                 mean = None
                 mean_err = None
@@ -783,16 +902,14 @@ class pdastrostatsclass(pdastroclass):
             return(1)
         return(0)
 
-    def calcaverage_sigmacutloop(self,datacol, indices=None, noisecol=None, maskcol=None, maskval=None, 
+    def calcaverage_sigmacutloop(self,datacol, indices=None, noisecol=None, sigmacutFlag=False,
+                                 maskcol=None, maskval=None, 
                                  removeNaNs = True,
                                  Nsigma=3.0,Nitmax=10,verbose=0,
                                  percentile_cut_firstiteration=None,
                                  median_firstiteration=True):
         """
-        mask must have same dimensions than data. If mask[x]=True, then data[x] is not used.
-        noise must have same dimensions than data. If noise != None, then the error weighted mean is calculated.
-        if saveused, then self.use contains array of datapoints used, and self.clipped the array of datapoints clipped
-        median_firstiteration: in the first iteration, use the median instead the mean. This is more robust if there is a population of bad measurements
+         median_firstiteration: in the first iteration, use the median instead the mean. This is more robust if there is a population of bad measurements
         """
 
         # get the indices based on input.
@@ -800,6 +917,15 @@ class pdastrostatsclass(pdastroclass):
 
         self.reset()
         
+        # exclude data if wanted
+        if maskcol!=None:
+            Ntot = len(indices)
+            indices = self.ix_unmasked(maskcol,maskval=maskval,indices=indices)
+            self.statparams['Nmask']= Ntot-len(indices)
+            if verbose>1: print('Keeping {:d} out of {:d}, skippin {:d} because of masking in column {} (maskval={})'.format(len(indices),Ntot,Ntot-len(indices),maskcol,maskval))
+        else:
+            self.statparams['Nmask']= 0
+
         # remove null values if wanted
         if removeNaNs:
             colnames = [datacol]
@@ -813,15 +939,6 @@ class pdastrostatsclass(pdastroclass):
             self.statparams['Nnan']= 0
             
 
-        #self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr','mask'],indices=indices)
-        # exclude data if wanted
-        if maskcol!=None:
-            Ntot = len(indices)
-            indices = self.ix_unmasked(maskcol,maskval=maskval,indices=indices)
-            self.statparams['Nmask']= Ntot-len(indices)
-            if verbose>1: print('Keeping {:d} out of {:d}, skippin {:d} because of masking in column {} (maskval={})'.format(len(indices),Ntot,Ntot-len(indices),maskcol,maskval))
-        else:
-            self.statparams['Nmask']= 0
 
         while ((self.statparams['i']<Nitmax) or (Nitmax==0)) and (not self.statparams['converged']):
             # median only in first iteration and if wanted
@@ -831,8 +948,8 @@ class pdastrostatsclass(pdastroclass):
             if (self.statparams['i']==0):
                 percentile_cut = percentile_cut_firstiteration
 
-            if noisecol is None:
-                errorflag = self.calcaverage_sigmacut(datacol, indices=indices, 
+            if (noisecol is None) or sigmacutFlag:
+                errorflag = self.calcaverage_sigmacut(datacol, indices=indices, noisecol=noisecol,
                                                       mean = self.statparams['mean'], stdev = self.statparams['stdev'],
                                                       Nsigma=Nsigma, 
                                                       medianflag=medianflag, percentile_cut=percentile_cut,
@@ -921,21 +1038,25 @@ class pdastrostatsclass(pdastroclass):
                     self.default_formatters[outcol]=format4outvals.format
             
             if setcol2None:
-                self.t[outcol]=None
+                if param in ['mean','mean_err','stdev','stdev_err','X2norm']:
+                    self.t[outcol]=np.nan
+                else:
+                    self.t[outcol]=None
+                    
             
         return(set(zip(outparams,outcols)))
 
-    def statresults2table(self,pdstats,param2columnmapping,destindex=None):
-        vals=[]
+    def statresults2table(self,statparams,param2columnmapping,destindex=None):
         resultdict={}
+        
+        #statparams = copy.deepcopy(statparams)
         
         # loop through keys,outcols, and assign values
         for (param,outcol) in param2columnmapping:
             if destindex is None:
-                resultdict[outcol]:pdstats.statparams[param]
+                resultdict[outcol]:statparams[param]
             else:
-                #vals.append(pdstats.statparams[param])
-                self.t.loc[destindex,outcol]=pdstats.statparams[param]
+                self.t.loc[destindex,outcol]=statparams[param]
 
         # either put the data into a new row or into an existing one
         if destindex is None:
@@ -947,36 +1068,3 @@ class pdastrostatsclass(pdastroclass):
 
 
 
-"""
-    def statresults2tableOLD(self,desttable,destindex=None,colmapping={},prefix='',suffix='',skipcols=[])
-        vals=[]
-        resultdict={}
-
-        # get matching statistic keys for self.statparams and output cols
-        (keys,outcols)=self.colnames4params(colmapping=colmapping,prefix=prefix,suffix=suffix,skipcols=skipcols)
-
-        # loop through keys,outcols, and assign values
-        for (k,outcol) in zip(keys,outcols):
-            if destindex is None:
-                resultdict[outcol]:self.statparams[k]
-            else:
-                vals.append(self.statparams[k])
-
-        # initialize column if not exist yet
-        cols_not_exists=AnotB(outcols,desttable.columns)
-        if len(cols_not_exists)>0:
-            # redo it, but ordered.
-            print('BBBB',cols_not_exists)
-            cols_not_exists=AnotB(outcols,desttable.columns,keeporder=True)
-            print('BBBB',cols_not_exists)
-            sys.exit(0)
-            for col in cols_not_exists: desttable[col]=None
-
-        # either put the data into a new row or into an existing one
-        if destindex is None:
-            outindex = self.newrow(resultdict)
-        else:
-            outindex = destindex
-            desttable.loc[destindex,outcols]=vals
-        return(outindex)
-"""

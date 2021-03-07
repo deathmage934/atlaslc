@@ -280,7 +280,6 @@ class pdastroclass:
         # if wanted, find columns that are in hexadecimal string format, and convert it interger. 
         # These columns are added to self.hexcols
         if auto_find_hexcols and len(self.t)>0:
-            print('msskjsjddjjdjdjdSISISIIS')
             for col in self.t.columns:
                 if self.t[col].dtype == object and isinstance(self.t.at[0,col],str):
                     if not(hexpattern.search(self.t.at[0,col]) is None):

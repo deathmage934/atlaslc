@@ -155,8 +155,6 @@ class pdastroclass:
         if hexcols is None: hexcols=[]
         hexcols.extend(self.hexcols)
         self.formattable(namesMapping=namesMapping,roundingMapping=roundingMapping,hexcols=hexcols,auto_find_hexcols=auto_find_hexcols)
-        
-        
         return(0)
 
     def write(self,filename=None,indices=None,columns=None,formatters=None,raiseError=True,overwrite=True,verbose=False, 
@@ -282,6 +280,7 @@ class pdastroclass:
         # if wanted, find columns that are in hexadecimal string format, and convert it interger. 
         # These columns are added to self.hexcols
         if auto_find_hexcols and len(self.t)>0:
+            print('msskjsjddjjdjdjdSISISIIS')
             for col in self.t.columns:
                 if self.t[col].dtype == object and isinstance(self.t.at[0,col],str):
                     if not(hexpattern.search(self.t.at[0,col]) is None):
@@ -534,15 +533,16 @@ class pdastroclass:
                     else:
                         self.t.loc[index,fitskey]=None
 
+    """
     def dateobs2mjd(self,dateobscol,mjdcol,timeobscol=None,indices=None):
         indices = self.getindices(indices)  
         if len(indices)==0:
             return(0)
+    """
+    def dateobs2mjd(self,dateobscol,mjdcol,timeobscol=None,indices=None,tformat='isot'):
+        if indices is None:
+            indices = self.getindices()
 
-<<<<<<< HEAD
-    def dateobs2mjd(self,dateobscol,mjdcol,timeobscol=None,tformat='isot'):
-=======
->>>>>>> d3c723bbe2860e7c018bd309ff75aab756dafc03
         if not (mjdcol in self.t.columns):
             self.t.loc[indices,mjdcol]=None
 

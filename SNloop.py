@@ -115,7 +115,7 @@ class SNloopclass(pdastroclass):
         parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
         parser.add_argument('-s','--savelc', default=False, action="store_true", help=("save lc"))
         parser.add_argument('--outrootdir', default=outrootdir, help=('output root directory.''(default=%(default)s)'))
-        parser.add_argument('--outsubdir', default=None, help=('subdir added to the output root directory (and filename) ''(default=%(default)s)'))
+        parser.add_argument('--outsubdir', default=None, help=('subdir added to the output root directory (and filename) (default=%(default)s)'))
         parser.add_argument('-c', '--cfgfile', default=cfgfile, help='main config file. (default=%(default)s)')
         parser.add_argument('-e', '--extracfgfile', default=None, action='append', help=('additional config file. These cfg files do not need to have all ''parameters. They overwrite the parameters in the main cfg file.'))
         parser.add_argument('-p', '--params', default=None, action='append', nargs=2, help=('"param val": change parameter in config file (not in section, only ''main part) (default=%(default)s)'))

@@ -70,8 +70,8 @@ class autoaddclass(SNloopclass):
 
 	def getdisc_date(self,tnsname):
 		obj_name=tnsname
-		print('Getting data from https://wis-tns.weizmann.ac.il/object/'+obj_name)
-		page = requests.get('https://wis-tns.weizmann.ac.il/object/'+obj_name)
+		print('Getting data from https://www.wis-tns.org/object/'+obj_name)
+		page = requests.get('https://www.wis-tns.org/object/'+obj_name)
 		tree = html.fromstring(page.content)
 		
 		discoverydate = tree.xpath('//div[@class="field field-discoverydate"]//div[@class="value"]/b/text()')

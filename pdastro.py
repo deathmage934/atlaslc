@@ -1045,7 +1045,7 @@ class pdastrostatsclass(pdastroclass):
             
         return(set(zip(outparams,outcols)))
 
-    def statresults2table(self,statparams,param2columnmapping,destindex=None):
+    def statresults2table(self,pdstats,param2columnmapping,destindex=None):
         resultdict={}
         
         #statparams = copy.deepcopy(statparams)
@@ -1053,9 +1053,9 @@ class pdastrostatsclass(pdastroclass):
         # loop through keys,outcols, and assign values
         for (param,outcol) in param2columnmapping:
             if destindex is None:
-                resultdict[outcol]:statparams[param]
+                resultdict[outcol]:pdstats.statparams[param]
             else:
-                self.t.loc[destindex,outcol]=statparams[param]
+                self.t.loc[destindex,outcol]=pdstats.statparams[param]
 
         # either put the data into a new row or into an existing one
         if destindex is None:
@@ -1064,6 +1064,4 @@ class pdastrostatsclass(pdastroclass):
             outindex = destindex
             #self.t.loc[destindex,outcols]=vals
         return(outindex)
-
-
 

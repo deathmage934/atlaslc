@@ -10,19 +10,25 @@ class getcleanlcclass(SNloopclass):
 		SNloopclass.__init__(self)
 
 	def getcleanlcfile(self,args,SNindex):
+		# for original lcs
 		self.load_lc(SNindex,filt=self.filt,controlindex=0)
-		indices = self.getusableindices()
-		if self.lctype == 'avg':
-			self.save_lc(SNindex=SNindex,indices=indices,filt=self.filt,overwrite=True,controlindex=0,MJDbinsize=args.MJDbinsize,addsuffix='.clean')
-		else:
-			self.save_lc(SNindex=SNindex,indices=indices,filt=self.filt,overwrite=True,controlindex=0,addsuffix='.clean')
+		self.lctype = 'og'
+		#indices = self.getusableindices()
+		indices = self.getgoodindices()
+		#if self.lctype == 'avg':
+			#self.save_lc(SNindex=SNindex,indices=indices,filt=self.filt,overwrite=True,controlindex=0,MJDbinsize=args.MJDbinsize,addsuffix='.clean')
+		#else:
+		self.save_lc(SNindex=SNindex,indices=indices,filt=self.filt,overwrite=True,controlindex=0,addsuffix='.clean')
 
+		# for average lcs
 		self.load_lc(SNindex,filt=self.filt,controlindex=0,MJDbinsize=args.MJDbinsize)
-		indices = self.getusableindices()
-		if self.lctype == 'avg':
-			self.save_lc(SNindex=SNindex,indices=indices,filt=self.filt,overwrite=True,controlindex=0,MJDbinsize=args.MJDbinsize,addsuffix='.clean')
-		else:
-			self.save_lc(SNindex=SNindex,indices=indices,filt=self.filt,overwrite=True,controlindex=0,addsuffix='.clean')
+		self.lctype = 'avg'
+		#indices = self.getusableindices()
+		indices = self.getgoodindices()
+		#if self.lctype == 'avg':
+		self.save_lc(SNindex=SNindex,indices=indices,filt=self.filt,overwrite=True,controlindex=0,MJDbinsize=args.MJDbinsize,addsuffix='.clean')
+		#else:
+			#self.save_lc(SNindex=SNindex,indices=indices,filt=self.filt,overwrite=True,controlindex=0,addsuffix='.clean')
 
 if __name__ == '__main__':
 
@@ -34,14 +40,19 @@ if __name__ == '__main__':
 
 	if args.filt is None:
 		print('Looping through c and o filters...')
-		for filt in ['o','c']:
+		filtlist = ['c','o']
+	else:
+		filtlist = [args.filt]
+	
+	for filt in filtlist:
 			print('### FILTER SET: %s' % filt)
 			getcleanlc.filt = filt
 			for SNindex in SNindexlist:
-				print('Getting and saving clean lc for ',getcleanlc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(getcleanlc.t)))
+				print('Getting and saving clean (usable) lc for ',getcleanlc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(getcleanlc.t)))
 				getcleanlc.loadRADEClist(SNindex=SNindex,filt=getcleanlc.filt)
 				getcleanlc.getcleanlcfile(args,SNindex)
 			print('Finished with filter %s!' % filt)
+	"""
 	else:
 		print('### FILTER SET: %s' % args.filt)
 		getcleanlc.filt = args.filt
@@ -49,3 +60,4 @@ if __name__ == '__main__':
 			print('Getting and saving clean lc for ',getcleanlc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(getcleanlc.t)))
 			getcleanlc.loadRADEClist(SNindex=SNindex,filt=getcleanlc.filt)
 			getcleanlc.getcleanlcfile(args,SNindex)
+	"""

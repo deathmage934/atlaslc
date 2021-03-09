@@ -79,6 +79,7 @@ class SNloopclass(pdastroclass):
                     'flag_c2_absnormmean':self.flag_c2_absnormmean,
                     'flag_c2_Nclip':self.flag_c2_Nclip,
                     'flag_c2_Nused':self.flag_c2_Nused,
+                    'flag_c2_ok':self.flag_c2_ok,
                     'flag_daysigma':self.flag_daysigma,
                     'flag_daysmallnumber':self.flag_daysmallnumber,
                     'flag_c0_bad':self.flag_c0_bad,
@@ -272,18 +273,25 @@ class SNloopclass(pdastroclass):
                 self.lctype = 'avg'
             else:
                 self.lctype = 'og'
+        print('LC TYPE: ',self.lctype)
         masks = 0 #self.flag_c2_bad|self.flag_c0_X2norm|self.flag_c0_uncertainty
         if self.lctype == 'og':
-            flagslist = self.cfg.params['cleanlc']['questionable_flags_og']
-            flagslist = flagslist.append(self.cfg.params['cleanlc']['exclude_flags_og'])
+            flagslist = []
+            for item in self.cfg.params['cleanlc']['questionable_flags_og']:
+                flagslist.append(item)
+            for item in self.cfg.params['cleanlc']['exclude_flags_og']:
+                flagslist.append(item)
             print('Excluding flags: ',flagslist)
             for key in flagslist:
                 if not(key in self.flags):
                     raise RuntimeError('Bad flag name: %s' % key)
                 masks |= self.flags[key]
         elif self.lctype == 'avg':
-            flagslist = self.cfg.params['cleanlc']['questionable_flags_avg']
-            flagslist = flagslist.append(self.cfg.params['cleanlc']['exclude_flags_avg'])
+            flagslist = []
+            for item in self.cfg.params['cleanlc']['questionable_flags_avg']:
+                flagslist.append(item)
+            for item in self.cfg.params['cleanlc']['exclude_flags_avg']:
+                flagslist.append(item)
             print('Excluding flags: ',flagslist)
             for key in flagslist:
                 if not(key in self.flags):

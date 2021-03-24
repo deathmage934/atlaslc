@@ -212,7 +212,7 @@ class plotlcclass(SNloopclass):
 			else:
 				plt.legend((plot),(self.t.at[SNindex,'tnsname']))
 			plt.axhline(linewidth=1,color='k')
-			plt.xlim(58900,59250) # delete me
+			#plt.xlim(58900,59250) # delete me
 			plt.ylim(min(lc_uJy)*1.1,max(lc_uJy)*1.1) # delete me
 
 			plotfilename = self.lcbasename(SNindex=SNindex)+'.mask4mjd.png'

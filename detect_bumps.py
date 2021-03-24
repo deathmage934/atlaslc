@@ -171,6 +171,19 @@ class detectbumpsclass(SNloopclass):
 				plt.legend((plot_uJysim,plot_uJy,plot),('Control LC %d + Simulated Gaussian'% controlindex,'Control LC %d' % controlindex,'Gaussian Models'))
 		plt.xlabel('MJD')
 		plt.ylabel('Flux ($\mu$Jy)')
+		# get x and y limits from args; else, leave as is
+		xlim_lower, xlim_upper = plt.xlim()
+		if not(args.xlim_lower is None): 
+			xlim_lower = args.xlim_lower
+		if not(args.xlim_upper is None):
+			xlim_upper = args.xlim_upper
+		ylim_lower, ylim_upper = plt.xlim()
+		if not(args.ylim_lower is None): 
+			ylim_lower = args.ylim_lower
+		if not(args.ylim_upper is None): 
+			ylim_upper = args.ylim_upper
+		plt.xlim(xlim_lower,xlim_upper)
+		plt.ylim(ylim_lower,ylim_upper)
 		if not(simparams is None):
 			outfile = '%s.simLC.png' % outbasefilename
 		else:
@@ -205,6 +218,19 @@ class detectbumpsclass(SNloopclass):
 				plt.legend((plot_SNR,plot_sum),('Control LC %d S/N' % controlindex,'Gaussian Weighted Rolling Sum'))
 		plt.xlabel('MJD')
 		plt.ylabel('S/N')
+		# get x and y limits from args; else, leave as is
+		xlim_lower, xlim_upper = plt.xlim()
+		if not(args.xlim_lower is None): 
+			xlim_lower = args.xlim_lower
+		if not(args.xlim_upper is None):
+			xlim_upper = args.xlim_upper
+		ylim_lower, ylim_upper = plt.xlim()
+		if not(args.ylim_lower is None): 
+			ylim_lower = args.ylim_lower
+		if not(args.ylim_upper is None): 
+			ylim_upper = args.ylim_upper
+		plt.xlim(xlim_lower,xlim_upper)
+		plt.ylim(ylim_lower,ylim_upper)
 		if not(simparams is None):
 			outfile = '%s.simSNR.png' % outbasefilename
 		else:
@@ -272,6 +298,19 @@ class detectbumpsclass(SNloopclass):
 		plt.title('%s Gaussian Weighted Rolling Sum of S/N' % self.t.loc[SNindex,'tnsname'])
 		plt.xlabel('MJD')
 		plt.ylabel('S/N')
+		# get x and y limits from args; else, leave as is
+		xlim_lower, xlim_upper = plt.xlim()
+		if not(args.xlim_lower is None): 
+			xlim_lower = args.xlim_lower
+		if not(args.xlim_upper is None):
+			xlim_upper = args.xlim_upper
+		ylim_lower, ylim_upper = plt.xlim()
+		if not(args.ylim_lower is None): 
+			ylim_lower = args.ylim_lower
+		if not(args.ylim_upper is None): 
+			ylim_upper = args.ylim_upper
+		plt.xlim(xlim_lower,xlim_upper)
+		plt.ylim(ylim_lower,ylim_upper)
 		outfile = '%s.allsnr.png' % outbasefilename
 		print('Saving ',outfile)
 		plt.savefig(outfile,dpi=200)

@@ -7,6 +7,7 @@ from SNloop import SNloopclass
 import pylab as matlib
 import matplotlib.pyplot as plt
 import sys,os
+import numpy as np
 
 def dataPlot(x, y, dx=None, dy=None, sp=None, label=None, fmt='bo', ecolor='k', elinewidth=None, barsabove = False, capsize=1, logx=False, logy=False, zorder=None):
 	if sp == None:
@@ -38,119 +39,134 @@ class plotlcclass(SNloopclass):
 		SNloopclass.__init__(self)
 
 	def plot_lc(self,args,SNindex,sp=None):
-		print('Plotting SN lc and control lc...')
-		plt.figure()
-		if sp is None: sp = matlib.subplot(111)
-		self.loadRADEClist(SNindex)
-
-		# plot SN in red first, then loop through control lcs to plot in blue
-		for controlindex in range(len(self.RADECtable.t)-1,-1,-1):
-			plt.rcParams['font.family'] = 'serif'
-			plt.rcParams["font.serif"] = 'times'
-
-			self.load_lc(SNindex, filt=self.filt, controlindex=self.RADECtable.t.at[controlindex,'ControlID'])
-			if self.verbose>2: print('control index: ',controlindex)
-
-			# check if plotting good data
-			makecuts_apply = self.cfg.params['plotlc']['makecuts']
-			# check if plotting bad SN lc data ONLY IF making cuts
-			plot_bad_data = self.cfg.params['plotlc']['plot_bad_data']
-			if makecuts_apply is False:
-				print("WARNING: Cannot plot bad data without making cuts! Setting plot_bad_data to False.")
-				plot_bad_data = False
-			# check if plotting cotrol lc data (makecuts also applies)
-			plot_controllc_data = self.cfg.params['plotlc']['plot_controllc_data']
+		for testavg in [True,False]:
+			if testavg is False:
+				binsize4avg = None
+			else:
+				binsize4avg = args.MJDbinsize
+			print('BINSIZEAVG:',binsize4avg)
+			plt.figure()
+			plt.clf()
+			if sp is None: sp = matlib.subplot(111)
+			self.loadRADEClist(SNindex)
+			if binsize4avg is None:
+				print('Plotting original SN lc and control lc...')
+			else:
+				print('Plotting averaged SN lc and control lc...')
 			
-			if makecuts_apply is True:
-				if not('Mask' in self.lc.t.columns): raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
-				# make cuts on lc, save bad data to possibly plot
-				lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, controlindex=controlindex, procedure1='plotlc')
-				lc_uJy_bad = self.lc.t.loc[bad_data, self.flux_colname]
-				lc_duJy_bad = self.lc.t.loc[bad_data, self.dflux_colname]
-				lc_MJD_bad = self.lc.t.loc[bad_data, 'MJD']
-			else:
-				print('Skipping makecuts using mask column...')
-				lc_uJy = self.lc.t[self.flux_colname]
-				lc_duJy = self.lc.t[self.dflux_colname]
-				lc_MJD = self.lc.t['MJD']
+			# plot SN in red first, then loop through control lcs to plot in blue
+			for controlindex in range(len(self.RADECtable.t)-1,-1,-1):
+				plt.rcParams['font.family'] = 'serif'
+				plt.rcParams["font.serif"] = 'times'
 
-			if controlindex==0:
+				self.load_lc(SNindex,filt=self.filt,controlindex=self.RADECtable.t.at[controlindex,'ControlID'],MJDbinsize=binsize4avg)
+				if self.verbose>2: print('control index: ',controlindex)
+
+				# check if plotting good data
+				makecuts_apply = self.cfg.params['plotlc']['makecuts']
+				# check if plotting bad SN lc data ONLY IF making cuts
+				plot_bad_data = self.cfg.params['plotlc']['plot_bad_data']
+				if makecuts_apply is False:
+					print("WARNING: Cannot plot bad data without making cuts! Setting plot_bad_data to False.")
+					plot_bad_data = False
+				# check if plotting cotrol lc data (makecuts also applies)
+				plot_controllc_data = self.cfg.params['plotlc']['plot_controllc_data']
 				
-				if plot_bad_data is True:
-					# plot bad data with open red circles
-					sp, plotbad, dplotbad = dataPlot(lc_MJD_bad,lc_uJy_bad,dy=lc_duJy_bad,sp=sp)
-					matlib.setp(plotbad,mfc='white',ms=4,color='r')
-				# plot good data in closed red circles
-				sp, plotSN, dplotSN = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
-				matlib.setp(plotSN,ms=4,color='r')
-				maxlc = max(lc_uJy)
-				minlc = min(lc_uJy)
-				
-			else: 
-				if plot_controllc_data is True:
-					if plot_bad_data is True:
-						# plot bad data with open blue circles
-						sp, plotControlLCBad, dplotControlLCBad = dataPlot(lc_MJD_bad,lc_uJy_bad,dy=lc_duJy_bad,sp=sp)
-						matlib.setp(plotControlLCBad,mfc='white',ms=4,color='b')
-					# plot good data in closed blue circles
-					sp, plotControlLC, dplotControlLC = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
-					matlib.setp(plotControlLC,ms=4,color='b')
-		
-		# determine legend and check if control lc data plotted
-		# if control lcs
-		if len(self.RADECtable.t)>1:
-			# control lc PatternID circle gets specific legend
-			if max(self.RADECtable.t['PatternID']) == 1:
-				if len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1:
-					controlLClabel = '%s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
+				if makecuts_apply is True:
+					if not('Mask' in self.lc.t.columns): raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
+					# make cuts on lc, save bad data to possibly plot
+					# old method: #lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, controlindex=controlindex, procedure1='plotlc')
+					usableix = self.getusableindices()
+					badix = self.getbadindices()
+					lc_uJy = self.lc.t.loc[usableix,self.flux_colname]
+					lc_duJy = self.lc.t.loc[usableix,self.dflux_colname]
+					lc_MJD = self.lc.t.loc[usableix,'MJD']
+					lc_uJy_bad = self.lc.t.loc[badix,self.flux_colname]
+					lc_duJy_bad = self.lc.t.loc[badix,self.dflux_colname]
+					lc_MJD_bad = self.lc.t.loc[badix,'MJD']
 				else:
-					controlLClabel = '%s %s" Control LCs and %s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0],self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
-			# greater/multiple different controlLC PatternIDs get simpler legend
-			else:
-				controlLCtotal = len(self.RADECtable.t)-1
-				controlLClabel = '%d Total Control LCs' % controlLCtotal
-			# check if bad data plotted
-			if plot_bad_data is True:
-				plt.legend((plotSN,plotbad,plotControlLC,plotControlLCBad),('SN %s Accurate & Usable Data' % self.t.at[SNindex,'tnsname'],'SN %s Inaccurate Data' % self.t.at[SNindex,'tnsname'],controlLClabel+' Accurate & Usable Data',controlLClabel+' Inaccurate Data'))
-			else:
-				plt.legend((plotSN,plotControlLC),('SN %s' % self.t.at[SNindex,'tnsname'],controlLClabel))
-		# if only sn
-		else:
-			plt.legend(('SN %s cleaned' % self.t.at[SNindex,'tnsname']))
-		
-		plt.title('SN %s' % self.t.at[SNindex,'tnsname'])
-		#plt.title('8 Control Light Curves around SN 2021pb, 17" Radius')
-		plt.axhline(linewidth=1,color='k')
-		plt.xlabel('MJD')
-		plt.ylabel(self.flux_colname)
+					print('Skipping makecuts using mask column...')
+					lc_uJy = self.lc.t[self.flux_colname]
+					lc_duJy = self.lc.t[self.dflux_colname]
+					lc_MJD = self.lc.t['MJD']
+				if controlindex==0:
+					if plot_bad_data is True:
+						# plot bad data with open red circles
+						sp, plotbad, dplotbad = dataPlot(lc_MJD_bad,lc_uJy_bad,dy=lc_duJy_bad,sp=sp)
+						#plotbad, = plt.plot(lc_MJD_bad,lc_uJy_bad)
+						matlib.setp(plotbad,mfc='white',ms=4,color='r')
+					# plot good data in closed red circles
+					sp, plotSN, dplotSN = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
+					#plotSN, = plt.plot(lc_MJD,lc_uJy)
+					matlib.setp(plotSN,ms=4,color='r')
+					maxlc = max(lc_uJy)
+					minlc = min(lc_uJy)
+				else: 
+					if plot_controllc_data is True:
+						if plot_bad_data is True:
+							# plot bad data with open blue circles
+							sp, plotControlLCBad, dplotControlLCBad = dataPlot(lc_MJD_bad,lc_uJy_bad,dy=lc_duJy_bad,sp=sp)
+							matlib.setp(plotControlLCBad,mfc='white',ms=4,color='b')
+						# plot good data in closed blue circles
+						sp, plotControlLC, dplotControlLC = dataPlot(lc_MJD,lc_uJy,dy=lc_duJy,sp=sp)
+						matlib.setp(plotControlLC,ms=4,color='b')
 
-		# get x limits from args; else, leave as is
-		xlim_lower, xlim_upper = plt.xlim()
-		if not(args.xlim_lower is None): 
-			xlim_lower = args.xlim_lower
-		if not(args.xlim_upper is None):
-			xlim_upper = args.xlim_upper
-		
-		# get y limits from args; else, set to min and max lc
-		if not(args.ylim_lower is None): 
-			ylim_lower = args.ylim_lower
-		else: 
-			ylim_lower = minlc*1.1
-		if not(args.ylim_upper is None): 
-			ylim_upper = args.ylim_upper
-		else:
-			ylim_upper = maxlc*1.1
-		
-		# set x and y limits
-		plt.xlim(xlim_lower,xlim_upper)
-		plt.ylim(ylim_lower,ylim_upper)
-		print('xlim lower: ',xlim_lower,'. xlim upper: ',xlim_upper,'. ')
-		print('ylim lower: ',ylim_lower,'. ylim upper: ',ylim_upper,'. ')
+			# determine legend and check if control lc data plotted
+			# if control lcs
+			if len(self.RADECtable.t)>1:
+				# control lc PatternID circle gets specific legend
+				if max(self.RADECtable.t['PatternID']) == 1:
+					if len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1:
+						controlLClabel = '%s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
+					else:
+						controlLClabel = '%s %s" Control LCs and %s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0],self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
+				# greater/multiple different controlLC PatternIDs get simpler legend
+				else:
+					controlLCtotal = len(self.RADECtable.t)-1
+					controlLClabel = '%d Total Control LCs' % controlLCtotal
 
-		# save plot
-		plotfilename = self.lcbasename(SNindex=SNindex)+'.png'
-		print('Plot file name: ',plotfilename)
-		plt.savefig(plotfilename,dpi=200)
+				# check if bad data plotted
+				if plot_bad_data is True:
+					plt.legend((plotSN,plotbad,plotControlLC,plotControlLCBad),('SN %s Accurate & Usable Data' % self.t.at[SNindex,'tnsname'],'SN %s Inaccurate Data' % self.t.at[SNindex,'tnsname'],controlLClabel+' Accurate & Usable Data',controlLClabel+' Inaccurate Data'))
+				else:
+					plt.legend((plotSN,plotControlLC),('SN %s' % self.t.at[SNindex,'tnsname'],controlLClabel))
+			# if only sn
+			#else:
+				#plt.legend(('SN %s Cleaned' % self.t.at[SNindex,'tnsname']))
+			title = 'SN %s' % self.t.at[SNindex,'tnsname']
+			if self.lctype == 'avg':
+				title += ' Averaged'
+			plt.title(title)
+			plt.axhline(linewidth=1,color='k')
+			plt.xlabel('MJD')
+			plt.ylabel(self.flux_colname)
+
+			# get x limits from args; else, leave as is
+			xlim_lower, xlim_upper = plt.xlim()
+			if not(args.xlim_lower is None): 
+				xlim_lower = args.xlim_lower
+			if not(args.xlim_upper is None):
+				xlim_upper = args.xlim_upper
+			# get y limits from args; else, set to min and max lc
+			if not(args.ylim_lower is None): 
+				ylim_lower = args.ylim_lower
+			else: 
+				ylim_lower = minlc*1.1
+			if not(args.ylim_upper is None): 
+				ylim_upper = args.ylim_upper
+			else:
+				ylim_upper = maxlc*1.1
+			# set x and y limits
+			plt.xlim(xlim_lower,xlim_upper)
+			plt.ylim(ylim_lower,ylim_upper)
+			print('xlim lower: ',xlim_lower,'. xlim upper: ',xlim_upper,'. ')
+			print('ylim lower: ',ylim_lower,'. ylim upper: ',ylim_upper,'. ')
+
+			# save plot
+			plotfilename = self.lcbasename(SNindex=SNindex,MJDbinsize=binsize4avg)+'.png'
+			print('Plot file name: ',plotfilename)
+			plt.savefig(plotfilename,dpi=200)
+			plt.close()
 
 	def plot_lc_controlLC(self,args,SNindex,sp=None,c1_flag=False,c2_flag=False):
 		plt.rcParams['font.family'] = 'serif'

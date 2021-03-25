@@ -88,9 +88,9 @@ class SNloopclass(pdastroclass):
         
         self.flags_c1c2 = self.flag_c1_X2norm|self.flag_c1_absnormmean|self.flag_c2_X2norm|self.flag_c2_absnormmean|self.flag_c2_Nclip|self.flag_c2_Nused|self.flag_c2_bad|self.flag_c2_ok#|self.flag_c1_good|self.flag_c2_good
 
-    def define_options(self, parser=None, usage=None, conflict_handler='resolve'):
+    def define_options(self,parser=None,usage=None,conflict_handler='resolve'):
         if parser is None:
-            parser = argparse.ArgumentParser(usage=usage, conflict_handler=conflict_handler)
+            parser = argparse.ArgumentParser(usage=usage,conflict_handler=conflict_handler)
 
         # options for config file
         if 'ATLASLC_SOURCEDIR' in os.environ and os.environ['ATLASLC_SOURCEDIR'] != '':
@@ -141,7 +141,7 @@ class SNloopclass(pdastroclass):
             basedir += '/'+outsubdir
         self.outrootdir = basedir
 
-    def loadcfgfiles(self, *pargs, filt=None, **kwargs):
+    def loadcfgfiles(self,*pargs,filt=None,**kwargs):
         cfgfiles=self.cfg.loadcfgfiles(*pargs, **kwargs)
         # set filter to filt in precursor.cfg, then check if args.filt set
         self.filt = self.cfg.params['filter']
@@ -149,7 +149,7 @@ class SNloopclass(pdastroclass):
             self.filt=filt
         return(cfgfiles)
 
-    def lcbasename(self, SNindex=None, yse=False, TNSname=None, controlindex=None, filt=None, MJDbinsize=None,addsuffix=None):
+    def lcbasename(self,SNindex=None,yse=False,TNSname=None,controlindex=None,filt=None,MJDbinsize=None,addsuffix=None):
         # define address and file name of the data table
         if yse is True:
             SNID = TNSname
@@ -181,7 +181,7 @@ class SNloopclass(pdastroclass):
             basename += addsuffix
         return(basename)
 
-    def getSNlist(self, SNlist):
+    def getSNlist(self,SNlist):
         # if --snlist all, get data for all SN in snlist.txt; otherwise, only for listed SN in cmd
         if len(SNlist)==1 and SNlist[0]=='all':
             SNindexlist = range(len(self.t))
@@ -192,7 +192,7 @@ class SNloopclass(pdastroclass):
                     SNindexlist.append(index)
         return(SNindexlist)
 
-    def load_lc(self, SNindex, filt=None, controlindex=None, MJDbinsize=None,addsuffix=None,hexcols=None):
+    def load_lc(self,SNindex,filt=None,controlindex=None,MJDbinsize=None,addsuffix=None,hexcols=None):
         # get lc from already existing file
         if MJDbinsize is None:
             self.lctype = 'og'
@@ -205,7 +205,7 @@ class SNloopclass(pdastroclass):
             
         return(0)
 
-    def save_lc(self, SNindex=None, yse=False, TNSname=None, indices=None, filt=None, overwrite=False, controlindex=None, MJDbinsize=None,addsuffix=None):
+    def save_lc(self,SNindex=None,yse=False,TNSname=None,indices=None,filt=None,overwrite=False,controlindex=None,MJDbinsize=None,addsuffix=None):
         # write table and save lc as file
         filename = self.lcbasename(SNindex=SNindex, yse=False, filt=filt, controlindex=controlindex, MJDbinsize=MJDbinsize,addsuffix=addsuffix)+'.txt'
         self.lc.write(filename, indices=indices,overwrite=True,verbose=self.verbose)
@@ -232,6 +232,7 @@ class SNloopclass(pdastroclass):
             self.RADECtable.write()
         return(0)
 
+    # NEED TO EVENTUALLY MOVE THIS OUT OF COMMISSION; THERE ARE BETTER METHODS NOW
     def makecuts_indices(self,SNindex,controlindex,procedure1):
         # use when cleaning up data in plot_lc.py or average_lc.py; makes cuts based on mask column created in cleanup_lc.py
         # set flags in precursor.cfg to control what data to cut based on uncertainties and/or chi/N
@@ -263,8 +264,6 @@ class SNloopclass(pdastroclass):
         lc_duJy = self.lc.t.loc[cuts_indices, self.dflux_colname]
         lc_MJD = self.lc.t.loc[cuts_indices, 'MJD']
         return(lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data)
-
-    # for the following indices methods: idea to create another definition just for getting masks list because right now it's a little redundant
 
     # get all measurements that have not been flagged as bad or questionable
     def getgoodindices(self,indices=None):

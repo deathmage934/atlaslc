@@ -12,14 +12,14 @@ class getcleanlcclass(SNloopclass):
 	def getcleanlcfile(self,args,SNindex):
 		# for original lcs
 		self.load_lc(SNindex,filt=self.filt,controlindex=0)
-		self.lctype = 'og'
+		#self.lctype = 'og'
 		indices = self.getusableindices()
 		#indices = self.getgoodindices()
 		self.save_lc(SNindex=SNindex,indices=indices,filt=self.filt,overwrite=True,controlindex=0,addsuffix='.clean')
 
 		# for average lcs
 		self.load_lc(SNindex,filt=self.filt,controlindex=0,MJDbinsize=args.MJDbinsize)
-		self.lctype = 'avg'
+		#self.lctype = 'avg'
 		indices = self.getusableindices()
 		#indices = self.getgoodindices()
 		self.save_lc(SNindex=SNindex,indices=indices,filt=self.filt,overwrite=True,controlindex=0,MJDbinsize=args.MJDbinsize,addsuffix='.clean')

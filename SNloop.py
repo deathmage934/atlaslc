@@ -149,7 +149,7 @@ class SNloopclass(pdastroclass):
             self.filt=filt
         return(cfgfiles)
 
-    def lcbasename(self,SNindex=None,yse=False,TNSname=None,controlindex=None,filt=None,MJDbinsize=None,addsuffix=None):
+    def lcbasename(self,SNindex=None,yse=False,TNSname=None,controlindex=None,filt=None,MJDbinsize=None,addsuffix=None,addsubdir=None):
         # define address and file name of the data table
         if yse is True:
             SNID = TNSname
@@ -159,7 +159,10 @@ class SNloopclass(pdastroclass):
         if filt is None:
             filt=self.filt
         
-        basename = '%s/%s/%s' % (self.outrootdir,SNID,SNID)
+        basename = '%s/%s' % (self.outrootdir,SNID)
+        if not(addsubdir is None):
+            basename += '/%s' % addsubdir
+        basename += '/%s' % SNID
         
         if not(controlindex is None):
             basename += '_i%03d' % self.RADECtable.t['ControlID'][controlindex]
@@ -205,9 +208,9 @@ class SNloopclass(pdastroclass):
             
         return(0)
 
-    def save_lc(self,SNindex=None,yse=False,TNSname=None,indices=None,filt=None,overwrite=False,controlindex=None,MJDbinsize=None,addsuffix=None):
+    def save_lc(self,SNindex=None,yse=False,TNSname=None,indices=None,filt=None,overwrite=False,controlindex=None,MJDbinsize=None,addsuffix=None,addsubdir=None):
         # write table and save lc as file
-        filename = self.lcbasename(SNindex=SNindex, yse=False, filt=filt, controlindex=controlindex, MJDbinsize=MJDbinsize,addsuffix=addsuffix)+'.txt'
+        filename = self.lcbasename(SNindex=SNindex, yse=False, filt=filt, controlindex=controlindex, MJDbinsize=MJDbinsize,addsuffix=addsuffix,addsubdir=addsubdir)+'.txt'
         self.lc.write(filename, indices=indices,overwrite=True,verbose=self.verbose)
         #self.lc.write(filename,format=fileformat, overwrite=overwrite,verbose=(self.verbose>0))
         return(0)
@@ -272,7 +275,7 @@ class SNloopclass(pdastroclass):
                 self.lctype = 'avg'
             else:
                 self.lctype = 'og'
-        print('LC TYPE: ',self.lctype)
+        #print('LC TYPE: ',self.lctype)
         masks = 0 #self.flag_c2_bad|self.flag_c0_X2norm|self.flag_c0_uncertainty
         if self.lctype == 'og':
             flagslist = []
@@ -280,7 +283,7 @@ class SNloopclass(pdastroclass):
                 flagslist.append(item)
             for item in self.cfg.params['cleanlc']['exclude_flags_og']:
                 flagslist.append(item)
-            print('Excluding flags: ',flagslist)
+            #print('Excluding flags: ',flagslist)
             for key in flagslist:
                 if not(key in self.flags):
                     raise RuntimeError('Bad flag name: %s' % key)
@@ -291,7 +294,7 @@ class SNloopclass(pdastroclass):
                 flagslist.append(item)
             for item in self.cfg.params['cleanlc']['exclude_flags_avg']:
                 flagslist.append(item)
-            print('Excluding flags: ',flagslist)
+            #print('Excluding flags: ',flagslist)
             for key in flagslist:
                 if not(key in self.flags):
                     raise RuntimeError('Bad flag name: %s' % key)

@@ -46,7 +46,13 @@ class autoaddclass(SNloopclass):
 		result=self.cfg.loadcfgfiles(*pargs, **kwargs)
 		return(result)
 
-	def getradec(self, tnsname):
+	def my_split(self,seq):
+		for item in seq:
+			a, b, c = item.partition(' ')
+			yield a
+			yield b+c
+
+	def getradec(self,tnsname):
 		obj_name=tnsname
 		print('Getting data from https://www.wis-tns.org/object/'+obj_name)
 		page = requests.get('https://www.wis-tns.org/object/'+obj_name)
@@ -54,12 +60,6 @@ class autoaddclass(SNloopclass):
 		
 		radec = tree.xpath('//div[@class="field field-radec"]//div[@class="value"]/text()')
 		print(radec)
-
-		def my_split(seq):
-			for item in seq:
-				a, b, c = item.partition(' ')
-				yield a
-				yield b+c
 
 		datasplit = list(my_split(radec))
 		ra = datasplit[0]
@@ -76,12 +76,6 @@ class autoaddclass(SNloopclass):
 		
 		discoverydate = tree.xpath('//div[@class="field field-discoverydate"]//div[@class="value"]/b/text()')
 		print(discoverydate)
-
-		def my_split(seq):
-			for item in seq:
-				a, b, c = item.partition(' ')
-				yield a
-				yield b+c
 
 		datasplit2 = list(my_split(discoverydate))
 		date = datasplit2[0]

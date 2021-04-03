@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import pylab as matlib
 from pdastro import AnotB
 from matplotlib.backends.backend_pdf import PdfPages
+import argparse
 
 def dataPlot(x, y, dx=None, dy=None, sp=None, label=None, fmt='bo', ecolor='k', elinewidth=None, barsabove = False, capsize=1, logx=False, logy=False, zorder=None):
 	if sp == None:
@@ -39,16 +40,6 @@ class lightlcclass(SNloopclass):
 		SNloopclass.__init__(self)
 
 	def savelightweight(self):
-		"""
-		load original lc
-		new lc: only MJD, uJy, duJy, m, dm, and Mask cols
-		new lc: only good/usable measurements with only MJD, uJy, duJy, m, dm, and Mask cols
-
-		load avg lc
-		new avg lc: only MJD, uJy, duJy, m, dm, Mask, Nused, and Nclip cols
-		new avg lc: only good/usable measurements with only MJD, uJy, duJy, m, dm, Mask, Nused, and Nclip cols
-		"""
-
 		# original
 		self.load_lc(SNindex,filt=self.filt,controlindex=0)
 		self.lc.t = self.lc.t.drop(columns=['F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','mag5sig','Sky','Obs','c1_mean','c1_mean_err','c1_stdev','c1_stdev_err','c1_X2norm','c1_Nvalid','c1_Nnan','c2_mean','c2_mean_err','c2_stdev','c2_stdev_err','c2_X2norm','c2_Ngood','c2_Nclip','c2_Nmask','c2_Nnan'])
@@ -89,26 +80,30 @@ class lightlcclass(SNloopclass):
 		f.write("\n\n- In sum, 0x100000, 0x400000, and 0x800000 flag bad measurements; 0x80000, 0x1000, and 0x2000 flag questionable measurements that can be used at the user's discretion.")
 		f.close()
 
-	def plotlightweight(self,SNindex,pdf,MJDbinsize=None):
+	def plotindepth(self,args,SNindex,pdf,MJDbinsize=None):
+		if self.filt == 'c':
+			color = 'cyan'
+		else:
+			color = 'orange'
+
 		fig = plt.figure()
 		sp = matlib.subplot(111)
-		#plt.rcParams['font.family'] = 'serif'
-		#plt.rcParams["font.serif"] = 'times'
+		self.loadRADEClist(SNindex)
 		for controlindex in range(len(self.RADECtable.t)-1,-1,-1):
 			self.load_lc(SNindex,filt=self.filt,controlindex=self.RADECtable.t.at[controlindex,'ControlID'],MJDbinsize=MJDbinsize)
 			goodix = self.getgoodindices()
-			#badix = self.getbadindices()
 			allix = self.lc.getindices()
 			badix = AnotB(allix,goodix)
 			if controlindex == 0:
 				# plot bad data with open red circles
 				sp, plotbad, dplotbad = dataPlot(self.lc.t.loc[badix,'MJD'],self.lc.t.loc[badix,self.flux_colname],dy=self.lc.t.loc[badix,self.dflux_colname],sp=sp)
-				matlib.setp(plotbad,mfc='white',ms=4,color='r')
+				matlib.setp(plotbad,mfc='white',ms=4,color=color)
 				# plot good and usable data with closed red circless
 				sp, plotSN, dplotSN = dataPlot(self.lc.t.loc[goodix,'MJD'],self.lc.t.loc[goodix,self.flux_colname],dy=self.lc.t.loc[goodix,self.dflux_colname],sp=sp)
-				matlib.setp(plotSN,ms=4,color='r')
+				matlib.setp(plotSN,ms=4,color=color)
 				maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
 				minlc = min(self.lc.t.loc[goodix,self.flux_colname])
+				maxmjd = max(self.lc.t.loc[goodix,'MJD'])
 			else:
 				# plot bad data with open red circles
 				sp, plotControlLCBad, dplotControlLCBad = dataPlot(self.lc.t.loc[badix,'MJD'],self.lc.t.loc[badix,self.flux_colname],dy=self.lc.t.loc[badix,self.dflux_colname],sp=sp)
@@ -120,36 +115,38 @@ class lightlcclass(SNloopclass):
 		if len(self.RADECtable.t)>1:
 			# control lc PatternID circle gets specific legend
 			if max(self.RADECtable.t['PatternID']) == 1:
-				if len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1:
-					controlLClabel = '%s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
-				else:
-					controlLClabel = '%s %s" Control LCs and %s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0],self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
+				controlLClabel = '%s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'],self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
+				if not(len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1):
+					controlLClabel += ' and %s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'],self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
 			# greater/multiple different controlLC PatternIDs get simpler legend
 			else:
-				controlLCtotal = len(self.RADECtable.t)-1
-				controlLClabel = '%d Total Control LCs' % controlLCtotal
-		plt.legend((plotSN,plotbad,plotControlLC,plotControlLCBad),('SN %s Accurate & Usable Data' % self.t.at[SNindex,'tnsname'],'SN %s Inaccurate Data' % self.t.at[SNindex,'tnsname'],controlLClabel+' Accurate & Usable Data',controlLClabel+' Inaccurate Data'))
+				controlLClabel = '%d Total Control LCs' % (len(self.RADECtable.t)-1)
+		plt.legend((plotSN,plotbad,plotControlLC,plotControlLCBad),('SN %s %s-band Good Data' % (self.t.at[SNindex,'tnsname'],self.filt),'SN %s %s-band Bad Data' % (self.t.at[SNindex,'tnsname'],self.filt),controlLClabel+' %s-band Good Data' % self.filt,controlLClabel+' %s-band Bad Data' % self.filt))
+		filename = '%s.%s' % (self.t['tnsname'][SNindex],self.filt)
+		if not(MJDbinsize is None):
+			if int(args.MJDbinsize) == args.MJDbinsize:
+				filename += '.%ddays' % int(args.MJDbinsize)
+			else:
+				filename += '.%.2fdays' % args.MJDbinsize
+		filename += '.light.txt'
 		title = 'SN %s ' % self.t.at[SNindex,'tnsname']
 		if self.lctype == 'avg': 
 			title += 'Averaged '
-		title += 'All Detections'
+		title += 'All Detections \nFilename: %s' % filename
 		plt.title(title)
+		print('Adding plot to PDF: "%s"' % title)
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
+		if not(args.deltat is None):
+			xlim_lower, xlim_upper = plt.xlim()
+			print('xlim_lower set: ',maxmjd-args.deltat)
+			plt.xlim(maxmjd-args.deltat,xlim_upper)
 		plt.ylim(1.1*minlc,1.1*maxlc)
-		basename = '%s/%s/lightweight/%s.%s.alldetections' % (self.outrootdir,self.t['tnsname'][SNindex],self.t.at[SNindex,'tnsname'],self.filt)
-		if self.lctype == 'avg':
-			if int(args.MJDbinsize) == args.MJDbinsize:
-				basename += '.%ddays' % int(args.MJDbinsize)
-			else:
-				basename += '.%.2fdays' % args.MJDbinsize
-		#print('Saving fig "SN %s All Detections" at %s.png' % (self.t.at[SNindex,'tnsname'],basename))
 		pdf.savefig(fig)
-		#plt.savefig(basename+".png",dpi=200)
 		plt.clf()
 
-		fig = plt.figure(1)
+		fig = plt.figure()
 		sp = matlib.subplot(111)
 		for controlindex in range(len(self.RADECtable.t)-1,-1,-1):
 			self.load_lc(SNindex,filt=self.filt,controlindex=self.RADECtable.t.at[controlindex,'ControlID'],MJDbinsize=MJDbinsize)
@@ -157,9 +154,10 @@ class lightlcclass(SNloopclass):
 			if controlindex == 0:
 				# plot good and usable data with closed red circless
 				sp, plotSN, dplotSN = dataPlot(self.lc.t.loc[goodix,'MJD'],self.lc.t.loc[goodix,self.flux_colname],dy=self.lc.t.loc[goodix,self.dflux_colname],sp=sp)
-				matlib.setp(plotSN,ms=4,color='r')
+				matlib.setp(plotSN,ms=4,color=color)
 				maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
 				minlc = min(self.lc.t.loc[goodix,self.flux_colname])
+				maxmjd = max(self.lc.t.loc[goodix,'MJD'])
 			else:
 				# plot good data in closed blue circles
 				sp, plotControlLC, dplotControlLC = dataPlot(self.lc.t.loc[goodix,'MJD'],self.lc.t.loc[goodix,self.flux_colname],dy=self.lc.t.loc[goodix,self.dflux_colname],sp=sp)
@@ -168,51 +166,139 @@ class lightlcclass(SNloopclass):
 		if len(self.RADECtable.t)>1:
 			# control lc PatternID circle gets specific legend
 			if max(self.RADECtable.t['PatternID']) == 1:
-				if len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1:
-					controlLClabel = '%s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
-				else:
-					controlLClabel = '%s %s" Control LCs and %s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][0],self.cfg.params['forcedphotpatterns']['circle']['n'], self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
+				controlLClabel = '%s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'],self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
+				if not(len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1):
+					controlLClabel += ' and %s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'],self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
 			# greater/multiple different controlLC PatternIDs get simpler legend
 			else:
-				controlLCtotal = len(self.RADECtable.t)-1
-				controlLClabel = '%d Total Control LCs' % controlLCtotal
-		plt.legend((plotSN,plotControlLC),('SN %s' % self.t.at[SNindex,'tnsname'],controlLClabel))
+				controlLClabel = '%d Total Control LCs' % (len(self.RADECtable.t)-1)
+		plt.legend((plotSN,plotControlLC),('SN %s %s-band'%(self.t.at[SNindex,'tnsname'],self.filt),controlLClabel+' %s-band'%self.filt))
 		title = 'SN %s ' % self.t.at[SNindex,'tnsname']
 		if self.lctype == 'avg': 
 			title += 'Averaged '
-		title += 'Good Detections Only'
+		filename = '%s.%s' % (self.t['tnsname'][SNindex],self.filt)
+		if not(MJDbinsize is None):
+			if int(args.MJDbinsize) == args.MJDbinsize:
+				filename += '.%ddays' % int(args.MJDbinsize)
+			else:
+				filename += '.%.2fdays' % args.MJDbinsize
+		filename += '.light.clean.txt'
+		title += 'Good Detections Only\nFilename: %s' % filename
 		plt.title(title)
+		print('Adding plot to PDF: "%s"' % title)
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
+		if not(args.deltat is None):
+			xlim_lower, xlim_upper = plt.xlim()
+			print('xlim_lower set: ',maxmjd-args.deltat)
+			plt.xlim(maxmjd-args.deltat,xlim_upper)
 		plt.ylim(1.1*minlc,1.1*maxlc)
-		basename = '%s/%s/lightweight/%s.%s.usabledetections' % (self.outrootdir,self.t['tnsname'][SNindex],self.t.at[SNindex,'tnsname'],self.filt)
-		if self.lctype == 'avg':
-			if int(args.MJDbinsize) == args.MJDbinsize:
-				basename += '.%ddays' % int(args.MJDbinsize)
-			else:
-				basename += '.%.2fdays' % args.MJDbinsize
-		#print('Saving fig "SN %s Good Detections Only" at %s.png' % (self.t.at[SNindex,'tnsname'],basename))
 		pdf.savefig(fig)
-		#plt.savefig(basename+".png",dpi=200)
 		plt.clf()
 
-	def plotloop(self,SNindex):
-		self.loadRADEClist(SNindex)
-		basename = '%s/%s/lightweight/%s.%s.plots' % (self.outrootdir,self.t['tnsname'][SNindex],self.t.at[SNindex,'tnsname'],self.filt)
-		pdf = PdfPages(basename+'.pdf')
+		return pdf
 
-		# first 2 plots: individal detections: good only, then all detections with bad in open circles
-		self.plotlightweight(SNindex,pdf)
-		# second 2 plots: averaged detections: good only, then all detections with bad in open circles
-		self.plotlightweight(SNindex,pdf,MJDbinsize=args.MJDbinsize)
-		
+	def plotloop(self,args,SNindex):
+		pdf = PdfPages('%s/%s/lightweight/%s_plots.pdf' % (self.outrootdir,self.t['tnsname'][SNindex],self.t.at[SNindex,'tnsname']))
+
+		# summary plot: only averaged SN lc, not clean, both c and o
+		fig = plt.figure()
+		sp = matlib.subplot(111)
+		self.loadRADEClist(SNindex)
+		for filt in ['c','o']:
+			self.load_lc(SNindex,filt=filt,controlindex=0,MJDbinsize=args.MJDbinsize)
+			goodix = self.getgoodindices()
+			allix = self.lc.getindices()
+			badix = AnotB(allix,goodix)
+			if filt == 'c':
+				color = 'c'
+			else:
+				color = 'orange'
+			sp, plotbad, dplotbad = dataPlot(self.lc.t.loc[badix,'MJD'],self.lc.t.loc[badix,self.flux_colname],dy=self.lc.t.loc[badix,self.dflux_colname],sp=sp)
+			matlib.setp(plotbad,mfc='white',ms=4,color=color)
+			sp, plotSN, dplotSN = dataPlot(self.lc.t.loc[goodix,'MJD'],self.lc.t.loc[goodix,self.flux_colname],dy=self.lc.t.loc[goodix,self.dflux_colname],sp=sp)
+			matlib.setp(plotSN,ms=4,color=color)
+			maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
+			minlc = min(self.lc.t.loc[goodix,self.flux_colname])
+		plt.title('SN %s, c- and o-band' % self.t.at[SNindex,'tnsname'])
+		plt.axhline(linewidth=1,color='k')
+		plt.xlabel('MJD')
+		plt.ylabel(self.flux_colname)
+		print('Adding summary plot to PDF: "SN %s, c- and o-band"' % self.t.at[SNindex,'tnsname'])
+		pdf.savefig(fig)
+		plt.clf()
+
+		for filt in ['c','o']:
+			self.filt = filt
+			print('### FILT SET: ',self.filt)
+			if filt == 'c':
+				color = 'cyan'
+			else:
+				color = 'orange'
+
+			# first 2 plots: individal detections: good only, then all detections with bad in open circles
+			pdf = self.plotindepth(args,SNindex,pdf)
+
+			# second 2 plots: averaged detections: good only, then all detections with bad in open circles
+			pdf = self.plotindepth(args,SNindex,pdf,MJDbinsize=args.MJDbinsize)
+
+			# baseline plot 
+			fig = plt.figure()
+			sp = matlib.subplot(111)
+			self.loadRADEClist(SNindex)
+			for controlindex in range(len(self.RADECtable.t)-1,-1,-1):
+				self.load_lc(SNindex,filt=self.filt,controlindex=self.RADECtable.t.at[controlindex,'ControlID'])
+				goodix = self.getgoodindices()
+				allix = self.lc.getindices()
+				badix = AnotB(allix,goodix)
+				if controlindex == 0:
+					# plot bad data with open red circles
+					sp, plotbad, dplotbad = dataPlot(self.lc.t.loc[badix,'MJD'],self.lc.t.loc[badix,self.flux_colname],dy=self.lc.t.loc[badix,self.dflux_colname],sp=sp)
+					matlib.setp(plotbad,mfc='white',ms=4,color=color)
+					# plot good and usable data with closed red circless
+					sp, plotSN, dplotSN = dataPlot(self.lc.t.loc[goodix,'MJD'],self.lc.t.loc[goodix,self.flux_colname],dy=self.lc.t.loc[goodix,self.dflux_colname],sp=sp)
+					matlib.setp(plotSN,ms=4,color=color)
+					maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
+					minlc = min(self.lc.t.loc[goodix,self.flux_colname])
+					maxmjd = max(self.lc.t.loc[goodix,'MJD'])
+				else:
+					# plot bad data with open red circles
+					sp, plotControlLCBad, dplotControlLCBad = dataPlot(self.lc.t.loc[badix,'MJD'],self.lc.t.loc[badix,self.flux_colname],dy=self.lc.t.loc[badix,self.dflux_colname],sp=sp)
+					matlib.setp(plotControlLCBad,mfc='white',ms=4,color='b')
+					# plot good data in closed blue circles
+					sp, plotControlLC, dplotControlLC = dataPlot(self.lc.t.loc[goodix,'MJD'],self.lc.t.loc[goodix,self.flux_colname],dy=self.lc.t.loc[goodix,self.dflux_colname],sp=sp)
+					matlib.setp(plotControlLC,ms=4,color='b')
+			# get control lc legend label
+			if len(self.RADECtable.t)>1:
+				# control lc PatternID circle gets specific legend
+				if max(self.RADECtable.t['PatternID']) == 1:
+					controlLClabel = '%s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'],self.cfg.params['forcedphotpatterns']['circle']['radii'][0])
+					if not(len(self.cfg.params['forcedphotpatterns']['circle']['radii'])==1):
+						controlLClabel += ' and %s %s" Control LCs' % (self.cfg.params['forcedphotpatterns']['circle']['n'],self.cfg.params['forcedphotpatterns']['circle']['radii'][1])
+				# greater/multiple different controlLC PatternIDs get simpler legend
+				else:
+					controlLClabel = '%d Total Control LCs' % (len(self.RADECtable.t)-1)
+			plt.legend((plotSN,plotbad,plotControlLC,plotControlLCBad),('SN %s %s-band Good Data' % (self.t.at[SNindex,'tnsname'],self.filt),'SN %s %s-band Bad Data' % (self.t.at[SNindex,'tnsname'],self.filt),controlLClabel+' %s-band Good Data' % self.filt,controlLClabel+' %s-band Bad Data' % self.filt))
+			plt.title('SN %s All Detections: Zoomed to Baseline' % self.t.at[SNindex,'tnsname'])
+			print('Adding plot to PDF: "SN %s All Detections: Zoomed to Baseline"' % self.t.at[SNindex,'tnsname'])
+			plt.axhline(linewidth=1,color='k')
+			plt.xlabel('MJD')
+			plt.ylabel(self.flux_colname)
+			plt.ylim(-200,200)
+			pdf.savefig(fig)
+			plt.clf()
+
 		pdf.close()
 
 if __name__ == '__main__':
 
 	lightlc = lightlcclass()
-	parser = lightlc.define_options()
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-t','--deltat', help="lookback time in days for filter-separated plots", default=None, type=float)
+	#args = parser.parse_args()
+	parser = lightlc.define_options(parser=parser)
 	args = parser.parse_args()
 
 	SNindexlist = lightlc.initialize(args)
@@ -229,7 +315,7 @@ if __name__ == '__main__':
 			lightlc.loadRADEClist(SNindex,filt=lightlc.filt)
 			lightlc.savelightweight()
 			lightlc.addflagdescriptions()
-			lightlc.plotloop(SNindex)
+		lightlc.plotloop(args,SNindex)
 
 		# pdf file
 		# single and avg lc plots: 1. only good, 2. all detections with bad in open circles

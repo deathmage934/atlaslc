@@ -143,17 +143,18 @@ class detectbumpsclass(SNloopclass):
 		# Updated version by Sofia
 		
 		# plot og lc with simulated bumps (if added)
-		plt.figure()
+		fig = plt.figure()
+		sp = matlib.subplot(111)
 		plt.axhline(linewidth=1,color='k')
 		plt.rcParams['font.family'] = 'serif'
 		plt.rcParams["font.serif"] = 'times'
 		if not(simparams is None):
-			sp, plot_uJysim, dplot_uJysim = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJysim'],dy=self.lc.t.loc[indices,'duJy'],fmt='co',ecolor='c')
+			sp, plot_uJysim, dplot_uJysim = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJysim'],dy=self.lc.t.loc[indices,'duJy'],fmt='co',ecolor='c',sp=sp)
 			matlib.setp(plot_uJysim,ms=3,alpha=1)
-		sp, plot_uJy, dplot_uJy = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJy'],dy=self.lc.t.loc[indices,'duJy'],fmt='ro',ecolor='r')
+		sp, plot_uJy, dplot_uJy = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'uJy'],dy=self.lc.t.loc[indices,'duJy'],fmt='ro',ecolor='r',sp=sp)
 		matlib.setp(plot_uJy,ms=3,alpha=1)
 		if not(simparams is None):
-			sp, plot, dplot = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['simLC'],fmt='c')
+			sp, plot, dplot = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['simLC'],fmt='c',sp=sp)
 		# set title and legend
 		if controlindex == 0:
 			if not(simparams is None):
@@ -171,38 +172,43 @@ class detectbumpsclass(SNloopclass):
 				plt.legend((plot_uJysim,plot_uJy,plot),('Control LC %d + Simulated Gaussian'% controlindex,'Control LC %d' % controlindex,'Gaussian Models'))
 		plt.xlabel('MJD')
 		plt.ylabel('Flux ($\mu$Jy)')
+
 		# get x and y limits from args; else, leave as is
+		
 		xlim_lower, xlim_upper = plt.xlim()
 		if not(args.xlim_lower is None): 
 			xlim_lower = args.xlim_lower
 		if not(args.xlim_upper is None):
 			xlim_upper = args.xlim_upper
-		ylim_lower, ylim_upper = plt.xlim()
+		ylim_lower, ylim_upper = plt.ylim()
 		if not(args.ylim_lower is None): 
 			ylim_lower = args.ylim_lower
 		if not(args.ylim_upper is None): 
 			ylim_upper = args.ylim_upper
 		plt.xlim(xlim_lower,xlim_upper)
 		plt.ylim(ylim_lower,ylim_upper)
+	
+
 		if not(simparams is None):
 			outfile = '%s.simLC.png' % outbasefilename
 		else:
 			outfile = '%s.png' % outbasefilename
 		print('Saving ',outfile)
 		plt.savefig(outfile,dpi=200)
-		plt.close()
+		plt.clf()
 		
 		# plot snr
-		plt.figure()
+		fig = plt.figure()
+		sp = matlib.subplot(111)
 		plt.axhline(linewidth=1,color='k')
 		if not(simparams is None):
-			sp, plot_SNRsim, dplot_SNRsim = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNRsim'],fmt='co')
+			sp, plot_SNRsim, dplot_SNRsim = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNRsim'],fmt='co',sp=sp)
 			matlib.setp(plot_SNRsim,ms=3,alpha=1)
-		sp, plot_SNR, dplot_SNR = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNR'],fmt='ro')
+		sp, plot_SNR, dplot_SNR = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNR'],fmt='ro',sp=sp)
 		matlib.setp(plot_SNR,ms=3,alpha=1)
 		if not(simparams is None):
-			sp, plot_simsum, dplot_simsum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsimsum'],fmt='c')
-		sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r')
+			sp, plot_simsum, dplot_simsum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsimsum'],fmt='c',sp=sp)
+		sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r',sp=sp)
 		# set title and legend
 		if controlindex == 0:
 			plt.title('SN %s S/N and Gaussian Weighted Rolling Sum of S/N' % self.t.loc[SNindex,'tnsname'])
@@ -219,33 +225,36 @@ class detectbumpsclass(SNloopclass):
 		plt.xlabel('MJD')
 		plt.ylabel('S/N')
 		# get x and y limits from args; else, leave as is
+		
 		xlim_lower, xlim_upper = plt.xlim()
 		if not(args.xlim_lower is None): 
 			xlim_lower = args.xlim_lower
 		if not(args.xlim_upper is None):
 			xlim_upper = args.xlim_upper
-		ylim_lower, ylim_upper = plt.xlim()
+		ylim_lower, ylim_upper = plt.ylim()
 		if not(args.ylim_lower is None): 
 			ylim_lower = args.ylim_lower
 		if not(args.ylim_upper is None): 
 			ylim_upper = args.ylim_upper
 		plt.xlim(xlim_lower,xlim_upper)
 		plt.ylim(ylim_lower,ylim_upper)
+		
 		if not(simparams is None):
 			outfile = '%s.simSNR.png' % outbasefilename
 		else:
 			outfile = '%s.snr.png' % outbasefilename
 		print('Saving ',outfile)
 		plt.savefig(outfile,dpi=200)
-		plt.close()
+		plt.clf()
 
 		# make plot of all SNR
-		plt.figure(self.filt_dict[self.filt])
+		fig = plt.figure(self.filt_dict[self.filt])
+		sp = matlib.subplot(111)
 		plt.axhline(linewidth=1,color='k')
 		if controlindex == 0:
-			sp, plotn_sum, dplotn_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r')
+			sp, plotn_sum, dplotn_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r',sp=sp)
 		else:
-			sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='c')
+			sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='c',sp=sp)
 		#plt.close(self.filt_dict[self.filt])
 		
 		# TEMPORARY - DELETE -----------------------------
@@ -299,21 +308,24 @@ class detectbumpsclass(SNloopclass):
 		plt.xlabel('MJD')
 		plt.ylabel('S/N')
 		# get x and y limits from args; else, leave as is
+		
 		xlim_lower, xlim_upper = plt.xlim()
 		if not(args.xlim_lower is None): 
 			xlim_lower = args.xlim_lower
 		if not(args.xlim_upper is None):
 			xlim_upper = args.xlim_upper
-		ylim_lower, ylim_upper = plt.xlim()
+		ylim_lower, ylim_upper = plt.ylim()
 		if not(args.ylim_lower is None): 
 			ylim_lower = args.ylim_lower
 		if not(args.ylim_upper is None): 
 			ylim_upper = args.ylim_upper
 		plt.xlim(xlim_lower,xlim_upper)
 		plt.ylim(ylim_lower,ylim_upper)
+		
 		outfile = '%s.allsnr.png' % outbasefilename
 		print('Saving ',outfile)
 		plt.savefig(outfile,dpi=200)
+		plt.clf()
 
 		# TEMPORARY - DELETE -----------------------------
 		"""

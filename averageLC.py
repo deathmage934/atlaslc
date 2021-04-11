@@ -162,7 +162,8 @@ class averagelcclass(SNloopclass):
             self.averagelc.t[col] = self.averagelc.t[col].astype(np.int32)
 
         # save average lc
-        if self.verbose>1: self.averagelc.write()
+        if self.verbose>1: 
+            self.averagelc.write()
         self.averagelc.write(avglcfilename,overwrite=True,verbose=self.verbose)
 
         # save lc

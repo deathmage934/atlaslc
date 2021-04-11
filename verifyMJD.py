@@ -18,7 +18,7 @@ class verifyMJDclass(SNloopclass):
         """
         Parameters
         ----------
-        SNindex : interger
+        SNindex : integer
             index of SN in SNlist.
 
 

@@ -165,7 +165,7 @@ class detectbumpsclass(SNloopclass):
 				plt.legend((plot_uJysim,plot_uJy,plot),('SN %s + Simulated Gaussian'% self.t.loc[SNindex,'tnsname'],'SN %s' % self.t.loc[SNindex,'tnsname'],'Gaussian Models'))
 		else:
 			if not(simparams is None):
-				plt.title('Control LC %d and Simulated Eruptions (2 Gaussians of width = 30 days)' % controlindex)
+				plt.title('Control LC %d and Simulated Eruptions (2 Gaussians of width = %.2f days)' % (controlindex,gaussian_sigma_days)) # 30 IS HARD-CODED - CHANGE!!!!
 			else:
 				plt.title('Control LC %d' % controlindex)
 			if not(simparams is None):

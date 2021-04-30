@@ -133,7 +133,7 @@ class plotlcclass(SNloopclass):
 			# if only sn
 			#else:
 				#plt.legend(('SN %s Cleaned' % self.t.at[SNindex,'tnsname']))
-			title = 'SN %s' % self.t.at[SNindex,'tnsname']
+			title = 'SN %s %s-band' % (self.t.at[SNindex,'tnsname'],self.filt)
 			if self.lctype == 'avg':
 				title += ' Averaged'
 			plt.title(title)

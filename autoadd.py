@@ -61,7 +61,7 @@ class autoaddclass(SNloopclass):
 		radec = tree.xpath('//div[@class="field field-radec"]//div[@class="value"]/text()')
 		print(radec)
 
-		datasplit = list(my_split(radec))
+		datasplit = list(self.my_split(radec))
 		ra = datasplit[0]
 		dec = datasplit[1]
 		print('RA: %s, Dec: %s' % (ra, dec))
@@ -77,7 +77,7 @@ class autoaddclass(SNloopclass):
 		discoverydate = tree.xpath('//div[@class="field field-discoverydate"]//div[@class="value"]/b/text()')
 		print(discoverydate)
 
-		datasplit2 = list(my_split(discoverydate))
+		datasplit2 = list(self.my_split(discoverydate))
 		date = datasplit2[0]
 		time = datasplit2[1][1:]
 		#time = time[1:]

@@ -211,13 +211,13 @@ class detectbumpsclass(SNloopclass):
 		sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r',sp=sp)
 		# set title and legend
 		if controlindex == 0:
-			plt.title('SN %s S/N and Gaussian Weighted Rolling Sum of S/N' % self.t.loc[SNindex,'tnsname'])
+			plt.title('SN %s %s-band S/N and Gaussian Weighted Rolling Sum of S/N' % (self.t.loc[SNindex,'tnsname'],self.filt))
 			if not(simparams is None):
 				plt.legend((plot_SNRsim,plot_simsum,plot_SNR,plot_sum),('SN %s + Eruption Model S/N' % self.t.loc[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum','SN %s S/N' % self.t.loc[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum'))
 			else:
 				plt.legend((plot_SNR,plot_sum),('SN %s S/N' % self.t.loc[SNindex,'tnsname'],'Gaussian Weighted Rolling Sum'))
 		else:
-			plt.title('Control LC %d S/N and Gaussian Weighted Rolling Sum of S/N' % controlindex)
+			plt.title('Control LC %d %s-band S/N and Gaussian Weighted Rolling Sum of S/N' % (controlindex,self.filt))
 			if not(simparams is None):
 				plt.legend((plot_SNRsim,plot_simsum,plot_SNR,plot_sum),('Control LC %d + Eruption Model S/N' % controlindex,'Gaussian Weighted Rolling Sum','Control LC %d S/N' % controlindex,'Gaussian Weighted Rolling Sum'))
 			else:
@@ -304,7 +304,7 @@ class detectbumpsclass(SNloopclass):
 		# save allsnr plot
 		outbasefilename = self.lcbasename(SNindex=SNindex,MJDbinsize=MJDbinsize)
 		plt.figure(self.filt_dict[self.filt])
-		plt.title('%s Gaussian Weighted Rolling Sum of S/N' % self.t.loc[SNindex,'tnsname'])
+		plt.title('%s %s-band Gaussian Weighted Rolling Sum of S/N' % (self.t.loc[SNindex,'tnsname'],self.filt))
 		plt.xlabel('MJD')
 		plt.ylabel('S/N')
 		# get x and y limits from args; else, leave as is

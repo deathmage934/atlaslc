@@ -80,6 +80,25 @@ class lightlcclass(SNloopclass):
 		f.write("\n\n- In sum, 0x100000, 0x400000, and 0x800000 flag bad measurements; 0x80000, 0x1000, and 0x2000 flag questionable measurements that can be used at the user's discretion.")
 		f.close()
 
+	def setplotlims(self,args,xlims=True,ylims=True,maxlc=None,minlc=None):
+		# get limits from args; else, leave as is
+		if xlims is True:
+			xlim_lower, xlim_upper = plt.xlim()
+			if not(args.xlim_lower is None): 
+				xlim_lower = args.xlim_lower
+			if not(args.xlim_upper is None):
+				xlim_upper = args.xlim_upper
+			plt.xlim(xlim_lower,xlim_upper)
+			print('xlim lower: ',xlim_lower,'. xlim upper: ',xlim_upper,'. ')
+		if ylims is True:
+			ylim_lower, ylim_upper = plt.ylim()
+			if not(args.ylim_lower is None): 
+				ylim_lower = args.ylim_lower
+			if not(args.xlim_upper is None):
+				ylim_upper = args.ylim_upper
+			plt.ylim(ylim_lower,ylim_upper)
+			print('ylim lower: ',ylim_lower,'. ylim upper: ',ylim_upper,'. ')
+
 	def plotindepth(self,args,SNindex,pdf,MJDbinsize=None):
 		if self.filt == 'c':
 			color = 'cyan'
@@ -132,7 +151,7 @@ class lightlcclass(SNloopclass):
 		title = 'SN %s ' % self.t.at[SNindex,'tnsname']
 		if self.lctype == 'avg': 
 			title += 'Averaged '
-		title += 'All Detections \nFilename: %s' % filename
+		title += 'All Detections %s-band \nFilename: %s' % (self.filt,filename)
 		plt.title(title)
 		print('Adding plot to PDF: "%s"' % title)
 		plt.axhline(linewidth=1,color='k')
@@ -142,6 +161,8 @@ class lightlcclass(SNloopclass):
 			xlim_lower, xlim_upper = plt.xlim()
 			print('xlim_lower set: ',maxmjd-args.deltat)
 			plt.xlim(maxmjd-args.deltat,xlim_upper)
+		else:
+			self.setplotlims(args,ylims=False)
 		plt.ylim(1.1*minlc,1.1*maxlc)
 		pdf.savefig(fig)
 		plt.clf()
@@ -193,6 +214,8 @@ class lightlcclass(SNloopclass):
 			xlim_lower, xlim_upper = plt.xlim()
 			print('xlim_lower set: ',maxmjd-args.deltat)
 			plt.xlim(maxmjd-args.deltat,xlim_upper)
+		else:
+			self.setplotlims(args,ylims=False)
 		plt.ylim(1.1*minlc,1.1*maxlc)
 		pdf.savefig(fig)
 		plt.clf()
@@ -204,6 +227,7 @@ class lightlcclass(SNloopclass):
 
 		# summary plot: only averaged SN lc, not clean, both c and o
 		fig = plt.figure()
+		plt.clf() # just added 4.27.21 not tested
 		sp = matlib.subplot(111)
 		self.loadRADEClist(SNindex)
 		for filt in ['c','o']:
@@ -225,6 +249,7 @@ class lightlcclass(SNloopclass):
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
+		self.setplotlims(args)
 		print('Adding summary plot to PDF: "SN %s, c- and o-band"' % self.t.at[SNindex,'tnsname'])
 		pdf.savefig(fig)
 		plt.clf()
@@ -285,6 +310,7 @@ class lightlcclass(SNloopclass):
 			plt.axhline(linewidth=1,color='k')
 			plt.xlabel('MJD')
 			plt.ylabel(self.flux_colname)
+			self.setplotlims(args,ylims=False)
 			plt.ylim(-200,200)
 			pdf.savefig(fig)
 			plt.clf()

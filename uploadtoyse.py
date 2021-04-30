@@ -50,7 +50,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		self.outsubdir = None
 		self.flux_colname = None
 		self.dflux_colname = None
-		self.existflag = False
+		#self.existflag = False
 
 		# tables and table/list names
 		self.YSEtable = pdastroclass()
@@ -259,10 +259,9 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
 		if self.api is True:
 			print('Connecting to API...')
-			# API IMPLEMENTATION IS A WORK IN PROGRESS AND IS NOT FUNCTIONAL YET
 			token_header = self.download_atlas_lc.connect_atlas(args.user,args.passwd)
 			print('TOKEN HEADER: ',token_header)
-			self.lc.t = self.download_atlas_lc.get_result(ra, dec, token_header, lookbacktime_days=lookbacktime_days)
+			self.lc.t = self.download_atlas_lc.get_result(RaInDeg(ra), DecInDeg(dec), token_header, lookbacktime_days=lookbacktime_days)
 		else:
 			print('Connecting to SSH...')
 			self.download_atlas_lc.connect(args.atlasmachine,args.user,args.passwd)
@@ -293,22 +292,20 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
 	def downloadYSEcontrollc(self,args,TNSname,ra,dec,pattern=None,lookbacktime_days=None):
 		print('Offset status: ',args.forcedphot_offset)
-		RA = ra 
-		Dec = dec
 		if args.forcedphot_offset == 'True':
-			self.defineRADECtable(RA,Dec,pattern=pattern)
+			self.defineRADECtable(ra,dec,pattern=pattern)
 			for i in range(len(self.RADECtable.t)):
 				print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
 				#if self.RADECtable.t.at[i,'ControlID']==0:
-				if self.existflag is False:
-					self.downloadyselc(args,RA,Dec,i,lookbacktime_days=lookbacktime_days)
-					print('Length of lc: ',len(self.lc.t))
+				#if self.existflag is False:
+				self.downloadyselc(args,ra,dec,i,lookbacktime_days=lookbacktime_days)
+				print('Length of lc: ',len(self.lc.t))
 
-					self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
-					ofilt = np.where(self.lc.t['F']=='o')
-					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
-					cfilt = np.where(self.lc.t['F']=='c')
-					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
+				ofilt = np.where(self.lc.t['F']=='o')
+				self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
+				cfilt = np.where(self.lc.t['F']=='c')
+				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
 				"""
 				else:
 					self.downloadyselc(args,RA,Dec,i,lookbacktime_days=lookbacktime_days)
@@ -324,20 +321,20 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			self.saveRADECtable(TNSname,'o')
 		else:
 			print('Skipping forcedphot offsets lc...')
-			self.defineRADECtable(RA,Dec,pattern=None)
+			self.defineRADECtable(ra,dec,pattern=None)
 			print(self.RADECtable.write(index=True,overwrite=False))
 			
 			for i in range(len(self.RADECtable.t)):
 				#print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec'])) # delete me
-				if self.existflag is False:
-					self.downloadyselc(args,RA,Dec,i,lookbacktime_days=lookbacktime_days)
-					print('Length of lc: ',len(self.lc.t))
+				#if self.existflag is False:
+				self.downloadyselc(args,ra,dec,i,lookbacktime_days=lookbacktime_days)
+				print('Length of lc: ',len(self.lc.t))
 
-					self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
-					ofilt = np.where(self.lc.t['F']=='o')
-					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
-					cfilt = np.where(self.lc.t['F']=='c')
-					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
+				ofilt = np.where(self.lc.t['F']=='o')
+				self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
+				cfilt = np.where(self.lc.t['F']=='c')
+				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
 
 			self.saveRADECtable(TNSname,'c')
 			self.saveRADECtable(TNSname,'o')
@@ -479,19 +476,19 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			else:
 				raise RuntimeError('Something went wrong: TNSname does not exist!')
 
-		# check if sn already has lc downloaded
-		self.existflag = False
-		
+		#self.existflag = False
 		if args.overwrite is False:
 			for filt in ['c','o']:
 				#oindex = '%03d' % 0
 				filename = self.yselcfilename(TNSname,0,filt)
+				"""
 				if os.path.exists(filename):
 					print("Data for %s with filter %s already exists" % (TNSname,filt))
 					self.existflag = True
 				else:
 					print("Found no data for %s with filter %s, downloading full lc..." % (TNSname,filt))
 					self.existflag = False
+				"""
 
 		# set offset pattern
 		if not(args.pattern is None):

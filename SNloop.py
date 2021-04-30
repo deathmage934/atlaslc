@@ -185,6 +185,7 @@ class SNloopclass(pdastroclass):
         return(basename)
 
     def getSNlist(self,SNlist):
+        #print(self.t['tnsname'])
         # if --snlist all, get data for all SN in snlist.txt; otherwise, only for listed SN in cmd
         if len(SNlist)==1 and SNlist[0]=='all':
             SNindexlist = range(len(self.t))

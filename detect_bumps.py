@@ -92,7 +92,10 @@ class detectbumpsclass(SNloopclass):
 		temp = pd.Series(np.zeros(len(self.lc.t)+2*halfwindowsize),name='SNR', dtype=np.float64)
 		temp[dataindices] = self.lc.t['SNR']
 		SNRsum = temp.rolling(windowsize,center=True,win_type='gaussian').sum(std=gaussian_sigma)
-		self.lc.t['SNRsum']=list(SNRsum.loc[dataindices])
+		norm_temp = pd.Series(np.zeros(len(self.lc.t)+2*halfwindowsize),name='norm', dtype=np.float64)
+		norm_temp[np.array(range(len(self.lc.t))+np.full(len(self.lc.t),halfwindowsize))] = np.ones(len(self.lc.t))
+		norm_temp_sum = norm_temp.rolling(windowsize,center=True,win_type='gaussian').sum(std=gaussian_sigma)
+		self.lc.t['SNRsum']=list(SNRsum.loc[dataindices]/norm_temp_sum.loc[dataindices]*max(norm_temp_sum.loc[dataindices]))
 
 		if not(simparams is None):
 			# Calculate the rolling SNR sum for SNR including simflux

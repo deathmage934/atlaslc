@@ -221,9 +221,10 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 				self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
 				cfilt = np.where(self.lc.t['F']=='c')
 				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
-				print('sleeping...')
-				time.sleep(20)
-				print('done')
+				if self.api:
+					print('sleeping...')
+					time.sleep(20)
+					print('done')
 				
 			if savelc:
 				self.saveRADEClist(SNindex,filt='c')

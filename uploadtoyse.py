@@ -596,7 +596,8 @@ if __name__ == '__main__':
 
 	# api
 	upltoyse.api = upltoyse.cfg.params['api']
-	if args.api is True: upltoyse.api = True
+	if args.api: 
+		upltoyse.api = True
 
 	#for TNSname in upltoyse.TNSnamelist:
 	for index in range(0,len(upltoyse.TNSnamelist)):

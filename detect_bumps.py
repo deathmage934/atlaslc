@@ -92,10 +92,11 @@ class detectbumpsclass(SNloopclass):
 		temp = pd.Series(np.zeros(len(self.lc.t)+2*halfwindowsize),name='SNR', dtype=np.float64)
 		temp[dataindices] = self.lc.t['SNR']
 		SNRsum = temp.rolling(windowsize,center=True,win_type='gaussian').sum(std=gaussian_sigma)
+		self.lc.t['SNRsum']=list(SNRsum.loc[dataindices])
 		norm_temp = pd.Series(np.zeros(len(self.lc.t)+2*halfwindowsize),name='norm', dtype=np.float64)
 		norm_temp[np.array(range(len(self.lc.t))+np.full(len(self.lc.t),halfwindowsize))] = np.ones(len(self.lc.t))
 		norm_temp_sum = norm_temp.rolling(windowsize,center=True,win_type='gaussian').sum(std=gaussian_sigma)
-		self.lc.t['SNRsum']=list(SNRsum.loc[dataindices]/norm_temp_sum.loc[dataindices]*max(norm_temp_sum.loc[dataindices]))
+		self.lc.t['SNRsumnorm']=list(SNRsum.loc[dataindices]/norm_temp_sum.loc[dataindices]*max(norm_temp_sum.loc[dataindices]))
 
 		if not(simparams is None):
 			# Calculate the rolling SNR sum for SNR including simflux
@@ -105,13 +106,17 @@ class detectbumpsclass(SNloopclass):
 			self.lc.t['SNRsimsum']=list(SNRsimsum.loc[dataindices])
 			
 		if not(simparams is None):
-			# maginfo is to add to filenames!
+			# maginfo added to filenames
 			maginfo='.sim%.1fmag' % (simparams['sim_appmag'])
-			if args.savelc is True:
-				self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,MJDbinsize=MJDbinsize,addsuffix=maginfo,overwrite=True)
 			outbasefilename = self.lcbasename(SNindex=SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize,addsuffix=maginfo)
+			if args.savelc is True:
+				print('Saving ',outbasefilename)
+				self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,MJDbinsize=MJDbinsize,addsuffix=maginfo,overwrite=True)
 		else:
 			outbasefilename = self.lcbasename(SNindex=SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
+			if args.savelc is True:
+				print('Saving ',outbasefilename)
+				self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,MJDbinsize=MJDbinsize,overwrite=True)
 
 		"""
 		plt.close("all")
@@ -211,7 +216,7 @@ class detectbumpsclass(SNloopclass):
 		matlib.setp(plot_SNR,ms=3,alpha=1)
 		if not(simparams is None):
 			sp, plot_simsum, dplot_simsum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsimsum'],fmt='c',sp=sp)
-		sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r',sp=sp)
+		sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsumnorm'],fmt='r',sp=sp)
 		# set title and legend
 		if controlindex == 0:
 			plt.title('SN %s %s-band S/N and Gaussian Weighted Rolling Sum of S/N' % (self.t.loc[SNindex,'tnsname'],self.filt))
@@ -255,9 +260,9 @@ class detectbumpsclass(SNloopclass):
 		sp = matlib.subplot(111)
 		plt.axhline(linewidth=1,color='k')
 		if controlindex == 0:
-			sp, plotn_sum, dplotn_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r',sp=sp)
+			sp, plotn_sum, dplotn_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsumnorm'],fmt='r',sp=sp)
 		else:
-			sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='c',sp=sp)
+			sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsumnorm'],fmt='c',sp=sp)
 		#plt.close(self.filt_dict[self.filt])
 		
 		# TEMPORARY - DELETE -----------------------------
@@ -279,9 +284,9 @@ class detectbumpsclass(SNloopclass):
 		#sp, plot_SNR, dplot_SNR = dataPlot(x=self.lc.t.loc[indices,'MJDbin'],y=self.lc.t.loc[indices,'SNR'],fmt='ro')
 		#matlib.setp(plot_SNR,ms=3,alpha=1)
 		if controlindex == 0:
-			sp, plotn_sum, dplotn_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='r')
+			sp, plotn_sum, dplotn_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsumnorm'],fmt='r')
 		else:
-			sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsum'],fmt='c')
+			sp, plot_sum, dplot_sum = dataPlot(x=self.lc.t['MJDbin'],y=self.lc.t['SNRsumnorm'],fmt='c')
 			#plt.legend((plotn_sum,plot_sum),('%s S/N Gaussian Weighted Rolling Sum' % self.t.loc[SNindex,'tnsname'],'Control LCs Gaussian Weighted Rolling Sum'))
 		plt.title('%s Gaussian Weighted Rolling Sum of S/N' % self.t.loc[SNindex,'tnsname'])
 		plt.xlabel('MJD')

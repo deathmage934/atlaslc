@@ -25,6 +25,7 @@ from verifyMJD import verifyMJDclass
 from averageLC import averagelcclass
 import sigmacut
 from pdastro import pdastroclass, AandB
+import time
 
 class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDclass):
 	def __init__(self):
@@ -214,13 +215,15 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			for i in range(len(self.RADECtable.t)):
 				if self.verbose: print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
 				self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i,token_header=token_header)
-
 				print('Length of lc: ',len(self.lc.t))
 				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
 				ofilt = np.where(self.lc.t['F']=='o')
 				self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
 				cfilt = np.where(self.lc.t['F']=='c')
 				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+				print('sleeping...')
+				time.sleep(20)
+				print('done')
 				
 			if savelc:
 				self.saveRADEClist(SNindex,filt='c')
@@ -282,6 +285,9 @@ if __name__ == '__main__':
 
 	pattern = downloadlc.cfg.params['forcedphotpatterns']['patterns_to_use']
 
+	if args.api:
+		downloadlc.api = True
+
 	for SNindex in SNindexlist:
 		if not(isinstance(downloadlc.t.at[SNindex,'tnsname'],str)):
 			print('\nnan detected, skipping...')
@@ -305,32 +311,3 @@ if __name__ == '__main__':
 				if args.detectbumps:
 					downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)
 				print('Finished with filter %s!' % filt)
-			"""
-			if args.filt is None:
-				print('Looping through c and o filters...')
-				for filt in ['o','c']:
-					print('### FILTER SET: %s' % filt)
-					downloadlc.filt = filt
-					downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
-					downloadlc.verifyMJD(SNindex)
-					downloadlc.cleanuplcloop(args,SNindex)
-					if (args.forcedphot_offset) and (args.averagelc): 
-						downloadlc.averagelcloop(SNindex)
-					if args.plot: 
-						downloadlc.plotlcloop(args,SNindex)
-					if args.detectbumps:
-						downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)
-					print('Finished with filter %s!' % filt)
-			else:
-				print('### FILTER SET: %s' % args.filt)
-				downloadlc.filt = args.filt
-				downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
-				downloadlc.verifyMJD(SNindex)
-				downloadlc.cleanuplcloop(args,SNindex)
-				if (args.forcedphot_offset) and (args.averagelc): 
-					downloadlc.averagelcloop(SNindex)
-				if args.plot: 
-					downloadlc.plotlcloop(args,SNindex)
-				if args.detectbumps:
-					downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)
-			"""

@@ -598,9 +598,10 @@ if __name__ == '__main__':
 	upltoyse.api = upltoyse.cfg.params['api']
 	if args.api is True: upltoyse.api = True
 
-	for TNSname in upltoyse.TNSnamelist:
-		index = np.where(upltoyse.TNSnamelist==TNSname)
-		print("\nUploading and/or downloading data for %s, TNSnamelist index %d/%d" % (TNSname,index[0],len(upltoyse.TNSnamelist)))
+	#for TNSname in upltoyse.TNSnamelist:
+	for index in range(0,len(upltoyse.TNSnamelist)):
+		TNSname = upltoyse.TNSnamelist[index]
+		print("\nUploading and/or downloading data for %s, TNSnamelist index %d/%d" % (TNSname,index,len(upltoyse.TNSnamelist)))
 		upltoyse.uploadloop(args,TNSname,overwrite=True)
 
 	if not(args.tnslistfilename is None):

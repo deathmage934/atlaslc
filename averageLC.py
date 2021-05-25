@@ -21,7 +21,6 @@ class averagelcclass(SNloopclass):
         X2norm_max = self.cfg.params['averageLC']['X2norm_max']
         keepNaNrows = self.cfg.params['averageLC']['keepNaNrows']
         if self.verbose>1:print('Max Nskipped: %d, min Nused: %d, max X2norm: %f' % (Nclip_max,Ngood_min,X2norm_max))
-        
 
         # load lc
         if self.verbose: print('Averaging lc for controlID %d' % self.RADECtable.t['ControlID'][controlindex])
@@ -81,7 +80,6 @@ class averagelcclass(SNloopclass):
                 MJD += MJDbinsize
                 continue
             
-
             # No good measurements?
             if len(ix2)==0:
                 flag_array = np.full(len(ix1),self.flag_day_bad)
@@ -172,6 +170,8 @@ class averagelcclass(SNloopclass):
 
     def averagelcloop(self,SNindex,MJDbinsize=1.0):
         print('###################################\nAveraging LCs...\n###################################')
+
+        print('MJD bin size set to ')
         
         # loop through SN and control lcs
         for controlindex in range(0,len(self.RADECtable.t)):    

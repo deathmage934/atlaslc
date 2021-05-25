@@ -80,24 +80,27 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 				onTNSlistfile = True
 		return(onTNSlistfile)
 
-	def yselcfilename(self,TNSname,controlindex,filt):
-		oindex = '%03d' % controlindex
+	def yselcfilename(self,TNSname,controlindex,filt,MJDbinsize=None):
+		oindex = '%03d' % controlindex # why not just do this on the actual line?? like %03d.%s.lc.txt?? too afraid to fix lol
 		SNID = TNSname
-		#if not(filt is None):
-		filename = '%s/%s/%s/%s_i%s.%s.lc.txt' % (self.outrootdir,self.outsubdir,SNID,SNID,oindex,filt)
-		#else:
-			#filename = '%s/%s/%s/%s_i%s.lc.txt' % (self.outrootdir,self.outsubdir,SNID,SNID,oindex)
+		if not(MJDbinsize is None):
+			filename = '%s/%s/%s/%s_i%s.%s.%.2fdays.lc.txt' % (self.outrootdir,self.outsubdir,SNID,SNID,oindex,filt,MJDbinsize)
+		else:
+			filename = '%s/%s/%s/%s_i%s.%s.lc.txt' % (self.outrootdir,self.outsubdir,SNID,SNID,oindex,filt)
 		return(filename)
 
-	def saveyselc(self,TNSname,controlindex,filt=None,indices=None,overwrite=False):
+	def saveyselc(self,TNSname,controlindex,filt=None,indices=None,overwrite=False,MJDbinsize=None):
 		#oindex = '%03d' % controlindex
-		filename = self.yselcfilename(TNSname,controlindex,filt)
+		if filt is None:
+			filt = self.filt
+		filename = self.yselcfilename(TNSname,controlindex,filt,MJDbinsize)
 		self.lc.write(filename,indices=indices,overwrite=overwrite,verbose=True)
 		return(0)
 
-	def loadyselc(self,TNSname,controlindex,filt=None):
-		#oindex = '%03d' % controlindex
-		filename = self.yselcfilename(TNSname,controlindex,filt)
+	def loadyselc(self,TNSname,controlindex,filt=None,MJDbinsize=None):
+		if filt is None:
+			filt = self.filt
+		filename = self.yselcfilename(TNSname,controlindex,filt,MJDbinsize)
 		self.lc.load_spacesep(filename,delim_whitespace=True)
 		return(0)
 
@@ -256,7 +259,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
 	def downloadyselc(self,args,ra,dec,controlindex,lookbacktime_days=None):
 		self.download_atlas_lc.verbose = 1
-
 		if self.api is True:
 			print('Connecting to API...')
 			token_header = self.download_atlas_lc.connect_atlas(args.user,args.passwd)
@@ -294,10 +296,9 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		print('Offset status: ',args.forcedphot_offset)
 		if args.forcedphot_offset == 'True':
 			self.defineRADECtable(ra,dec,pattern=pattern)
+
 			for i in range(len(self.RADECtable.t)):
 				print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
-				#if self.RADECtable.t.at[i,'ControlID']==0:
-				#if self.existflag is False:
 				self.downloadyselc(args,ra,dec,i,lookbacktime_days=lookbacktime_days)
 				print('Length of lc: ',len(self.lc.t))
 
@@ -306,27 +307,15 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 				self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
 				cfilt = np.where(self.lc.t['F']=='c')
 				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
-				"""
-				else:
-					self.downloadyselc(args,RA,Dec,i,lookbacktime_days=lookbacktime_days)
-					print('Length of lc: ',len(self.lc.t))
-
-					self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
-					ofilt = np.where(self.lc.t['F']=='o')
-					self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
-					cfilt = np.where(self.lc.t['F']=='c')
-					self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
-				"""
+			
 			self.saveRADECtable(TNSname,'c')
 			self.saveRADECtable(TNSname,'o')
 		else:
 			print('Skipping forcedphot offsets lc...')
 			self.defineRADECtable(ra,dec,pattern=None)
+
 			print(self.RADECtable.write(index=True,overwrite=False))
-			
 			for i in range(len(self.RADECtable.t)):
-				#print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec'])) # delete me
-				#if self.existflag is False:
 				self.downloadyselc(args,ra,dec,i,lookbacktime_days=lookbacktime_days)
 				print('Length of lc: ',len(self.lc.t))
 
@@ -335,11 +324,19 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 				self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
 				cfilt = np.where(self.lc.t['F']=='c')
 				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
-
+			
 			self.saveRADECtable(TNSname,'c')
 			self.saveRADECtable(TNSname,'o')
 
-	# NEEDS UPDATING
+	def averageyselc(self,args,TNSname):
+		self.loadRADECtable(TNSname)
+		for filt in ['c','o']:
+			self.loadyselc(TNSname,0,filt)
+			
+			# add masks to mask column
+
+			# average light curve and add points to new averaged df
+
 	"""
 	def cleanupYSEcontrollc(self,args,TNSname):
 		self.loadRADECtable(TNSname)
@@ -479,16 +476,13 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		#self.existflag = False
 		if args.overwrite is False:
 			for filt in ['c','o']:
-				#oindex = '%03d' % 0
 				filename = self.yselcfilename(TNSname,0,filt)
-				"""
 				if os.path.exists(filename):
 					print("Data for %s with filter %s already exists" % (TNSname,filt))
 					self.existflag = True
 				else:
 					print("Found no data for %s with filter %s, downloading full lc..." % (TNSname,filt))
 					self.existflag = False
-				"""
 
 		# set offset pattern
 		if not(args.pattern is None):
@@ -503,23 +497,19 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			lookbacktime_days = 60
 		self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
 		
-		# clean up lc using chi square and uncertainty cuts
-		#if args.cleanlc is True:
-			#self.cleanupYSEcontrollc(args,TNSname)
-			#self.getcleanlc(args,TNSname)
-
-		#if args.plotlc is True:
-			#self.plotyselc(args,TNSname)
 		#if args.averagelc is True:
 			#self.averageYSElc(args,TNSname)
 		
 		# upload to YSE-PZ
 		for filt in ['c','o']:
-			# get lc file name
 			filename = self.yselcfilename(TNSname,0,filt)
-			# save yse-friendly lc file and get file name
 			outname = self.atlas2yse(TNSname,filename,ra,dec,filename,filt)
 			self.uploadtoyse(outname)
+
+			if args.averagelc:
+				filename = self.yselcfilename(TNSname,0,filt,args.MJDbinsize)
+				outname = self.atlas2yse(TNSname,outname,ra,dec,atlas_data_file,filt)
+				self.uploadtoyse(outname)
 
 if __name__ == '__main__':
 
@@ -538,7 +528,7 @@ if __name__ == '__main__':
 	parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
 	#parser.add_argument('--plotlc', default=False, help=('plot lcs')) # to add
 	#parser.add_argument('--cleanlc', default=False, help=('upload only clean data to yse')) # in progress
-	#parser.add_argument('--averagelc', default=False, help=('average lcs')) # to add
+	parser.add_argument('--averagelc', default=False, help=('average lcs')) # to add
 	#parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
 	#parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
 	parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float) # to add

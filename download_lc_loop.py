@@ -306,7 +306,7 @@ if __name__ == '__main__':
 				downloadlc.verifyMJD(SNindex)
 				downloadlc.cleanuplcloop(args,SNindex)
 				if (args.forcedphot_offset) and (args.averagelc): 
-					downloadlc.averagelcloop(SNindex)
+					downloadlc.averagelcloop(SNindex,MJDbinsize=args.MJDbinsize)
 				if args.plot: 
 					downloadlc.plotlcloop(args,SNindex)
 				if args.detectbumps:

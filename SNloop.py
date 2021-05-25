@@ -177,7 +177,7 @@ class SNloopclass(pdastroclass):
             if int(MJDbinsize)==MJDbinsize:
                 basename += '.%ddays' % int(MJDbinsize)
             else:
-                basename += '.%.2fdays' % int(MJDbinsize)
+                basename += '.%.2fdays' % (MJDbinsize)
         
         basename += '.lc'
         if not(addsuffix is None):

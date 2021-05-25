@@ -27,17 +27,14 @@ class cleanuplcclass(SNloopclass):
 
         # get indices
         a_indices = self.lc.ix_inrange(self.dflux_colname,dflux_max,None)
-        #a_indices = np.where(self.lc.t[self.dflux_colname]>a)
-        #a_indices = list(a_indices[0])
-        #if self.verbose>1: print('Indices: ',a_indices)
+        
         if len(a_indices)>0:
-            #if self.verbose: print('# %s above %i: %i/%i' % (self.dflux_colname, a, len(self.lc.t.loc[a_indices,self.dflux_colname]),len(self.lc.t[self.dflux_colname])))
             if self.verbose: print('# %s above %f: %i/%i' % (self.dflux_colname,dflux_max,len(a_indices),len(self.lc.getindices())))
         else:
             if self.verbose: print('# No measurements flagged!')
             return(0)
 
-        # update 'Mask' column
+        # update mask column
         flag_c0_uncertainty = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_c0_uncertainty|self.flag_c0_bad)
         self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'],flag_c0_uncertainty) 
         return(0)
@@ -51,9 +48,6 @@ class cleanuplcclass(SNloopclass):
         
         # get indices
         a_indices = self.lc.ix_inrange('chi/N',X2norm_max,None)
-        #a_indices = np.where(self.lc.t['chi/N']>c0max_X2norm)
-        #a_indices = list(a_indices[0])
-        #if self.verbose>1: print('Indices: ',a_indices) 
         
         if len(a_indices)>0:
             if self.verbose: print('# chi/N above %f: %i/%i' % (X2norm_max,len(a_indices),len(self.lc.getindices())))
@@ -108,11 +102,6 @@ class cleanuplcclass(SNloopclass):
             # make c0 cuts
             self.c0_PSF_uncertainty_cut(self.cfg.params['cleanlc']['cut0']['N_dflux_max'])
             self.c0_PSF_X2norm_cut(self.cfg.params['cleanlc']['cut0']['PSF_X2norm_max'])
-            
-            #if self.cfg.params['cleanlc']['cut0']['PSF_uncertainty']['apply'] is True:
-            #    self.c0_PSF_uncertainty_cut()
-            #if self.cfg.params['cleanlc']['cut0']['PSF_X2norm']['apply'] is True:
-            #    self.c0_PSF_X2norm_cut()
 
             # for later c1/c2 cuts: prepare the flux,dflux,mask arrays of all light curves
             if prepare_c1c2_cuts and controlindex!=0:

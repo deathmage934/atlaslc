@@ -141,27 +141,6 @@ class plotlcclass(SNloopclass):
 			plt.xlabel('MJD')
 			plt.ylabel(self.flux_colname)
 
-			# get x limits from args; else, leave as is
-			xlim_lower, xlim_upper = plt.xlim()
-			if not(args.xlim_lower is None): 
-				xlim_lower = args.xlim_lower
-			if not(args.xlim_upper is None):
-				xlim_upper = args.xlim_upper
-			# get y limits from args; else, set to min and max lc
-			if not(args.ylim_lower is None): 
-				ylim_lower = args.ylim_lower
-			else: 
-				ylim_lower = minlc*1.1
-			if not(args.ylim_upper is None): 
-				ylim_upper = args.ylim_upper
-			else:
-				ylim_upper = maxlc*1.1
-			# set x and y limits
-			plt.xlim(xlim_lower,xlim_upper)
-			plt.ylim(ylim_lower,ylim_upper)
-			print('xlim lower: ',xlim_lower,'. xlim upper: ',xlim_upper,'. ')
-			print('ylim lower: ',ylim_lower,'. ylim upper: ',ylim_upper,'. ')
-
 			# save plot
 			plotfilename = self.lcbasename(SNindex=SNindex,MJDbinsize=binsize4avg)+'.png'
 			print('Plot file name: ',plotfilename)

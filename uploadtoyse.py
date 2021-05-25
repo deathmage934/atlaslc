@@ -497,19 +497,19 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			lookbacktime_days = 60
 		self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
 		
-		#if args.averagelc is True:
-			#self.averageYSElc(args,TNSname)
-		
 		# upload to YSE-PZ
 		for filt in ['c','o']:
 			filename = self.yselcfilename(TNSname,0,filt)
 			outname = self.atlas2yse(TNSname,filename,ra,dec,filename,filt)
 			self.uploadtoyse(outname)
 
+			"""
 			if args.averagelc:
 				filename = self.yselcfilename(TNSname,0,filt,args.MJDbinsize)
+				self.averageyselc(args,TNSname)
 				outname = self.atlas2yse(TNSname,outname,ra,dec,atlas_data_file,filt)
 				self.uploadtoyse(outname)
+			"""
 
 if __name__ == '__main__':
 

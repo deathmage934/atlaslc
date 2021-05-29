@@ -466,13 +466,13 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			print('### FILTER SET: ',filt)
 			filename = self.yselcfilename(TNSname,0,filt)
 			outname = self.atlas2yse(TNSname,filename,ra,dec,filename,filt)
-			#self.uploadtoyse(outname)
+			self.uploadtoyse(outname)
 
 			if args.averagelc:
 				filename = self.yselcfilename(TNSname,0,filt,args.MJDbinsize)
 				self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
 				outname = self.atlas2yse(TNSname,filename,ra,dec,filename,filt)
-				#self.uploadtoyse(outname)
+				self.uploadtoyse(outname)
 
 if __name__ == '__main__':
 	upltoyse = uploadtoyseclass()

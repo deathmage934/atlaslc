@@ -362,6 +362,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		# masks
 		self.c0_PSF_uncertainty_cut(self.cfg.params['cleanlc']['cut0']['N_dflux_max'])
 		self.c0_PSF_X2norm_cut(self.cfg.params['cleanlc']['cut0']['PSF_X2norm_max'])
+		self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite)
 
 		# average light curve add points to new averaged df
 		MJD = int(np.amin(self.lc.t['MJD']))
@@ -462,6 +463,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		
 		# upload to YSE-PZ
 		for filt in ['c','o']:
+			print('### FILTER SET: ',filt)
 			filename = self.yselcfilename(TNSname,0,filt)
 			outname = self.atlas2yse(TNSname,filename,ra,dec,filename,filt)
 			#self.uploadtoyse(outname)
@@ -533,7 +535,7 @@ if __name__ == '__main__':
 		upltoyse.TNSnamelist = upltoyse.YSEtable.t['Name'].values
 		print("TNSnamelist from YSE: ",upltoyse.TNSnamelist) # change me
 
-	# SET UP TABLES
+	# set up tables
 	upltoyse.flux_colname = upltoyse.cfg.params['flux_colname']
 	upltoyse.dflux_colname = upltoyse.cfg.params['dflux_colname']
 	upltoyse.RADECtable = pdastroclass(columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])

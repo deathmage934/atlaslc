@@ -23,15 +23,15 @@ class cleanuplcclass(SNloopclass):
             return(0)
         
         dflux_max = N_dflux_max * median(self.lc.t[self.dflux_colname])
-        if self.verbose: print('Flagging all measurements with %s bigger than %f...' % (self.dflux_colname, dflux_max))
+        print('Flagging all measurements with %s bigger than %f...' % (self.dflux_colname, dflux_max))
 
         # get indices
         a_indices = self.lc.ix_inrange(self.dflux_colname,dflux_max,None)
         
         if len(a_indices)>0:
-            if self.verbose: print('# %s above %f: %i/%i' % (self.dflux_colname,dflux_max,len(a_indices),len(self.lc.getindices())))
+            print('# %s above %f: %i/%i' % (self.dflux_colname,dflux_max,len(a_indices),len(self.lc.getindices())))
         else:
-            if self.verbose: print('# No measurements flagged!')
+            print('# No measurements flagged!')
             return(0)
 
         # update mask column
@@ -44,15 +44,15 @@ class cleanuplcclass(SNloopclass):
             if self.verbose>1: print('No cut on the X2norm...')
             return(0)
         
-        if self.verbose: print('Flagging all measurements with chi/N bigger than %f...' % X2norm_max)
+        print('Flagging all measurements with chi/N bigger than %f...' % X2norm_max)
         
         # get indices
         a_indices = self.lc.ix_inrange('chi/N',X2norm_max,None)
         
         if len(a_indices)>0:
-            if self.verbose: print('# chi/N above %f: %i/%i' % (X2norm_max,len(a_indices),len(self.lc.getindices())))
+            print('# chi/N above %f: %i/%i' % (X2norm_max,len(a_indices),len(self.lc.getindices())))
         else:
-            if self.verbose: print('# No measurements flagged!')
+            print('# No measurements flagged!')
             return(0)
 
         # update mask column

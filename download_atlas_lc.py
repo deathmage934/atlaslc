@@ -51,7 +51,7 @@ class download_atlas_lc_class:
 		parser.add_argument('-f','--fileformat', default='fixed_width_two_line', choices=['basic','csv','rdb','tab','fixed_width','fixed_width_two_line'],
 							help=("specify the file format (https://docs.astropy.org/en/stable/io/ascii/index.html#supported-formats) (default=%(default)s)"))
 		parser.add_argument('-o','--overwrite', help="overwrite existing file if saved",
-							action="store_true", default=False)
+							action="store_true", default=True)
 		
 		return(parser)
 	   

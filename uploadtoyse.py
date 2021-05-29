@@ -6,7 +6,7 @@ from SNloop import SNloopclass
 from download_lc_loop import downloadlcloopclass
 from uploadTransientData import upload, runDBcommand, DBOps
 from autoadd import autoaddclass
-from pdastro import pdastroclass, AandB
+from pdastro import pdastroclass, pdastrostatsclass, AnotB, AandB
 from download_atlas_lc import download_atlas_lc_class
 from tools import RaInDeg
 from tools import DecInDeg
@@ -24,6 +24,7 @@ from astropy import units as u
 from astropy.coordinates import Angle
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from copy import deepcopy
 
 """
 for command input: uploadtoyse.py -t 2020lse --user USERNAME --passwd 'PASSWORD'
@@ -50,17 +51,18 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		self.outsubdir = None
 		self.flux_colname = None
 		self.dflux_colname = None
-		#self.existflag = False
 
 		# tables and table/list names
-		self.YSEtable = pdastroclass()
-		self.RADECtable = pdastroclass()
-		self.averagelctable = pdastroclass()
+		self.YSEtable = pdastrostatsclass()
+		self.RADECtable = pdastrostatsclass()
+		self.averagelctable = pdastrostatsclass()
 		self.TNSnamelist = None
 		self.TNSlistfilename = None
-		self.TNSlistfile = pdastroclass(columns=['TNSname','ra','dec'])
-		self.lc = pdastroclass()
+		self.TNSlistfile = pdastrostatsclass(columns=['TNSname','ra','dec'])
+		self.lc = pdastrostatsclass(hexcols=['Mask'])
+		
 		self.api = False
+		self.verbose = 0
 
 	def YSE_list(self):
 		all_cand = pd.read_csv('https://ziggy.ucolick.org/yse/explorer/147/download?format=csv')
@@ -89,57 +91,65 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			filename = '%s/%s/%s/%s_i%s.%s.lc.txt' % (self.outrootdir,self.outsubdir,SNID,SNID,oindex,filt)
 		return(filename)
 
-	def saveyselc(self,TNSname,controlindex,filt=None,indices=None,overwrite=False,MJDbinsize=None):
+	def saveyselc(self,TNSname,controlindex,filt=None,indices=None,overwrite=True,MJDbinsize=None):
 		#oindex = '%03d' % controlindex
 		if filt is None:
 			filt = self.filt
 		filename = self.yselcfilename(TNSname,controlindex,filt,MJDbinsize)
-		self.lc.write(filename,indices=indices,overwrite=overwrite,verbose=True)
+		if not(MJDbinsize is None):
+			self.averagelctable.write(filename,indices=indices,overwrite=overwrite,verbose=True)
+		else:
+			self.lc.write(filename,indices=indices,overwrite=overwrite,verbose=True)
 		return(0)
 
 	def loadyselc(self,TNSname,controlindex,filt=None,MJDbinsize=None):
 		if filt is None:
 			filt = self.filt
 		filename = self.yselcfilename(TNSname,controlindex,filt,MJDbinsize)
-		self.lc.load_spacesep(filename,delim_whitespace=True)
+		if not(MJDbinsize is None):
+			self.averagelctable.load_spacesep(filename,delim_whitespace=True)
+		else:
+			self.lc.load_spacesep(filename,delim_whitespace=True)
 		return(0)
 
 	def atlas2yse(self,TNSname,outname,ra,dec,atlas_data_file,filt):
-	    t = ascii.read(atlas_data_file)
-	    outname = atlas_data_file[:-9]+'%s.yse.csv' % filt
-	    filter_fict = {'o':'orange-ATLAS', 'c':'cyan-ATLAS'}
-	   
-	    with open(outname, 'w+') as f:
-	        f.write('SNID: '+TNSname+' \nRA: '+str(ra)+'     \nDECL: '+str(dec)+' \n \nVARLIST:  MJD  FLT  FLUXCAL   FLUXCALERR MAG     MAGERR DQ \n')
-	        for k in t:
-	        	#if args.cleanlc:
-	        		#if not(k['Mask']>0): #if k['Mask']==0:
-	        			# copy and paste
-	        	#else:
-	        		# copy and paste
-	            flt = filter_fict[k['F']]
-	            if k['m']>0:
-	                flux = 10**(-0.4*(k['m']-27.5))
-	                fluxerr= k['dm']*10**(-0.4*(k['m']-27.5))
-	            else:
-	                flux = -10**(-0.4*(-k['m']-27.5))
-	                fluxerr= k['dm']*10**(-0.4*(-k['m']-27.5))
-	            mag = k['m']
-	            magerr = k['dm']
-	            f.write('OBS: ' + str(k['MJD']) +' '+ flt+' '+ str(flux)+ ' '+str(fluxerr)+' '+ str(mag)+' '+ str(magerr)+' 0 \n')
-	    print("Converted ATLAS lc to YSE format: %s" % outname)
-	    return(outname)
+		t = ascii.read(atlas_data_file)
+		
+		# different output names for regular lcs vs. averaged lcs
+		if 'days' in atlas_data_file: # if averaged
+			outname = atlas_data_file[:-7]+'.yse.csv'
+		else:
+			outname = atlas_data_file[:-9]+'.%s.yse.csv' % filt
+		
+		filter_fict = {'o':'orange-ATLAS', 'c':'cyan-ATLAS'}
+		with open(outname, 'w+') as f:
+			f.write('SNID: '+TNSname+' \nRA: '+str(ra)+'     \nDECL: '+str(dec)+' \n \nVARLIST:  MJD  FLT  FLUXCAL   FLUXCALERR MAG     MAGERR DQ \n')
+			for row in t:
+				"""
+				flt = filter_fict[row['F']]
+				if row['m']>0:
+					flux = 10**(-0.4*(row['m']-27.5)) # mag = (-1/0.4)*log(row[self.flux_colname])+27.5
+					fluxerr= row['dm']*10**(-0.4*(row['m']-27.5))
+				else:
+					flux = -10**(-0.4*(-row['m']-27.5)) # mag = (1/0.4)*log(-row[self.flux_colname])+27.5
+					fluxerr= row['dm']*10**(-0.4*(-row['m']-27.5))
+				mag = row['m']
+				magerr = row['dm']
+				"""
+				f.write('OBS: '+str(row['MJD'])+' '+filter_fict[row['F']]+' '+str(row[self.flux_colname])+' '+str(row[self.dflux_colname])+' '+str(row['m'])+' '+str(row['dm'])+' 0 \n')
+		print("Converted ATLAS lc to YSE format: %s" % outname)
+		return(outname)
 
 	def uploadtoyse(self,filename):
 		os.system('python %s/uploadTransientData.py -e -s %s/settings.ini -i %s --instrument ACAM1 --fluxzpt 27.5' % (self.sourcedir,self.sourcedir,filename))
 
-	def saveRADECtable(self,TNSname,filt):
+	def saveRADECtable(self,args,TNSname,filt):
 		RADECtablefilename = '%s/%s/%s/%s.RADECtable.txt' % (self.outrootdir,self.outsubdir,TNSname,TNSname)
 		print('Saving RADECtable: %s' % RADECtablefilename)
-		self.RADECtable.write(RADECtablefilename,overwrite=True,verbose=True)
+		self.RADECtable.write(RADECtablefilename,overwrite=args.overwrite,verbose=True)
 		return(0)
 
-	def loadRADECtable(self,TNSname):
+	def loadRADECtable(self,args,TNSname):
 		# get RADECtable from already existing file
 		RADECtablefilename = '%s/%s/%s/%s.RADECtable.txt' % (self.outrootdir,self.outsubdir,TNSname,TNSname)
 		print('Loading RADECtable: %s' % RADECtablefilename)
@@ -147,7 +157,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		#print(self.RADECtable.write())
 		return(0)
 
-	def defineRADECtable(self,RA,Dec,pattern=None):
+	def defineRADECtable(self,args,RA,Dec,pattern=None):
 		self.RADECtable.t = self.RADECtable.t[0:0]
 		if not(pattern is None):
 			pattern_list = pattern
@@ -174,13 +184,16 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
 					# query panstarrs for closest bright object and add to snlist.txt
 					if self.cfg.params['forcedphotpatterns']['closebright']['autosearch'] is True:
+						print('Autosearch not functional yet!!')
+						sys.exit(0)
+						"""
 						results = self.autosearch(RA.degree, Dec.degree, 20)
 						print('Close bright objects found: \n',results)
-						sys.exit(0)
-						cbRA = '_' # FIX
-						cbDec = '_' # FIX
+						cbRA = 
+						cbDec = 
 						self.t.at[SNindex,'closebrightRA'] = Angle(RaInDeg(cbRA),u.degree)
 						self.t.at[SNindex,'closebrightDec'] = Angle(RaInDeg(cbDec),u.degree)
+						"""
 					# use coordinates listed in snlist.txt
 					else:
 						cbRA = Angle(RaInDeg(self.t.at[SNindex,'closebrightRA']),u.degree)
@@ -192,9 +205,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 					sep = c1.separation(c2)
 					r1 = sep.arcsecond
 					radii = [r1]
-
-					if self.verbose:
-						print('Minimum distance from SN to control LC: ',mindist)
+					#print('Minimum distance from SN to control LC: ',mindist)
 				else:
 					raise RuntimeError("Pattern %s is not defined" % pattern)
 
@@ -215,9 +226,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 						Deccenter = Angle(Dec.degree,u.degree)
 					else:
 						raise RuntimeError('Pattern must be circle, box, or closebright!')
-
-					#print('CENTER: ',RAcenter.degree,Deccenter.degree) # delete me
-					#print('R = %f arcsec or %f deg or %f rad' % (R.arcsec,R.degree,R.radian)) # delete me
 
 					for i in range(n):
 						angle = Angle(i*360.0/n, u.degree)
@@ -250,7 +258,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 						if self.verbose:
 							print('#Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew.degree, DECnew.degree))
 						ControlID += 1
-			print(self.RADECtable.write(index=True,overwrite=False))
+			print(self.RADECtable.write(index=True,overwrite=args.overwrite))
 		else:
 			RA = Angle(RaInDeg(RA),u.degree)
 			Dec = Angle(DecInDeg(Dec),u.degree)
@@ -276,9 +284,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		self.lc.t = self.lc.t.sort_values(by=['MJD'],ignore_index=True)
 		indices = self.lc.ix_remove_null(colnames='uJy')
 
-		# save the lc file with the output filename
-		self.saveyselc(TNSname,controlindex,indices=indices)
-
 		# split the lc file into 2 separate files by filter
 		for filt in ['c','o']:
 			filename = self.yselcfilename(TNSname,controlindex,filt)
@@ -287,15 +292,15 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			newindices = AandB(indices,detections4filt)
 			if len(detections4filt[0]) is 0:
 				print('Saving blank light curve: %s' % filename)
-				self.lc.write(filename,index=False,indices=newindices,overwrite=True,verbose=False,columns=['MJD','m','dm',self.flux_colname,self.dflux_colname,'F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','Sky','ZP','Obs','Mask'])
+				self.lc.write(filename,index=False,indices=newindices,overwrite=args.overwrite,verbose=False,columns=['MJD','m','dm',self.flux_colname,self.dflux_colname,'F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','Sky','ZP','Obs','Mask'])
 			else: 
 				print('Saving light curve: %s' % filename)
-				self.lc.write(filename, index=False, indices=newindices, overwrite=True, verbose=False)
+				self.lc.write(filename, index=False,indices=newindices,overwrite=args.overwrite,verbose=False)
 
 	def downloadYSEcontrollc(self,args,TNSname,ra,dec,pattern=None,lookbacktime_days=None):
 		print('Offset status: ',args.forcedphot_offset)
 		if args.forcedphot_offset == 'True':
-			self.defineRADECtable(ra,dec,pattern=pattern)
+			self.defineRADECtable(args,ra,dec,pattern=pattern)
 
 			for i in range(len(self.RADECtable.t)):
 				print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
@@ -308,11 +313,11 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 				cfilt = np.where(self.lc.t['F']=='c')
 				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
 			
-			self.saveRADECtable(TNSname,'c')
-			self.saveRADECtable(TNSname,'o')
+			self.saveRADECtable(args,TNSname,'c')
+			self.saveRADECtable(args,TNSname,'o')
 		else:
 			print('Skipping forcedphot offsets lc...')
-			self.defineRADECtable(ra,dec,pattern=None)
+			self.defineRADECtable(args,ra,dec,pattern=None)
 
 			print(self.RADECtable.write(index=True,overwrite=False))
 			for i in range(len(self.RADECtable.t)):
@@ -325,126 +330,82 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 				cfilt = np.where(self.lc.t['F']=='c')
 				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
 			
-			self.saveRADECtable(TNSname,'c')
-			self.saveRADECtable(TNSname,'o')
+			self.saveRADECtable(args,TNSname,'c')
+			self.saveRADECtable(args,TNSname,'o')
 
-	def averageyselc(self,args,TNSname):
-		self.loadRADECtable(TNSname)
-		for filt in ['c','o']:
-			self.loadyselc(TNSname,0,filt)
-			
-			# add masks to mask column
+	def averageyselc(self,args,TNSname,filt,MJDbinsize=1.0):
+		self.loadRADECtable(args,TNSname)
+		self.loadyselc(TNSname,0,filt)
 
-			# average light curve and add points to new averaged df
+		# clear averagelctable and set columns
+		self.averagelctable.t = self.averagelctable.t.iloc[0:0]
+		self.averagelctable.t['MJD'] = pd.Series([], dtype=np.float64)
+		self.averagelctable.t['MJDbin'] = pd.Series([], dtype=np.float64)
+		self.averagelctable.t[self.flux_colname] = pd.Series([], dtype=np.float64)
+		self.averagelctable.t[self.dflux_colname] = pd.Series([], dtype=np.float64)
+		self.averagelctable.t['m'] = pd.Series([], dtype=np.float64)
+		self.averagelctable.t['dm'] = pd.Series([], dtype=np.float64)
+		self.averagelctable.t['stdev'] = pd.Series([], dtype=np.float64)
+		self.averagelctable.t['X2norm'] = pd.Series([], dtype=np.float64)
+		self.averagelctable.t['Nclipped'] = pd.Series([], dtype=np.int64)
+		self.averagelctable.t['Nused'] = pd.Series([], dtype=np.int64)
 
-	"""
-	def cleanupYSEcontrollc(self,args,TNSname):
-		self.loadRADECtable(TNSname)
-		for controlindex in range(len(self.RADECtable.t)):
-			for filt in ['c','o']:
-				# load lc
-				#oindex = '%03d' % controlindex
-				self.loadyselc(TNSname,controlindex,filt)
-				print('Loaded %s light curve! Length of self.lc.t: ' % filt,len(self.lc.t))
-				if len(self.lc.t) == 0: return(1)
+		# add masks to mask column by cleaning lc - x2norm and uncertainty masks
+		self.lc.t['Mask'] = 0
+		# drop old columns
+		dropcols=[]
+		if 'Noffsetlc' in self.lc.t.columns: dropcols.append('Noffsetlc')
+		for col in self.lc.t.columns:
+			if re.search('^c\d_',col): dropcols.append(col)
+			if re.search('^o\d_',col): dropcols.append(col)
+		if len(dropcols)>0: self.lc.t.drop(columns=dropcols,inplace=True)
+		# masks
+		self.c0_PSF_uncertainty_cut(self.cfg.params['cleanlc']['cut0']['N_dflux_max'])
+		self.c0_PSF_X2norm_cut(self.cfg.params['cleanlc']['cut0']['PSF_X2norm_max'])
 
-				# add or replace mask column
-				if 'Mask' in self.lc.t.columns:
-					if self.verbose:
-						print('Replacing existing Mask column...')
-					for i in range(len(self.lc.t)):
-						self.lc.t.loc[i,'Mask'] = 0
-				else: 
-					mask = np.zeros((len(self.lc.t)), dtype=int)
-					self.lc.t = self.lc.t.assign(Mask=mask)
+		# average light curve add points to new averaged df
+		MJD = int(np.amin(self.lc.t['MJD']))
+		MJDmax = int(np.amax(self.lc.t['MJD']))+1
+		while MJD <= MJDmax:
+			# get measurements for MJD range
+			mjd_ix = self.lc.ix_inrange(colnames=['MJD'],lowlim=MJD,uplim=MJD+MJDbinsize,exclude_uplim=True)
+			if self.cfg.params['upltoyse']['use_cut0']:
+				# get measurements without x2norm and uncertainty masks
+				mjd_ix = self.lc.ix_unmasked('Mask',maskval=self.flag_c0_X2norm|self.flag_c0_uncertainty,indices=mjd_ix)
 
-				# determine if using uncertainty cleanup
-				uncert_apply = self.cfg.params['cleanlc']['uncertainty']['apply']
-				if args.skip_uncert: uncert_apply = False
-				if uncert_apply == True:
-					print('Applying uncertainty cleanup...')
-					self.flag_biguncertainty_duJy(TNSname,controlindex)
-				else:
-					print('Skipping uncertainty cleanup...')
+			if len(mjd_ix)>0:
+				# add row to averagelc table
+				df = {'MJDbin':MJD+0.5*MJDbinsize,'F':filt}
+				lcaverageindex = self.averagelctable.newrow(df)
 
-				# determine if using chi/N cleanup, and if type is dynamic or static
-				chi_apply = self.cfg.params['cleanlc']['chi/N']['apply']
-				if args.skip_chi: chi_apply = False
-				if chi_apply == True:
-					chi_type = self.cfg.params['cleanlc']['chi/N']['type']
-					if chi_type == 'dynamic':
-						print('Applying chi/N cleanlc type: %s ' % chi_type)
-						self.flag_bigchi_dynamic(TNSname,controlindex)
-					elif chi_type == 'static':
-						print('Applying chi/N cleanlc type: %s ' % chi_type)
-						self.flag_bigchi_static(TNSname,controlindex)
-					else:
-						print('Cleanup type error--type: ',chi_type)
-						raise RuntimeError('chi/N cleanup type must be dynamic or static!')
-				else:
-					print('Skipping chi/N cleanup...')
+			if len(mjd_ix)==0: 
+				if self.verbose>1: print('No data in MJD range = 0, skipping MJD range...')
+				MJD += MJDbinsize
+				continue
 
-				# save lc with additional mask column
-				self.saveyselc(TNSname,controlindex,filt,overwrite=True)
-	"""
-	"""
-	def getcleanlc(self,args):
-		flags = self.cfg.params['upltoyse']['flags']
-		print('Setting indices using flags: %x' % flags)
-		
-		mask=np.bitwise_and(self.lc.t['Mask'], flags)
-		cuts_indices = np.where(mask==0)
-		cuts_indices = cuts_indices[0]
-		bad_data = np.where(mask!=0)
-		bad_data = bad_data[0]
+			# sigmacut indices
+			self.lc.calcaverage_sigmacutloop(self.flux_colname,noisecol=self.dflux_colname,indices=mjd_ix,verbose=1,Nsigma=3.0,median_firstiteration=True)
+			fluxstatparams = deepcopy(self.lc.statparams)
+			if self.verbose>1: print('Nclip: {}, Ngood: {}, X2norm: {}'.format(fluxstatparams['Nclip'],fluxstatparams['Ngood'],fluxstatparams['X2norm']))
 
-		datacut = len(self.lc.t)-len(self.lc.t.loc[cuts_indices])
-		print('Length original lc: ',len(self.lc.t),', length cleaned lc: ',len(self.lc.t.loc[cuts_indices]),', data points cut: ',datacut)
+			# get average mjd
+			self.lc.calcaverage_sigmacutloop('MJD',noisecol=self.dflux_colname,indices=fluxstatparams['ix_good'],verbose=1,Nsigma=0,median_firstiteration=False)
+				
+			# add row to averagelc table
+			df = {'MJD':self.lc.statparams['mean'],self.flux_colname:fluxstatparams['mean'],self.dflux_colname:fluxstatparams['mean_err'],
+				  'stdev':fluxstatparams['stdev'],'X2norm':fluxstatparams['X2norm'],'Nclipped':fluxstatparams['Nclip'],'Nused':fluxstatparams['Ngood']}
+			self.averagelctable.add2row(lcaverageindex,df)
 
-		lc_m = self.lc.t.loc[cuts_indices, 'm']
-		lc_dm = self.lc.t.loc[cuts_indices,'dm']
-		lc_mjd = self.lc.t.loc[cuts_indices,'MJD']
-		#return(lc_m, lc_dm, lc_mjd, cuts_indices)
-	"""
-	"""
-	def averageYSElc(self,args,TNSname):
-		self.loadRADECtable(TNSname)
+			MJD += MJDbinsize
 
-		# decide whether or not to make cuts on data to average
-		makecuts_apply = self.cfg.params['averagelc']['makecuts']
-		if not(args.avg_makecuts) is None:
-			if args.avg_makecuts is True:
-				makecuts_apply = True
-			else:
-				makecuts_apply = False
+		# convert flux to magnitude
+		self.averagelctable.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=27.5,upperlim_Nsigma=3)
 
-		for controlindex in range(len(self.RADECtable.t)):
-			MJDbinsize = self.cfg.params['output']['MJDbinsize']
-			if not(args.MJDbinsize is None): MJDbinsize = args.MJDbinsize
-			
-			# load lc
-			self.loadyselc(TNSname,controlindex,filt)
-			print('Loaded %s light curve! Length of self.lc.t: ' % filt,len(self.lc.t))
-			if len(self.lc.t) == 0: return(1)
+		print(self.averagelctable.t)
 
-			# AHHHHHHHHHHHHH 
-			if makecuts_apply == True:
-				if not('Mask' in self.lc.t.columns):
-					raise RuntimeError('No "Mask" column exists! Please run "cleanup_lc.py %s" beforehand.' % self.t.at[SNindex,'tnsname'])
-				lc_uJy, lc_duJy, lc_MJD, cuts_indices, bad_data = self.makecuts_indices(SNindex, controlindex, 'averagelc')
-				print('Calculating average_lc table for offset index %d' % controlindex)
-				self.averagelcs(args, SNindex, controlindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=MJDbinsize, cuts_indices=cuts_indices)
-			# data set to lc table
-			else:
-				print('Skipping makecuts using mask column...')
-				lc_uJy = self.lc.t[self.flux_colname]
-				lc_duJy = self.lc.t[self.dflux_colname]
-				lc_MJD = self.lc.t['MJD']
-				print('Calculating average_lc table for offset index %d' % controlindex) 
-				self.averagelcs(args, SNindex, controlindex, lc_uJy, lc_duJy, lc_MJD, MJDbinsize=MJDbinsize)
-			'''
-	"""
-	def uploadloop(self,args,TNSname,overwrite=False):
+		self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite,MJDbinsize=MJDbinsize)
+
+	def uploadloop(self,args,TNSname,overwrite=True):
 		# GET RA AND DEC
 		if args.tnsnamelist:
 			# get ra and dec automatically
@@ -473,7 +434,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			else:
 				raise RuntimeError('Something went wrong: TNSname does not exist!')
 
-		#self.existflag = False
+		"""
+		print('Overwrite status: ',args.overwrite)
 		if args.overwrite is False:
 			for filt in ['c','o']:
 				filename = self.yselcfilename(TNSname,0,filt)
@@ -483,6 +445,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 				else:
 					print("Found no data for %s with filter %s, downloading full lc..." % (TNSname,filt))
 					self.existflag = False
+		"""
 
 		# set offset pattern
 		if not(args.pattern is None):
@@ -501,18 +464,15 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		for filt in ['c','o']:
 			filename = self.yselcfilename(TNSname,0,filt)
 			outname = self.atlas2yse(TNSname,filename,ra,dec,filename,filt)
-			self.uploadtoyse(outname)
+			#self.uploadtoyse(outname)
 
-			"""
 			if args.averagelc:
 				filename = self.yselcfilename(TNSname,0,filt,args.MJDbinsize)
-				self.averageyselc(args,TNSname)
-				outname = self.atlas2yse(TNSname,outname,ra,dec,atlas_data_file,filt)
-				self.uploadtoyse(outname)
-			"""
+				self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
+				outname = self.atlas2yse(TNSname,filename,ra,dec,filename,filt)
+				#self.uploadtoyse(outname)
 
 if __name__ == '__main__':
-
 	upltoyse = uploadtoyseclass()
 
 	# add arguments
@@ -526,12 +486,8 @@ if __name__ == '__main__':
 	parser.add_argument('--api', default=False, help=('use API instead of SSH to get light curves from ATLAS'))
 	parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
 	parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
-	#parser.add_argument('--plotlc', default=False, help=('plot lcs')) # to add
-	#parser.add_argument('--cleanlc', default=False, help=('upload only clean data to yse')) # in progress
-	parser.add_argument('--averagelc', default=False, help=('average lcs')) # to add
-	#parser.add_argument('--skip_uncert', default=False, help=('skip cleanup lcs using uncertainties'))
-	#parser.add_argument('--skip_chi', default=False, help=('skip cleanup lcs using chi/N'))
-	parser.add_argument('-m','--MJDbinsize', default=None, help=('specify MJD bin size'),type=float) # to add
+	parser.add_argument('--averagelc', default=False, help=('average lcs'))
+	parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size'),type=float)
 
 	# add config file and atlaslc arguments
 	cfgfile = upltoyse.defineoptions()
@@ -553,6 +509,7 @@ if __name__ == '__main__':
 		upltoyse.outsubdir = args.outsubdir
 	else: 
 		upltoyse.outsubdir = upltoyse.cfg.params['output']['yse_outsubdir']
+	upltoyse.verbose = args.verbose
 
 	# GET TNSNAMELIST
 	if not(args.tnsnamelist is None):
@@ -580,9 +537,10 @@ if __name__ == '__main__':
 	upltoyse.flux_colname = upltoyse.cfg.params['flux_colname']
 	upltoyse.dflux_colname = upltoyse.cfg.params['dflux_colname']
 	upltoyse.RADECtable = pdastroclass(columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
-	upltoyse.averagelctable = pdastroclass(columns=['ControlID','MJD',upltoyse.flux_colname,upltoyse.dflux_colname,'stdev','X2norm','Nused','Nclipped','MJDNused','MJDNskipped'])
 	upltoyse.RADECtable.default_formatters = {'ControlID':'{:3d}'.format,'PatternID':'{:2d}'.format,'Ra':'{:.8f}'.format,'Dec':'{:.8f}'.format,'RaOffset':'{:.2f}'.format,'DecOffset':'{:.2f}'.format,'Radius':'{:.2f}'.format,'Ndet':'{:4d}'.format,'Ndet_c':'{:4d}'.format,'Ndet_o':'{:4d}'.format}
-	upltoyse.averagelctable.default_formatters = {'ControlID':'{:3d}'.format,'MJD':'{:.5f}'.format,upltoyse.flux_colname:'{:.2f}'.format,upltoyse.dflux_colname:'{:.2f}'.format,'stdev':'{:.2f}'.format,'X2norm':'{:.3f}'.format,'Nused':'{:4d}'.format,'Nclipped':'{:4d}'.format,'MJDNused':'{:4d}'.format,'MJDNskipped':'{:4d}'.format}
+	upltoyse.averagelctable = pdastroclass(columns=['MJDbin','MJD','F',upltoyse.flux_colname,upltoyse.dflux_colname,'m','dm','stdev','X2norm','Nused','Nclipped'])
+	# the following line caused a formatting error and I didn't want to figure out why... this is a problem for future sofia:
+	#upltoyse.averagelctable.default_formatters = {'MJDbin':'{:.1f}'.format,'MJD':'{:.5f}'.format,upltoyse.flux_colname:'{:.2f}'.format,upltoyse.dflux_colname:'{:.2f}'.format,'m':'{:.3f}'.format,'dm':'{:.3f}'.format,'stdev':'{:.2f}'.format,'X2norm':'{:.3f}'.format,'Nused':'{:4d}'.format,'Nclipped':'{:4d}'.format,'MJDNused':'{:4d}'.format,'MJDNskipped':'{:4d}'.format}
 
 	# api
 	upltoyse.api = upltoyse.cfg.params['api']

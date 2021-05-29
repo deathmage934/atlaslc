@@ -63,7 +63,7 @@ class averagelcclass(SNloopclass):
             # get good and ok measurements
             ix2 = self.lc.ix_unmasked('Mask',maskval=self.flag_c2_bad|self.flag_c0_X2norm|self.flag_c0_uncertainty,indices=ix1)
                 
-            # if keepNaN rows or any measurements, keep the row!
+            # if keepNaNrows or any measurements, keep the row!
             if keepNaNrows or len(ix1)>0:
                 # add row to averagelc table
                 df = {'ControlID':controlindex,'MJDbin':MJD+0.5*MJDbinsize,'Nclip':0,'Ngood':0,'Nexcluded':len(ix1)-len(ix2),'Mask':0}
@@ -95,7 +95,7 @@ class averagelcclass(SNloopclass):
                     print('Good and ok indices (ix2): ',ix2)
 
             # sigmacut good and ok measurements
-            self.lc.calcaverage_sigmacutloop('uJy',noisecol='duJy',indices=ix2,verbose=1,Nsigma=3.0,median_firstiteration=True)
+            self.lc.calcaverage_sigmacutloop(self.flux_colname,noisecol=self.dflux_colname,indices=ix2,verbose=1,Nsigma=3.0,median_firstiteration=True)
             fluxstatparams = deepcopy(self.lc.statparams)
             if self.verbose>1: 
                 print('Nclip: {}, Ngood: {}, X2norm: {}'.format(fluxstatparams['Nclip'],fluxstatparams['Ngood'],fluxstatparams['X2norm']))

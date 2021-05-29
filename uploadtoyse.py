@@ -550,7 +550,7 @@ if __name__ == '__main__':
 	#for TNSname in upltoyse.TNSnamelist:
 	for index in range(0,len(upltoyse.TNSnamelist)):
 		TNSname = upltoyse.TNSnamelist[index]
-		print("\nUploading and/or downloading data for %s, TNSnamelist index %d/%d" % (TNSname,index,len(upltoyse.TNSnamelist)))
+		print("\nUploading and/or downloading data for %s, TNSnamelist index %d/%d" % (TNSname,index+1,len(upltoyse.TNSnamelist)))
 		upltoyse.uploadloop(args,TNSname,overwrite=True)
 
 	if not(args.tnslistfilename is None):

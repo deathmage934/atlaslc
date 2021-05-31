@@ -182,7 +182,6 @@ class detectbumpsclass(SNloopclass):
 		plt.ylabel('Flux ($\mu$Jy)')
 
 		# get x and y limits from args; else, leave as is
-		
 		xlim_lower, xlim_upper = plt.xlim()
 		if not(args.xlim_lower is None): 
 			xlim_lower = args.xlim_lower
@@ -196,7 +195,6 @@ class detectbumpsclass(SNloopclass):
 		plt.xlim(xlim_lower,xlim_upper)
 		plt.ylim(ylim_lower,ylim_upper)
 	
-
 		if not(simparams is None):
 			outfile = '%s.simLC.png' % outbasefilename
 		else:

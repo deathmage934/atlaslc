@@ -453,7 +453,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			pattern = args.pattern
 		else:
 			pattern = self.cfg.params['forcedphotpatterns']['patterns_to_use']
-
 		# download lc and, if forcedphot_offset, offset lcs
 		if args.lookbacktime_days:
 			lookbacktime_days = args.lookbacktime_days

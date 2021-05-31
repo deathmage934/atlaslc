@@ -141,12 +141,26 @@ class plotlcclass(SNloopclass):
 			plt.xlabel('MJD')
 			plt.ylabel(self.flux_colname)
 
+			xlim_lower, xlim_upper = plt.xlim()
+			if not(args.xlim_lower is None): 
+				xlim_lower = args.xlim_lower
+			if not(args.xlim_upper is None):
+				xlim_upper = args.xlim_upper
+			ylim_lower, ylim_upper = plt.ylim()
+			if not(args.ylim_lower is None): 
+				ylim_lower = args.ylim_lower
+			if not(args.ylim_upper is None): 
+				ylim_upper = args.ylim_upper
+			plt.xlim(xlim_lower,xlim_upper)
+			plt.ylim(ylim_lower,ylim_upper)
+
 			# save plot
 			plotfilename = self.lcbasename(SNindex=SNindex,MJDbinsize=binsize4avg)+'.png'
 			print('Plot file name: ',plotfilename)
 			plt.savefig(plotfilename,dpi=200)
 			plt.close()
 
+	"""
 	def plot_lc_controlLC(self,args,SNindex,sp=None,c1_flag=False,c2_flag=False):
 		plt.rcParams['font.family'] = 'serif'
 		plt.rcParams["font.serif"] = 'times'
@@ -255,12 +269,14 @@ class plotlcclass(SNloopclass):
 			plotfilename = self.lcbasename(SNindex=SNindex)+'.mask_nan.png'
 			print('Plot file name: ',plotfilename)
 			plt.savefig(plotfilename)
+	"""
 
 	def plotlcloop(self,args,SNindex):
 		print('###################################\nPlotting LCs...\n###################################')
 		self.plot_lc(args,SNindex)
 		
 		# decide if plotting controlLC stats
+		"""
 		c1_flag = False
 		c2_flag = False
 		if self.cfg.params['plotlc']['plot_mask4mjd'] is True:
@@ -276,6 +292,7 @@ class plotlcclass(SNloopclass):
 		elif c2_flag is True:
 			print('Plotting mask_nan control LC...')
 			self.plot_lc_controlLC(args,SNindex,c2_flag=True)
+		"""
 
 if __name__ == '__main__':
 
@@ -287,18 +304,18 @@ if __name__ == '__main__':
 
 	if args.filt is None:
 		print('Looping through c and o filters...')
-		for filt in ['o','c']:
-			print('### FILTER SET: %s' % filt)
-			plotlc.filt = filt
-			for SNindex in SNindexlist:
-				print('Plotting lc for ',plotlc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(plotlc.t)))
-				print(SNindex,plotlc.t.at[SNindex,'tnsname']) # delete me
+		for SNindex in SNindexlist:
+			for filt in ['o','c']:
+				print('### FILTER SET: %s' % filt)
+				plotlc.filt = filt
+				print('Plotting lc for ',plotlc.t.at[SNindex,'tnsname'])
+				#print(SNindex,plotlc.t.at[SNindex,'tnsname']) # delete me
 				plotlc.plotlcloop(args,SNindex)
 			print('Finished with filter %s!' % filt)
 	else:
 		print('### FILTER SET: %s' % args.filt)
 		plotlc.filt = args.filt
 		for SNindex in SNindexlist:
-			print('Plotting lc for ',plotlc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(plotlc.t)))
-			print(SNindex,plotlc.t.at[SNindex,'tnsname']) # delete me
+			print('Plotting lc for ',plotlc.t.at[SNindex,'tnsname'])
+			#print(SNindex,plotlc.t.at[SNindex,'tnsname']) # delete me
 			plotlc.plotlcloop(args,SNindex)

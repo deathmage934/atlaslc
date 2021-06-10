@@ -15,6 +15,8 @@ import pandas as pd
 from lxml import html
 import requests
 import sys,os
+import json
+from collections import OrderedDict
 
 class autoaddclass(SNloopclass):
 	def __init__(self):
@@ -51,7 +53,8 @@ class autoaddclass(SNloopclass):
 			a, b, c = item.partition(' ')
 			yield a
 			yield b+c
-
+	
+	"""
 	def getradec(self,tnsname):
 		obj_name=tnsname
 		print('Getting data from https://www.wis-tns.org/object/'+obj_name)
@@ -87,6 +90,41 @@ class autoaddclass(SNloopclass):
 		disc_date = dateobjects.mjd
 		print("MJD: %.4f" % disc_date)
 		return(disc_date)
+	"""
+
+	def getdata(self,tnsname):
+		try:
+			get_obj = [("objname",tnsname), ("objid",""), ("photometry","1"), ("spectra","1")]
+			get_url = 'https://www.wis-tns.org/api/get/object'
+			json_file = OrderedDict(get_obj)
+			get_data = {'api_key':'2eca323a16b17d78fbc99cd6f1f801699a81a91c','data':json.dumps(json_file)}
+			response = requests.post(get_url, data=get_data, headers={'User-Agent':'tns_marker{"tns_id":104739,"type": "bot", "name":"Name and Redshift Retriever"}'})
+			json_data = json.loads(response.text,object_pairs_hook=OrderedDict) #self.format(response.text)
+			return json_data
+		except Exception as e:
+			return [None,'Error message : \n'+str(e)]
+
+	def getradec(self,tnsname):
+		json_data = self.getdata(tnsname)
+		ra = json_data['data']['reply']['ra']
+		dec = json_data['data']['reply']['dec']
+		return RaInDeg(ra), DecInDeg(dec)
+
+	def getdisc_date(self,tnsname):
+		json_data = self.getdata(tnsname)
+		discoverydate = json_data['data']['reply']['discoverydate']
+		print(discoverydate)
+
+		date = list(discoverydate.partition(' '))[0]
+		time = list(discoverydate.partition(' '))[2]
+		print('Date: %s, Time: %s' % (date, time))
+
+		disc_date_format = date+"T"+time
+		dateobjects = Time(disc_date_format, format='isot', scale='utc')
+		disc_date = dateobjects.mjd
+		print("MJD: %.4f" % disc_date)
+
+		return disc_date
 
 	def addrow2snlist(self, tnsname, ra, dec, MJDpreSN, closebrightRA=None, closebrightDec=None):
 		if os.path.exists(snlistfilename):

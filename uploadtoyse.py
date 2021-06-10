@@ -65,10 +65,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		self.verbose = 0
 
 	def YSE_list(self):
-		if not(self.cfg.params['upltoyse']['yse_list'] is None):
-			all_cand = pd.read_csv(self.cfg.params['upltoyse']['yse_list'])
-		else:
-			all_cand = pd.read_csv('https://ziggy.ucolick.org/yse/explorer/147/download?format=csv')
+		all_cand = pd.read_csv(self.cfg.params['upltoyse']['yse_list'])
 		all_cand = all_cand.drop_duplicates(subset='name')
 		df = pd.DataFrame()
 		df['Name'] = all_cand['name'] 

@@ -171,7 +171,7 @@ class averagelcclass(SNloopclass):
     def averagelcloop(self,SNindex,MJDbinsize=1.0):
         print('###################################\nAveraging LCs...\n###################################')
 
-        print('MJD bin size set to ')
+        print('MJD bin size set to ',MJDbinsize)
         
         # loop through SN and control lcs
         for controlindex in range(0,len(self.RADECtable.t)):    

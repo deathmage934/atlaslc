@@ -42,15 +42,17 @@ class lightlcclass(SNloopclass):
 	def savelightweight(self):
 		# original
 		self.load_lc(SNindex,filt=self.filt,controlindex=0)
-		self.lc.t = self.lc.t.drop(columns=['F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','mag5sig','Sky','Obs','c1_mean','c1_mean_err','c1_stdev','c1_stdev_err','c1_X2norm','c1_Nvalid','c1_Nnan','c2_mean','c2_mean_err','c2_stdev','c2_stdev_err','c2_X2norm','c2_Ngood','c2_Nclip','c2_Nmask','c2_Nnan'])
+		self.lc.t = self.lc.t.drop(columns=['F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','mag5sig','Sky','Obs'])
+		if 'c1_mean' in self.lc.t.columns:
+			self.lc.t = self.lc.t.drop(columns=['c1_mean','c1_mean_err','c1_stdev','c1_stdev_err','c1_X2norm','c1_Nvalid','c1_Nnan','c2_mean','c2_mean_err','c2_stdev','c2_stdev_err','c2_X2norm','c2_Ngood','c2_Nclip','c2_Nmask','c2_Nnan'])
 		basename = '%s/%s/lightweight/%s.%s' % (self.outrootdir,self.t['tnsname'][SNindex],self.t['tnsname'][SNindex],self.filt)
-		filename = basename + '.light.txt'
+		filename = basename + '.txt'
 		print('Saving original light curve: ',filename)
 		self.lc.write(filename,overwrite=True)
 
 		# original clean
 		indices = self.getusableindices()
-		filename = basename + '.light.clean.txt'
+		filename = basename + '.clean.txt'
 		print('Saving cleaned original light curve: ',filename)
 		self.lc.write(filename,indices=indices,overwrite=True)
 
@@ -61,13 +63,13 @@ class lightlcclass(SNloopclass):
 			basename += '.%ddays' % int(args.MJDbinsize)
 		else:
 			basename += '.%.2fdays' % args.MJDbinsize
-		filename = basename + '.light.txt'
+		filename = basename + '.txt'
 		print('Saving averaged light curve: ',filename)
 		self.lc.write(filename,overwrite=True)
 
 		# average clean
 		indices = self.getusableindices()
-		filename = basename + '.light.clean.txt'
+		filename = basename + '.clean.txt'
 		print('Saving cleaned averaged light curve: ',filename)
 		self.lc.write(filename,indices=indices,overwrite=True)
 

@@ -57,7 +57,6 @@ class autoaddclass(SNloopclass):
 		print('Getting data from https://www.wis-tns.org/object/'+obj_name)
 		page = requests.get('https://www.wis-tns.org/object/'+obj_name)
 		tree = html.fromstring(page.content)
-		
 		radec = tree.xpath('//div[@class="field field-radec"]//div[@class="value"]/text()')
 		print(radec)
 

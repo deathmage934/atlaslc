@@ -404,7 +404,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		# convert flux to magnitude
 		self.averagelctable.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
 
-		print(self.averagelctable.t)
+		self.averagelctable.write()
 
 		self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite,MJDbinsize=MJDbinsize)
 

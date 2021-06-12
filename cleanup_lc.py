@@ -25,8 +25,9 @@ class cleanuplcclass(SNloopclass):
         dflux_max = N_dflux_max * median(self.lc.t[self.dflux_colname])
         print('Flagging all measurements with %s bigger than %f...' % (self.dflux_colname, dflux_max))
 
-        # get indices
+        # get indices greater than dflux_max or equal to 0
         a_indices = self.lc.ix_inrange(self.dflux_colname,dflux_max,None)
+        a_indices = self.lc.ix_equal(self.dflux_colname,0,a_indices)
         
         if len(a_indices)>0:
             print('# %s above %f: %i/%i' % (self.dflux_colname,dflux_max,len(a_indices),len(self.lc.getindices())))

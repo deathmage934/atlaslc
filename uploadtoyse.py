@@ -143,7 +143,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 		return(outname)
 
 	def uploadtoyse(self,filename):
-		os.system('python %s/uploadTransientData.py -e -s %s/settings.ini -i %s --instrument ACAM1 --fluxzpt 27.5' % (self.sourcedir,self.sourcedir,filename))
+		os.system('python %s/uploadTransientData.py -e -s %s/settings.ini -i %s --instrument ACAM1 --fluxzpt 23.9' % (self.sourcedir,self.sourcedir,filename))
 
 	def saveRADECtable(self,args,TNSname,filt):
 		RADECtablefilename = '%s/%s/%s/%s.RADECtable.txt' % (self.outrootdir,self.outsubdir,TNSname,TNSname)
@@ -402,7 +402,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			MJD += MJDbinsize
 
 		# convert flux to magnitude
-		self.averagelctable.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=27.5,upperlim_Nsigma=3)
+		self.averagelctable.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
 
 		print(self.averagelctable.t)
 
@@ -460,7 +460,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 			lookbacktime_days = args.lookbacktime_days
 		else:
 			lookbacktime_days = 60
-		self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
+		#self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
 		
 		# upload to YSE-PZ
 		for filt in ['c','o']:

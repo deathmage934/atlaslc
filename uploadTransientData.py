@@ -181,7 +181,9 @@ less than this, in the same filter/instrument are treated as the same data.	 All
 		url = '%s'%db.dburl.replace('/api','/add_transient_phot')
 
 		def myconverter(obj):
-			if isinstance(obj, np.integer):
+			if obj is np.nan:
+				return None
+			elif isinstance(obj, np.integer):
 				return int(obj)
 			elif isinstance(obj, np.floating):
 				return float(obj)

@@ -140,13 +140,13 @@ class cleanuplcclass(SNloopclass):
             # c1 stats ...
             pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',verbose=1,Nsigma=0.0,median_firstiteration=False)
             # ... and save them into the table
-            self.lc.statresults2table(pda4MJD,c1_param2columnmapping,destindex=index)
+            self.lc.statresults2table(pda4MJD.statparams,c1_param2columnmapping,destindex=index)
 
             # c2 stats ...
             pda4MJD.calcaverage_sigmacutloop('uJy',noisecol='duJy',maskcol='Mask',maskval=(self.flag_c0_uncertainty|self.flag_c0_X2norm),verbose=1,Nsigma=3.0,median_firstiteration=True)
             # ... and save them into the table
 
-            self.lc.statresults2table(pda4MJD,c2_param2columnmapping,destindex=index)            
+            self.lc.statresults2table(pda4MJD.statparams,c2_param2columnmapping,destindex=index)            
 
         # Save the light curve with cuts in Mask
         self.save_lc(SNindex=SNindex,overwrite=True,controlindex=0)

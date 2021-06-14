@@ -77,13 +77,17 @@ class pdastroclass:
         # self.default_dtypeMapping = {'counter':np.int64}
         
         # default_formatters are passed to to_string() in self.write
-        self.default_formatters = None
+        self.default_formatters = {}
         # example:
         # self.default_formatters = {'MJD':'{:.6f}'.format,'counter':'{:05d}'.format}
        
         # dictionary for the splines. arguments are the y columns of the spline
         self.spline={}
 
+
+    def load_lines(self,lines,sep='\s+',**kwargs):
+        errorflag = self.load_spacesep(io.StringIO('\n'.join(lines)),sep=sep,**kwargs)
+        return(errorflag)
 
     def load_cmpfile(self,filename,**kwargs):
         """
@@ -532,15 +536,10 @@ class pdastroclass:
                     else:
                         self.t.loc[index,fitskey]=None
 
-    """
-    def dateobs2mjd(self,dateobscol,mjdcol,timeobscol=None,indices=None):
+    def dateobs2mjd(self,dateobscol,mjdcol,timeobscol=None,indices=None,tformat='isot'):
         indices = self.getindices(indices)  
         if len(indices)==0:
             return(0)
-    """
-    def dateobs2mjd(self,dateobscol,mjdcol,timeobscol=None,indices=None,tformat='isot'):
-        if indices is None:
-            indices = self.getindices()
 
         if not (mjdcol in self.t.columns):
             self.t.loc[indices,mjdcol]=None
@@ -725,12 +724,14 @@ class pdastrostatsclass(pdastroclass):
             #self.write(columns=['objID','filter','psfFlux','psfFluxErr','psfMag','psfMagErr','psfMagErr_tot'],indices=ix_good)
  
         Ngood = len(ix_good)      
+ 
         if Ngood>1:
             if medianflag:
                 mean = self.t.loc[ix_good,datacol].median()
                 if verbose>1: print('median: {:f}'.format(mean))
                 stdev =  np.sqrt(1.0/(Ngood-1.0)*np.sum(np.square(self.t.loc[ix_good,datacol] - mean)))/self.c4(Ngood)
-                mean_err = stdev/np.sqrt(Ngood-1)
+                mean_err = self.t.loc[ix_good,noisecol].median()/np.sqrt(Ngood-1)
+                #mean_err = stdev/np.sqrt(Ngood-1)
                 
             else:
                 c1 = np.sum(1.0*self.t.loc[ix_good,datacol]/np.square(self.t.loc[ix_good,noisecol]))
@@ -753,7 +754,7 @@ class pdastrostatsclass(pdastroclass):
             X2norm   = None
             stdev     = None
             stdev_err = None
-            
+           
         self.statparams['ix_good']=ix_good
         self.statparams['Ngood']=Ngood
         self.statparams['ix_clip']=AnotB(indices,ix_good)
@@ -911,6 +912,9 @@ class pdastrostatsclass(pdastroclass):
          median_firstiteration: in the first iteration, use the median instead the mean. This is more robust if there is a population of bad measurements
         """
 
+        if noisecol is None:
+            sigmacutFlag = True
+
         # get the indices based on input.
         indices=self.getindices(indices)
 
@@ -947,7 +951,7 @@ class pdastrostatsclass(pdastroclass):
             if (self.statparams['i']==0):
                 percentile_cut = percentile_cut_firstiteration
 
-            if (noisecol is None) or sigmacutFlag:
+            if sigmacutFlag:
                 errorflag = self.calcaverage_sigmacut(datacol, indices=indices, noisecol=noisecol,
                                                       mean = self.statparams['mean'], stdev = self.statparams['stdev'],
                                                       Nsigma=Nsigma, 
@@ -957,15 +961,16 @@ class pdastrostatsclass(pdastroclass):
                 errorflag = self.calcaverage_errorcut(datacol, noisecol, indices=indices, 
                                                       mean = self.statparams['mean'],
                                                       Nsigma=Nsigma, medianflag=medianflag, verbose=verbose)
+                        
             #if self.statparams['i']==0:
             #    self.statparams['stdev']=0.05
 
             if verbose>2:
                 print(self.statstring())
                 
-                
             # Not converged???
-            if errorflag or self.statparams['stdev']==None or self.statparams['stdev']==0.0 or self.statparams['mean']==None:
+#            if errorflag or self.statparams['stdev']==None or self.statparams['stdev']==0.0 or self.statparams['mean']==None:
+            if errorflag or self.statparams['stdev']==None or (self.statparams['stdev']==0.0 and sigmacutFlag) or self.statparams['mean']==None:
                 self.statparams['converged']=False
                 break
             # Only do a sigma cut if wanted
@@ -973,10 +978,11 @@ class pdastrostatsclass(pdastroclass):
                 self.statparams['converged']=True
                 break
             # No changes anymore? If yes converged!!!
-            if (self.statparams['i']>0) and (self.statparams['Nchanged']==0):
+            if (self.statparams['i']>0) and (self.statparams['Nchanged']==0) and (not medianflag):
                 self.statparams['converged']=True
                 break
             self.statparams['i']+=1
+            print()
         
         if not(self.statparams['converged']):
             if self.verbose>1:
@@ -1045,7 +1051,7 @@ class pdastrostatsclass(pdastroclass):
             
         return(set(zip(outparams,outcols)))
 
-    def statresults2table(self,pdstats,param2columnmapping,destindex=None):
+    def statresults2table(self,statparams,param2columnmapping,destindex=None):
         resultdict={}
         
         #statparams = copy.deepcopy(statparams)
@@ -1053,9 +1059,9 @@ class pdastrostatsclass(pdastroclass):
         # loop through keys,outcols, and assign values
         for (param,outcol) in param2columnmapping:
             if destindex is None:
-                resultdict[outcol]:pdstats.statparams[param]
+                resultdict[outcol]:statparams[param]
             else:
-                self.t.loc[destindex,outcol]=pdstats.statparams[param]
+                self.t.loc[destindex,outcol]=statparams[param]
 
         # either put the data into a new row or into an existing one
         if destindex is None:

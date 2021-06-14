@@ -94,7 +94,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         return(filename)
 
     def saveyselc(self,TNSname,controlindex,filt=None,indices=None,overwrite=True,MJDbinsize=None):
-        #oindex = '%03d' % controlindex
         if filt is None:
             filt = self.filt
         filename = self.yselcfilename(TNSname,controlindex,filt,MJDbinsize)
@@ -127,17 +126,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         with open(outname, 'w+') as f:
             f.write('SNID: '+TNSname+' \nRA: '+str(ra)+'     \nDECL: '+str(dec)+' \n \nVARLIST:  MJD  FLT  FLUXCAL   FLUXCALERR MAG     MAGERR DQ \n')
             for row in t:
-                """
-                flt = filter_fict[row['F']]
-                if row['m']>0:
-                    flux = 10**(-0.4*(row['m']-27.5)) # mag = (-1/0.4)*log(row[self.flux_colname])+27.5
-                    fluxerr= row['dm']*10**(-0.4*(row['m']-27.5))
-                else:
-                    flux = -10**(-0.4*(-row['m']-27.5)) # mag = (1/0.4)*log(-row[self.flux_colname])+27.5
-                    fluxerr= row['dm']*10**(-0.4*(-row['m']-27.5))
-                mag = row['m']
-                magerr = row['dm']
-                """
                 f.write('OBS: '+str(row['MJD'])+' '+filter_fict[row['F']]+' '+str(row[self.flux_colname])+' '+str(row[self.dflux_colname])+' '+str(row['m'])+' '+str(row['dm'])+' 0 \n')
         print("Converted ATLAS lc to YSE format: %s" % outname)
         return(outname)

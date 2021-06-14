@@ -2,7 +2,7 @@
 # D. Jones - 12/2/17
 # python uploadTransientData.py -i foundlc/GPC1v3_F15atz.snana.dat -f -e -s ../../YSE_PZ/settings.ini
 
-import os
+import os,sys
 import json
 import urllib.request
 import urllib
@@ -10,6 +10,7 @@ import ast
 from astropy.time import Time
 import numpy as np
 import coreapi
+import datetime
 
 class upload():
 	def __init__(self):
@@ -133,6 +134,7 @@ less than this, in the same filter/instrument are treated as the same data.	 All
 						 'photheader':photdict}
 		
 		# upload the photometry
+		print(sn.MJD,sn.FLUXCAL,sn.FLUXCALERR,sn.MAG,sn.MAGERR,sn.FLT,range(len(sn.FLT)))
 		for mjd,flux,fluxerr,mag,magerr,flt,i in zip(
 				sn.MJD,sn.FLUXCAL,sn.FLUXCALERR,sn.MAG,sn.MAGERR,sn.FLT,range(len(sn.FLT))):
 

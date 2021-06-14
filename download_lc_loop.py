@@ -52,6 +52,12 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 		# add mask column
 		mask = np.zeros((len(self.lc.t)), dtype=int)
 		self.lc.t = self.lc.t.assign(Mask=mask)
+
+		# delete all magnitudes and dmagnitudes by setting them to nan
+		self.lc.t['m'] = np.nan
+		self.lc.t['dm'] = np.nan
+		# flux2mag
+		self.lc.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
 		
 		# sort data by mjd
 		self.lc.t = self.lc.t.sort_values(by=['MJD'],ignore_index=True)

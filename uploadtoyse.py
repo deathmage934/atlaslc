@@ -143,7 +143,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         return(outname)
 
     def uploadtoyse(self,filename):
-        os.system('python %s/uploadTransientData.py -e -s %s/settings.ini -i %s --instrument ACAM1 --fluxzpt 23.9' % (self.sourcedir,self.sourcedir,filename))
+        os.system('python %s/uploadTransientData.py -e -s %s/settings.ini -i %s --instrument ACAM1 --fluxzpt 23.9 --forcedphot 1 --diffim 1' % (self.sourcedir,self.sourcedir,filename))
 
     def saveRADECtable(self,args,TNSname,filt):
         RADECtablefilename = '%s/%s/%s/%s.RADECtable.txt' % (self.outrootdir,self.outsubdir,TNSname,TNSname)
@@ -283,6 +283,12 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         mask = np.zeros((len(self.lc.t)), dtype=int)
         self.lc.t = self.lc.t.assign(Mask=mask)
 
+        # delete all magnitudes and dmagnitudes by setting them to nan
+        self.lc.t['m'] = np.nan
+        self.lc.t['dm'] = np.nan
+        # convert flux to magnitude
+        self.lc.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
+
         self.lc.t = self.lc.t.sort_values(by=['MJD'],ignore_index=True)
         indices = self.lc.ix_remove_null(colnames='uJy')
 
@@ -403,6 +409,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
         # convert flux to magnitude
         self.averagelctable.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
+        self.averagelctable.t = self.averagelctable.t.drop(columns=['__tmp_SN'])
 
         self.averagelctable.write()
 

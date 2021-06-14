@@ -982,7 +982,6 @@ class pdastrostatsclass(pdastroclass):
                 self.statparams['converged']=True
                 break
             self.statparams['i']+=1
-            print()
         
         if not(self.statparams['converged']):
             if self.verbose>1:

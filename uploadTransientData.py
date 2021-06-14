@@ -134,7 +134,7 @@ less than this, in the same filter/instrument are treated as the same data.	 All
 						 'photheader':photdict}
 		
 		# upload the photometry
-		print(sn.MJD,sn.FLUXCAL,sn.FLUXCALERR,sn.MAG,sn.MAGERR,sn.FLT,range(len(sn.FLT)))
+		#print(sn.MJD,sn.FLUXCAL,sn.FLUXCALERR,sn.MAG,sn.MAGERR,sn.FLT,range(len(sn.FLT)))
 		for mjd,flux,fluxerr,mag,magerr,flt,i in zip(
 				sn.MJD,sn.FLUXCAL,sn.FLUXCALERR,sn.MAG,sn.MAGERR,sn.FLT,range(len(sn.FLT))):
 

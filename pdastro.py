@@ -135,8 +135,10 @@ class pdastroclass:
         try:
             if verbose: print('Loading %s' % filename)
             self.t = pd.read_table(filename,**kwargs)
+            self.filename = filename
         except Exception as e:
             print('ERROR: could not read %s!' % filename)
+            self.filename = None
             if raiseError:
                 raise RuntimeError(str(e))
             return(1)
@@ -241,6 +243,7 @@ class pdastroclass:
             """
             
         if verbose>1 and not(filename is None): print('Saving %d rows into %s' % (len(indices),filename))
+        self.filename = None
         if len(indices)==0:
             # just save the header
             if filename is None:
@@ -249,11 +252,14 @@ class pdastroclass:
                 if columns is None:
                     columns = []
                 open(filename,'w').writelines(' '.join(columns)+'\n')
+                self.filename = filename
         else:
             if filename is None:
                 print(self.t.loc[indices].to_string(index=index, columns=columns, formatters=formatters, **kwargs))
             else:
                 self.t.loc[indices].to_string(filename, index=index, columns=columns, formatters=formatters, **kwargs)
+                self.filename = filename
+                
 
         if not (filename is None):
             # some extra error checking...
@@ -361,6 +367,32 @@ class pdastroclass:
                 colnames=[colnames]
         return(colnames)
             
+
+    def ix_nan(self,colnames=None,indices=None):
+        # get the indices based on input.
+        indices=self.getindices(indices)
+        
+        # get the column names over which to iterate
+        colnames=self.getcolnames(colnames)
+        
+        for colname in colnames:
+            #print('XXX',indices)
+            (null,) = np.where(pd.isnan(self.t.loc[indices,colname]))
+            indices = indices[null]
+            #print('YYY',notnull)
+        return(indices)
+
+    def ix_null(self,colnames=None,indices=None):
+        # get the indices based on input.
+        indices=self.getindices(indices)
+        
+        # get the column names over which to iterate
+        colnames=self.getcolnames(colnames)
+        
+        for colname in colnames:
+            (null,) = np.where(pd.isnull(self.t.loc[indices,colname]))
+            indices = indices[null]
+        return(indices)
 
     def ix_remove_null(self,colnames=None,indices=None):
         # get the indices based on input.

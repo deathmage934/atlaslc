@@ -109,12 +109,12 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             filt = self.filt
         filename = self.yselcfilename(TNSname,controlindex,filt,MJDbinsize)
         if not(MJDbinsize is None):
-            self.averagelctable.load_spacesep(filename,delim_whitespace=True)
+            self.averagelctable.load_spacesep(filename,delim_whitespace=True,raiseError=True)
         else:
-            self.lc.load_spacesep(filename,delim_whitespace=True)
+            self.lc.load_spacesep(filename,delim_whitespace=True,raiseError=True)
         return(0)
 
-    def atlas2yse(self,TNSname,outname,ra,dec,atlas_data_file,filt):
+    def atlas2yseold(self,TNSname,outname,ra,dec,atlas_data_file,filt):
         t = ascii.read(atlas_data_file)
         
         # different output names for regular lcs vs. averaged lcs
@@ -141,6 +141,33 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                 f.write('OBS: '+str(row['MJD'])+' '+filter_fict[row['F']]+' '+str(row[self.flux_colname])+' '+str(row[self.dflux_colname])+' '+str(row['m'])+' '+str(row['dm'])+' 0 \n')
         print("Converted ATLAS lc to YSE format: %s" % outname)
         return(outname)
+
+    def atlas2yse(self,TNSname,outname,ra,dec,lc,filt):
+        #t = ascii.read(atlas_data_file)
+        lc.t['dummy']='OBS: '
+        ix_o =  lc.ix_equal('F','o')
+        ix_c =  lc.ix_equal('F','c')
+        lc.t.loc[ix_o,'F']='orange-ATLAS'
+        lc.t.loc[ix_c,'F']='cyan-ATLAS'
+        
+        # HACK ALERT!!! I set dm=5 mag, so that it loads to YSE! NaN breaks it
+        ix = lc.ix_null('dm')
+        lc.t.loc[ix,'dm']=5.0
+        
+        ix = lc.ix_null('Mask')
+        lc.t.loc[ix,'Mask']=int(0)
+        lc.t['Mask']=lc.t['Mask'].astype(int)
+               
+        lc.write(columns=['dummy','MJD','F',self.flux_colname,self.dflux_colname,'m','dm','Mask'])
+         
+        with open(outname, 'w+') as f:
+            f.write('SNID: '+TNSname+' \nRA: '+str(ra)+'     \nDECL: '+str(dec)+' \n \nVARLIST:  MJD  FLT  FLUXCAL   FLUXCALERR MAG     MAGERR DQ \n')
+            lines = lc.t.to_string(header=False, index=False,columns=['dummy','MJD','F',self.flux_colname,self.dflux_colname,'m','dm','Mask'])
+            f.writelines(lines)
+        f.close()
+        print("Converted ATLAS lc to YSE format: %s" % outname)
+        return(outname)
+
 
     def uploadtoyse(self,filename):
         os.system('python %s/uploadTransientData.py -e -s %s/settings.ini -i %s --instrument ACAM1 --fluxzpt 23.9 --forcedphot 1 --diffim 1' % (self.sourcedir,self.sourcedir,filename))
@@ -357,6 +384,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         self.averagelctable.t['X2norm'] = pd.Series([], dtype=np.float64)
         self.averagelctable.t['Nclipped'] = pd.Series([], dtype=np.int64)
         self.averagelctable.t['Nused'] = pd.Series([], dtype=np.int64)
+        self.averagelctable.t['Mask'] = pd.Series([], dtype=np.int64)
 
         # add masks to mask column by cleaning lc - x2norm and uncertainty masks
         self.lc.t['Mask'] = 0
@@ -370,6 +398,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         # masks
         self.c0_PSF_uncertainty_cut(self.cfg.params['cleanlc']['cut0']['N_dflux_max'])
         self.c0_PSF_X2norm_cut(self.cfg.params['cleanlc']['cut0']['PSF_X2norm_max'])
+
+        self.lc.write()
         self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite)
 
         # average light curve add points to new averaged df
@@ -410,6 +440,10 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         # convert flux to magnitude
         self.averagelctable.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
         self.averagelctable.t = self.averagelctable.t.drop(columns=['__tmp_SN'])
+
+        # HACK ALERT!!! I set dm=5 mag, so that it loads to YSE! NaN breaks it
+        ix = self.averagelctable.ix_null('dm')
+        self.averagelctable.t.loc[ix,'dm']=5.0
 
         self.averagelctable.write()
 
@@ -475,15 +509,36 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         # upload to YSE-PZ
         for filt in ['c','o']:
             print('### FILTER SET: ',filt)
-            filename = self.yselcfilename(TNSname,0,filt)
-            outname = self.atlas2yse(TNSname,filename,ra,dec,filename,filt)
+            # load single measurement light curve, and calculate the average lc
+            # This also applies cut0 to single measurement light curve
+            self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
+            
+            print('# single measurements for filter: ',filt)
+            outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
+            self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
             self.uploadtoyse(outname)
 
             if args.averagelc:
-                filename = self.yselcfilename(TNSname,0,filt,args.MJDbinsize)
-                self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
-                outname = self.atlas2yse(TNSname,filename,ra,dec,filename,filt)
+                print('# average measurements for filter: ',filt)
+                outname = re.sub('lc\.txt','yse.csv',self.averagelctable.filename)
+                self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
                 self.uploadtoyse(outname)
+           
+
+        # upload to YSE-PZ
+        #for filt in ['c','o']:
+        #    print('### FILTER SET: ',filt)
+        #    self.loadyselc(TNSname,0,filt=filt)
+        #    outname = re.sub('lc\.txt','yse.txt',self.lc.filename)
+        #    self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
+        #   self.uploadtoyse(outname)
+
+        #    if args.averagelc:
+#       #         self.loadyselc(TNSname,0,filt,args.MJDbinsize)
+        #        self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
+        #        outname = re.sub('lc\.txt','yse.txt',self.averagelctable.filename)
+        #        self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
+        #        self.uploadtoyse(outname)
 
 if __name__ == '__main__':
     upltoyse = uploadtoyseclass()

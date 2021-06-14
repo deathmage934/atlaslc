@@ -53,44 +53,6 @@ class autoaddclass(SNloopclass):
 			a, b, c = item.partition(' ')
 			yield a
 			yield b+c
-	
-	"""
-	def getradec(self,tnsname):
-		obj_name=tnsname
-		print('Getting data from https://www.wis-tns.org/object/'+obj_name)
-		page = requests.get('https://www.wis-tns.org/object/'+obj_name)
-		tree = html.fromstring(page.content)
-		radec = tree.xpath('//div[@class="field field-radec"]//div[@class="value"]/text()')
-		print(radec)
-
-		datasplit = list(self.my_split(radec))
-		ra = datasplit[0]
-		dec = datasplit[1]
-		print('RA: %s, Dec: %s' % (ra, dec))
-		print('RA in degrees: %s, Dec in degrees: %s' % (RaInDeg(ra),DecInDeg(dec)))
-		return(ra, dec)
-
-	def getdisc_date(self,tnsname):
-		obj_name=tnsname
-		print('Getting data from https://www.wis-tns.org/object/'+obj_name)
-		page = requests.get('https://www.wis-tns.org/object/'+obj_name)
-		tree = html.fromstring(page.content)
-		
-		discoverydate = tree.xpath('//div[@class="field field-discoverydate"]//div[@class="value"]/b/text()')
-		print(discoverydate)
-
-		datasplit2 = list(self.my_split(discoverydate))
-		date = datasplit2[0]
-		time = datasplit2[1][1:]
-		#time = time[1:]
-		print('Date: %s, Time: %s' % (date, time))
-
-		disc_date_format = date+"T"+time
-		dateobjects = Time(disc_date_format, format='isot', scale='utc')
-		disc_date = dateobjects.mjd
-		print("MJD: %.4f" % disc_date)
-		return(disc_date)
-	"""
 
 	def getdata(self,tnsname):
 		try:
@@ -108,37 +70,31 @@ class autoaddclass(SNloopclass):
 		json_data = self.getdata(tnsname)
 		ra = json_data['data']['reply']['ra']
 		dec = json_data['data']['reply']['dec']
+		print('RA: %s, Dec: %s' % (ra,dec))
+
 		return RaInDeg(ra), DecInDeg(dec)
 
 	def getdisc_date(self,tnsname):
 		json_data = self.getdata(tnsname)
 		discoverydate = json_data['data']['reply']['discoverydate']
-		print(discoverydate)
 
 		date = list(discoverydate.partition(' '))[0]
 		time = list(discoverydate.partition(' '))[2]
-		print('Date: %s, Time: %s' % (date, time))
 
 		disc_date_format = date+"T"+time
 		dateobjects = Time(disc_date_format, format='isot', scale='utc')
 		disc_date = dateobjects.mjd
-		print("MJD: %.4f" % disc_date)
+		print("Discovery Date MJD: %.4f" % disc_date)
 
 		return disc_date
 
 	def addrow2snlist(self, tnsname, ra, dec, MJDpreSN, closebrightRA=None, closebrightDec=None):
-		if os.path.exists(snlistfilename):
-			print('snlist.txt OLD:')
-			print(self.snlist.write())
-
 		if closebrightRA is None:
 			df = pd.DataFrame([['<NA>','<NA>',ra,dec,'<NA>','NaN',tnsname,'<NA>','<NA>',disc_date]], columns=['atlasdesignation','otherdesignation','ra','dec','spectraltype','earliestmjd','tnsname','closebrightRA','closebrightDec','MJDpreSN'])
 		else: 
 			df = pd.DataFrame([['<NA>','<NA>',ra,dec,'<NA>','NaN',tnsname,closebrightRA,closebrightDec,disc_date]], columns=['atlasdesignation','otherdesignation','ra','dec','spectraltype','earliestmjd','tnsname','closebrightRA','closebrightDec','MJDpreSN'])
+		print('Adding row: \n',df)
 		self.snlist.t = self.snlist.t.append(df, ignore_index=True)
-		
-		print('snlist.txt NEW:')
-		print(self.snlist.write())
 
 	def getcmd(self, tnsname):
 		print('Your command is: download_lc_loop.py %s -v -o -s --forcedphot_offset True --plot True --user %s --passwd "X"' % (tnsname, self.cfg.params['username']))
@@ -201,7 +157,6 @@ if __name__ == '__main__':
 		
 		deltat = autoadd.cfg.params['deltat']
 		disc_date = disc_date.astype(float) - deltat
-		print(disc_date, type(disc_date)) # delete me
 
 		snlistfilename = autoadd.cfg.params['snlistfilename']
 		if os.path.exists(snlistfilename):

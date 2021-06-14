@@ -94,6 +94,10 @@ class lightlcclass(SNloopclass):
 			print('xlim lower: ',xlim_lower,'. xlim upper: ',xlim_upper,'. ')
 		if ylims is True:
 			ylim_lower, ylim_upper = plt.ylim()
+			if not(maxlc is None):
+				ylim_upper = maxlc
+			if not(minlc is None):
+				ylim_lower = minlc
 			if not(args.ylim_lower is None): 
 				ylim_lower = args.ylim_lower
 			if not(args.xlim_upper is None):
@@ -227,31 +231,54 @@ class lightlcclass(SNloopclass):
 	def plotloop(self,args,SNindex):
 		pdf = PdfPages('%s/%s/lightweight/%s_plots.pdf' % (self.outrootdir,self.t['tnsname'][SNindex],self.t.at[SNindex,'tnsname']))
 
-		# summary plot: only averaged SN lc, not clean, both c and o
+		# summary plot: not clean, both c and o
 		fig = plt.figure()
-		plt.clf() # just added 4.27.21 not tested
+		plt.clf()
 		sp = matlib.subplot(111)
 		self.loadRADEClist(SNindex)
+		# load c band
+		self.load_lc(SNindex,filt='c',controlindex=0,MJDbinsize=None)
+		goodix = self.getgoodindices()
+		sp,plotc,dplot = dataPlot(self.lc.t['MJD'],self.lc.t[self.flux_colname],dy=self.lc.t[self.dflux_colname],sp=sp)
+		matlib.setp(plotc,ms=4,color='cyan')
+		maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
+		minlc = min(self.lc.t.loc[goodix,self.flux_colname])
+		# load o band
+		self.load_lc(SNindex,filt='o',controlindex=0,MJDbinsize=None)
+		goodix = self.getgoodindices()
+		sp,ploto,dplot = dataPlot(self.lc.t['MJD'],self.lc.t[self.flux_colname],dy=self.lc.t[self.dflux_colname],sp=sp)
+		matlib.setp(ploto,ms=4,color='orange')
+		goodix = self.getgoodindices()
+		# set x and y lims
+		if max(self.lc.t.loc[goodix,self.flux_colname]) > maxlc:
+			maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
+		if min(self.lc.t.loc[goodix,self.flux_colname]) < minlc:
+			minlc = min(self.lc.t.loc[goodix,self.flux_colname])
+		self.setplotlims(args,maxlc=maxlc,minlc=minlc)
+		"""
 		for filt in ['c','o']:
 			self.load_lc(SNindex,filt=filt,controlindex=0,MJDbinsize=args.MJDbinsize)
 			goodix = self.getgoodindices()
 			allix = self.lc.getindices()
 			badix = AnotB(allix,goodix)
 			if filt == 'c':
-				color = 'c'
+				color = 'cyan'
 			else:
 				color = 'orange'
 			sp, plotbad, dplotbad = dataPlot(self.lc.t.loc[badix,'MJD'],self.lc.t.loc[badix,self.flux_colname],dy=self.lc.t.loc[badix,self.dflux_colname],sp=sp)
 			matlib.setp(plotbad,mfc='white',ms=4,color=color)
 			sp, plotSN, dplotSN = dataPlot(self.lc.t.loc[goodix,'MJD'],self.lc.t.loc[goodix,self.flux_colname],dy=self.lc.t.loc[goodix,self.dflux_colname],sp=sp)
 			matlib.setp(plotSN,ms=4,color=color)
-			maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
-			minlc = min(self.lc.t.loc[goodix,self.flux_colname])
+			sp,plot,dplot = dataPlot(self.lc.t['MJD'],self.lc.t[self.flux_colname],dy=self.lc.t[self.dflux_colname],sp=sp)
+			matlib.setp(plot,ms=4,color=color)
+			#maxlc = max(self.lc.t[self.flux_colname])
+			#minlc = min(self.lc.t[self.flux_colname])
+		"""
 		plt.title('SN %s, c- and o-band' % self.t.at[SNindex,'tnsname'])
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
-		self.setplotlims(args)
+		plt.legend((plotc,ploto),('c-band','o-band'))
 		print('Adding summary plot to PDF: "SN %s, c- and o-band"' % self.t.at[SNindex,'tnsname'])
 		pdf.savefig(fig)
 		plt.clf()

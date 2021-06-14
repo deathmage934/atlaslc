@@ -11,7 +11,7 @@ import sigmacut
 import sys,re
 import numpy as np
 import pandas as pd
-from pdastro import pdastrostatsclass
+from pdastro import pdastrostatsclass, AorB
 
 class cleanuplcclass(SNloopclass):
     def __init__(self):
@@ -25,8 +25,10 @@ class cleanuplcclass(SNloopclass):
         dflux_max = N_dflux_max * median(self.lc.t[self.dflux_colname])
         print('Flagging all measurements with %s bigger than %f...' % (self.dflux_colname, dflux_max))
 
-        # get indices
-        a_indices = self.lc.ix_inrange(self.dflux_colname,dflux_max,None)
+        # get indices greater than dflux_max or equal to 0
+        dflux_max_indices = self.lc.ix_inrange(self.dflux_colname,dflux_max)
+        zero_indices = self.lc.ix_equal(self.dflux_colname,0)
+        a_indices = AorB(dflux_max_indices,zero_indices)
         
         if len(a_indices)>0:
             print('# %s above %f: %i/%i' % (self.dflux_colname,dflux_max,len(a_indices),len(self.lc.getindices())))

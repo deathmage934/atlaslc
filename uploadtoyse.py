@@ -73,7 +73,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         df['Dec'] = all_cand['transient_Dec']
         df['Disc date'] = all_cand['disc_date']
         print(df)
-        sys.exit(0)
         return df
 
     def checkTNSlistfile(self,TNSname):
@@ -146,7 +145,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         lc.t.loc[ix,'Mask']=int(0)
         lc.t['Mask']=lc.t['Mask'].astype(int)
                
-        lc.write(columns=['dummy','MJD','F',self.flux_colname,self.dflux_colname,'m','dm','Mask'])
+        #lc.write(columns=['dummy','MJD','F',self.flux_colname,self.dflux_colname,'m','dm','Mask'])
          
         with open(outname, 'w+') as f:
             f.write('SNID: '+TNSname+' \nRA: '+str(ra)+'     \nDECL: '+str(dec)+' \n \nVARLIST:  MJD  FLT  FLUXCAL   FLUXCALERR MAG     MAGERR DQ \n')
@@ -387,7 +386,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         self.c0_PSF_uncertainty_cut(self.cfg.params['cleanlc']['cut0']['N_dflux_max'])
         self.c0_PSF_X2norm_cut(self.cfg.params['cleanlc']['cut0']['PSF_X2norm_max'])
 
-        self.lc.write()
+        #self.lc.write()
         self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite)
 
         # average light curve add points to new averaged df
@@ -433,7 +432,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         ix = self.averagelctable.ix_null('dm')
         self.averagelctable.t.loc[ix,'dm']=5.0
 
-        self.averagelctable.write()
+        #self.averagelctable.write()
 
         self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite,MJDbinsize=MJDbinsize)
 
@@ -511,7 +510,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                 outname = re.sub('lc\.txt','yse.csv',self.averagelctable.filename)
                 self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
                 self.uploadtoyse(outname)
-           
 
         # upload to YSE-PZ
         #for filt in ['c','o']:

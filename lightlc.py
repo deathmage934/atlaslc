@@ -43,6 +43,8 @@ class lightlcclass(SNloopclass):
 		# original
 		self.load_lc(SNindex,filt=self.filt,controlindex=0)
 		self.lc.t = self.lc.t.drop(columns=['F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','mag5sig','Sky','Obs'])
+		if '__tmp_SN' in self.lc.t.columns:
+			self.lc.t = self.lc.t.drop(columns=['__tmp_SN'])
 		if 'c1_mean' in self.lc.t.columns:
 			self.lc.t = self.lc.t.drop(columns=['c1_mean','c1_mean_err','c1_stdev','c1_stdev_err','c1_X2norm','c1_Nvalid','c1_Nnan','c2_mean','c2_mean_err','c2_stdev','c2_stdev_err','c2_X2norm','c2_Ngood','c2_Nclip','c2_Nmask','c2_Nnan'])
 		basename = '%s/%s/lightweight/%s.%s' % (self.outrootdir,self.t['tnsname'][SNindex],self.t['tnsname'][SNindex],self.filt)

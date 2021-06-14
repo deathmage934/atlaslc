@@ -84,6 +84,7 @@ class cleanuplcclass(SNloopclass):
             MJD_SN = uJy = duJy = Mask = None
             
         for controlindex in self.RADECtable.getindices():
+            print('cut0 for %d/%d' % (controlindex,len(self.RADECtable.t)-1))
             # load lc
             self.load_lc(SNindex, filt=self.filt, controlindex=controlindex, MJDbinsize=None)
             

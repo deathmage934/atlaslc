@@ -70,9 +70,9 @@ class autoaddclass(SNloopclass):
 		json_data = self.getdata(tnsname)
 		ra = json_data['data']['reply']['ra']
 		dec = json_data['data']['reply']['dec']
-		print('RA: %s, Dec: %s' % (ra,dec))
-
-		return RaInDeg(ra), DecInDeg(dec)
+		print('In sexagesimal: RA: %s, Dec: %s' % (ra,dec))
+		print('In decimal: RA %0.6f Dec: %0.6f' % (RaInDeg(ra),DecInDeg(dec)))
+		return ra, dec
 
 	def getdisc_date(self,tnsname):
 		json_data = self.getdata(tnsname)
@@ -85,16 +85,16 @@ class autoaddclass(SNloopclass):
 		dateobjects = Time(disc_date_format, format='isot', scale='utc')
 		disc_date = dateobjects.mjd
 		print("Discovery Date MJD: %.4f" % disc_date)
-
 		return disc_date
 
 	def addrow2snlist(self, tnsname, ra, dec, MJDpreSN, closebrightRA=None, closebrightDec=None):
 		if closebrightRA is None:
-			df = pd.DataFrame([['<NA>','<NA>',ra,dec,'<NA>','NaN',tnsname,'<NA>','<NA>',disc_date]], columns=['atlasdesignation','otherdesignation','ra','dec','spectraltype','earliestmjd','tnsname','closebrightRA','closebrightDec','MJDpreSN'])
+			df = pd.DataFrame([['<NA>','<NA>','%0.6f'%RaInDeg(ra),'%0.6f'%DecInDeg(dec),'<NA>','NaN',tnsname,'<NA>','<NA>',disc_date]], columns=['atlasdesignation','otherdesignation','ra','dec','spectraltype','earliestmjd','tnsname','closebrightRA','closebrightDec','MJDpreSN'])
 		else: 
-			df = pd.DataFrame([['<NA>','<NA>',ra,dec,'<NA>','NaN',tnsname,closebrightRA,closebrightDec,disc_date]], columns=['atlasdesignation','otherdesignation','ra','dec','spectraltype','earliestmjd','tnsname','closebrightRA','closebrightDec','MJDpreSN'])
+			df = pd.DataFrame([['<NA>','<NA>','%0.6f'%RaInDeg(ra),'%0.6f'%DecInDeg(dec),'<NA>','NaN',tnsname,closebrightRA,closebrightDec,disc_date]], columns=['atlasdesignation','otherdesignation','ra','dec','spectraltype','earliestmjd','tnsname','closebrightRA','closebrightDec','MJDpreSN'])
 		print('Adding row: \n',df)
 		self.snlist.t = self.snlist.t.append(df, ignore_index=True)
+		#print(self.snlist.t)
 
 	def getcmd(self, tnsname):
 		print('Your command is: download_lc_loop.py %s -v -o -s --forcedphot_offset True --plot True --user %s --passwd "X"' % (tnsname, self.cfg.params['username']))
@@ -143,6 +143,7 @@ if __name__ == '__main__':
 		if not args.ra:
 			print(args.tnsname)
 			ra, dec = autoadd.getradec(args.tnsname)
+			#print(ra,dec)
 			if not args.disc_date:
 				disc_date = autoadd.getdisc_date(args.tnsname)
 			else:

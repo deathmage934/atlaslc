@@ -79,7 +79,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 				detections4filt=np.where(self.lc.t['F']==filt)
 				newindices = AandB(indices,detections4filt)
 
-				if len(detections4filt[0]) is 0:
+				if len(detections4filt[0])==0:
 					print('Saving blank light curve: %s' % filename)
 					self.lc.write(filename,index=False,indices=newindices,overwrite=True,verbose=False,columns=['MJD','m','dm',self.flux_colname,self.dflux_colname,'F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','Sky','ZP','Obs','Mask'])
 				else: 
@@ -278,6 +278,9 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	SNindexlist = downloadlc.initialize(args)
+	if len(SNindexlist)<1:
+		print('No matching SN found, exiting!!')
+		sys.exit(0)
 	
 	username = downloadlc.cfg.params['username']
 	if username is False:

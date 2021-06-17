@@ -488,8 +488,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             lookbacktime_days = args.lookbacktime_days
         else:
             lookbacktime_days = 60
-        #self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
-        
+               
         if not skipdownload:
             self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
 

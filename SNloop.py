@@ -15,7 +15,6 @@ from tools import yamlcfgclass
 from tools import rmfile
 from tools import RaInDeg
 from tools import DecInDeg
-#from astrotable import astrotableclass
 from download_atlas_lc import download_atlas_lc_class
 import sigmacut
 from pdastro import pdastroclass, pdastrostatsclass, AnotB
@@ -192,8 +191,23 @@ class SNloopclass(pdastroclass):
         else:
             SNindexlist = []
             for index in range(0,len(self.t)):
-                if self.t.at[index,'tnsname'] in SNlist:
+                if self.t.loc[index,'tnsname'] in SNlist:
                     SNindexlist.append(index)
+                """
+                if SNlist in self.t:
+                    SNindexlist.append(index)
+                else:
+                    print('No matching SN found in the SN list text file!')
+                    response = input('Search for RA and Dec on TNS? (y/n)')
+                    if response=='y':
+                        # doesn't work bc autoadd.py child of SNloop.py - maybe I should move all the autoadd.py functions to SNloop.py??
+                        ra, dec = self.getradec(TNSname)
+                        df = pd.DataFrame([[TNSname,ra,dec]],columns=['tnsname','ra','dec'])
+                        self.t = self.t.append(df,ignore_index=True)
+                    else:
+                        print('Exiting...')
+                        sys.exit()
+                """
         return(SNindexlist)
 
     def load_lc(self,SNindex,filt=None,controlindex=None,MJDbinsize=None,addsuffix=None,hexcols=None):
@@ -404,20 +418,19 @@ class SNloopclass(pdastroclass):
         return(lc2.t)
 
     # to do: still have to make sure this works
-    def autosearch(self, ra, dec, search_size):
-        os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])
-        print('Casjobs WSID set to %s in precursor.cfg...' % self.cfg.params['casjobs_wsid'])
-        os.environ['CASJOBS_PW'] = getpass.getpass('Enter Casjobs password:')
+    #def autosearch(self, ra, dec, search_size):
+        #os.environ['CASJOBS_WSID'] = str(self.cfg.params['casjobs_wsid'])
+        #print('Casjobs WSID set to %s in precursor.cfg...' % self.cfg.params['casjobs_wsid'])
+        #os.environ['CASJOBS_PW'] = getpass.getpass('Enter Casjobs password:')
 
-        query = """select o.ObjID, o.raMean, o.decMean, o.nDetections
-        from fGetNearbyObjEq("""+str(ra)+','+str(dec)+","+str(search_size/60)+""") nb
-        join MeanObjectView o on o.ObjID=nb.ObjID
-        where o.nDetections > 5
-        and o.rmeankronmag < 18
-        """
-        jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
-        results = jobs.quick(query, task_name="python cone search")
-        return(results)
+        #query = """select o.ObjID, o.raMean, o.decMean, o.nDetections
+        #from fGetNearbyObjEq("""+str(ra)+','+str(dec)+","+str(search_size/60)+""") nb
+        #join MeanObjectView o on o.ObjID=nb.ObjID
+        #where o.nDetections > 5
+        #and o.rmeankronmag < 18"""
+        #jobs = mastcasjobs.MastCasJobs(context="PanSTARRS_DR2")
+        #results = jobs.quick(query, task_name="python cone search")
+        #return(results)
 
     def initialize(self,args):
         # load config files

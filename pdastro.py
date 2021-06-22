@@ -160,7 +160,8 @@ class pdastroclass:
             
         if hexcols is None: hexcols=[]
         hexcols.extend(self.hexcols)
-        self.formattable(namesMapping=namesMapping,roundingMapping=roundingMapping,hexcols=hexcols,auto_find_hexcols=auto_find_hexcols)
+        if len(self.t)>0:
+            self.formattable(namesMapping=namesMapping,roundingMapping=roundingMapping,hexcols=hexcols,auto_find_hexcols=auto_find_hexcols)
         return(0)
 
     def write(self,filename=None,indices=None,columns=None,formatters=None,raiseError=True,overwrite=True,verbose=False, 

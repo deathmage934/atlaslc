@@ -634,23 +634,28 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         # upload to YSE-PZ
         for filt in ['c','o']:
             print('### FILTER SET: ',filt)
-            # load single measurement light curve, and calculate the average lc
-            # This also applies cut0 to single measurement light curve
-            self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
+            self.loadRADECtable(args,TNSname)
+            self.loadyselc(TNSname,0,filt)
+            if not len(self.lc.t)<1:
+                # load single measurement light curve, and calculate the average lc
+                # This also applies cut0 to single measurement light curve
+                self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
             
-            if not args.skipsingleupload:
-                print('# single measurements for filter: ',filt)
-                #outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
-                #self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
-                #self.uploadtoyse(outname)
-                self.yseupload(TNSname,ra,dec,filt,parser=parser)
+                if not args.skipsingleupload:
+                    print('# single measurements for filter: ',filt)
+                    #outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
+                    #self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
+                    #self.uploadtoyse(outname)
+                    self.yseupload(TNSname,ra,dec,filt,parser=parser)
 
-            if args.averagelc:
-                print('# average measurements for filter: ',filt)
-                #outname = re.sub('lc\.txt','yse.csv',self.averagelctable.filename)
-                #self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
-                #self.uploadtoyse(outname)
-                self.yseupload(TNSname,ra,dec,filt,MJDbinsize=args.MJDbinsize,parser=parser)
+                if args.averagelc:
+                    print('# average measurements for filter: ',filt)
+                    #outname = re.sub('lc\.txt','yse.csv',self.averagelctable.filename)
+                    #self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
+                    #self.uploadtoyse(outname)
+                    self.yseupload(TNSname,ra,dec,filt,MJDbinsize=args.MJDbinsize,parser=parser)
+            else:
+                print('WARNING: empty light curve, skipping averaging and uploading...')
 
 if __name__ == '__main__':
     upltoyse = uploadtoyseclass()

@@ -638,11 +638,12 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             # This also applies cut0 to single measurement light curve
             self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
             
-            print('# single measurements for filter: ',filt)
-            #outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
-            #self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
-            #self.uploadtoyse(outname)
-            self.yseupload(TNSname,ra,dec,filt,parser=parser)
+            if not args.skipsingleupload:
+                print('# single measurements for filter: ',filt)
+                #outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
+                #self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
+                #self.uploadtoyse(outname)
+                self.yseupload(TNSname,ra,dec,filt,parser=parser)
 
             if args.averagelc:
                 print('# average measurements for filter: ',filt)
@@ -666,7 +667,8 @@ if __name__ == '__main__':
     parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
     parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
     parser.add_argument('--averagelc', default=False, help=('average lcs'))
-    parser.add_argument('--skipdownload', default=False, help=('askip downloading'))
+    parser.add_argument('--skipsingleupload', default=False, help=('skip uploading single-measurement light curves'))
+    parser.add_argument('--skipdownload', default=False, help=('skip downloading'))
     parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size'),type=float)
 
     # add config file and atlaslc arguments

@@ -1,23 +1,20 @@
 #!/usr/bin/env python
 
-# Code adapted from Q. Wang by S. Rest
+# Code adapted from Q. Wang and D. Jones by S. Rest
 
+import sigmacut
 from SNloop import SNloopclass
 from download_lc_loop import downloadlcloopclass
 from uploadTransientData import upload, runDBcommand, DBOps
 from autoadd import autoaddclass
 from pdastro import pdastroclass, pdastrostatsclass, AnotB, AandB
 from download_atlas_lc import download_atlas_lc_class
-from tools import RaInDeg
-from tools import DecInDeg
+from tools import RaInDeg,DecInDeg
 
 import pandas as pd
 import numpy as np
-import sigmacut
 import sys,socket,os,re,io
-import optparse
-import configparser
-import argparse
+import optparse,configparser,argparse
 import math
 from copy import deepcopy
 from astropy.io import ascii
@@ -26,23 +23,40 @@ from astropy.coordinates import Angle
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 
+# from uploadTransientData.py
+import requests,json,urllib.request,urllib,ast,datetime,time,coreapi
+from astropy.time import Time
+from requests.auth import HTTPBasicAuth
+
 """
-for command input: uploadtoyse.py -t 2020lse --user USERNAME --passwd 'PASSWORD'
-for TNSlistfile input: uploadtoyse.py -n tnslist.txt --user USERNAME --passwd 'PASSWORD'
-for YSE list input: uploadtoyse.py --user USERNAME --passwd 'PASSWORD'
+get & upload original ATLAS light curves from daily YSE list: 
+    uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api True
+get & upload specific original ATLAS light curves: 
+    uploadtoyse.py -t 2020lse 2019vxm --user USERNAME --passwd 'PASSWORD' --api True
+get & upload original ATLAS light curves from user-made table of TNS names, RA, and Dec: 
+    uploadtoyse.py -n tnslist.txt --user USERNAME --passwd 'PASSWORD' --api True
+get & upload original ATLAS light curves AND averaged light curves: 
+    add --averagelc True to the command
+        uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api True --averagelc True
+    change the MJD bin size to 0.04 days instead of the default 1.00 day when averaging:
+        add --MJDbinsize 0.04 to the command (must be averaging light curve with the command --averagelc True)
+            uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api True --averagelc True --MJDbinsize 0.04
+set the lookback time in days to 500 instead of the default 60:
+    add -l 500 to the command
+        uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api True -l 500
 
 you must specify source directory, output root directory (has tnslist.txt if you want to use it), and output subdirectory (has all the downloaded data).
 you can specify these in the commandline using --sourcedir, --outrootdir, and --outsubdir
 OR
 1. you can set the source directory and the output root directory in atlaslc.sourceme
-2. then set the output subdirectory in precursor.cfg next to 'yse_outsubdir' (currently set to default 'ysetest')
+2. then set the output subdirectory in precursor.cfg through the variable 'yse_outsubdir' (currently set to default 'ysetest')
 """
 
 class uploadtoyseclass(downloadlcloopclass,autoaddclass):
     def __init__(self):
         downloadlcloopclass.__init__(self)
         autoaddclass.__init__(self)
-        #upload.__init__(self)
+
         self.download_atlas_lc = download_atlas_lc_class()
 
         # important vars
@@ -63,6 +77,136 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         
         self.api = False
         self.verbose = 0
+
+    def add_options(self,parser=None,usage=None,config=None):
+        if parser == None:
+            parser = argparse.ArgumentParser(usage=usage,conflict_handler="resolve")
+        parser.add_argument('-s','--settingsfile', default='%s/settings.ini'%self.sourcedir, type=str,help='settings file (login/password info)')
+        parser.add_argument('-v', '--verbose', action="count", dest="verbose",default=1)
+        parser.add_argument('--clobber', default=False, action="store_true",help='clobber output file')
+        parser.add_argument('--status', default='Following', type=str,help='transient status (new, follow, etc')
+        parser.add_argument('--obsgroup', default='Foundation', type=str,help='group who observed this transient')
+        parser.add_argument('--permissionsgroup', default='', type=str,help='group that has permission to view this photometry on YSE_PZ')
+        parser.add_argument('--inputformat', default='basic', type=str,help="input file format, can be 'basic' or 'snana' (photometry only) ")
+        parser.add_argument('--instrument', default='ACAM1', type=str,help="instrument name")
+        parser.add_argument('--forcedphot', default=1, type=int,help="set to 1 if forced photometry")
+        parser.add_argument('--diffim', default=1, type=int,help="set to 1 if difference imaged")
+        parser.add_argument('--fluxzpt', default=23.9, type=float,help="flux zero point")
+        parser.add_argument('-e','--onlyexisting', default=True, action="store_true",help="only add light curves for existing objects")
+        parser.add_argument('-m','--mjdmatchmin', default=0.01, type=float,help="""if clobber flag not set, photometric observation with MJD separation less than this, in the same filter/instrument are treated as the same data. Allows updates to the photometry""")
+        parser.add_argument('--spectrum', default=False, action="store_true",help='input file is a spectrum') 
+        return(parser)
+
+    def db_init_params(self,args):
+        self.dblogin = args.dblogin
+        self.dbpassword = args.dbpassword
+        self.dburl = args.dburl
+        self.baseposturl = "http --ignore-stdin -a %s:%s POST %s"%(self.dblogin,self.dbpassword,self.dburl)
+        self.basegeturl = "http --ignore-stdin -a %s:%s GET %s"%(self.dblogin,self.dbpassword,self.dburl)
+        self.baseputurl = "http --ignore-stdin -a %s:%s PUT %s"%(self.dblogin,self.dbpassword,self.dburl)
+        self.basegetobjurl = "http --ignore-stdin -a %s:%s GET "%(self.dblogin,self.dbpassword)
+
+    def add_db_options(self,parser=None,usage=None,config=None):
+        if parser == None:
+            parser = argparse.ArgumentParser(usage=usage,conflict_handler="resolve")
+        parser.add_argument('-p','--photometry',default=False,action="store_true",help='input file is photometry')
+        parser.add_argument('--login', default=config.get('main','login'), type=str,help='gmail login (default=%default)')
+        parser.add_argument('--password', default=config.get('main','password'), type=str,help='gmail password (default=%default)')
+        parser.add_argument('--dblogin', default=config.get('main','dblogin'), type=str,help='gmail login (default=%default)')
+        parser.add_argument('--dbpassword', default=config.get('main','dbpassword'), type=str,help='gmail password (default=%default)')
+        parser.add_argument('--dburl', default=config.get('main','dburl'), type=str,help='base URL to POST/GET,PUT to/from a database (default=%default)')
+        parser.add_argument('--transientapi', default=config.get('main','transientapi'), type=str,help='URL to POST transients to a database (default=%default)')
+        parser.add_argument('--internalsurveyapi', default=config.get('main','internalsurveyapi'), type=str,help='URL to POST transients to a database (default=%default)')
+        parser.add_argument('--transientclassesapi', default=config.get('main','transientclassesapi'), type=str,help='URL to POST transients classes to a database (default=%default)')
+        parser.add_argument('--hostapi', default=config.get('main','hostapi'), type=str,help='URL to POST transients to a database (default=%default)')
+        parser.add_argument('--photometryapi', default=config.get('main','photometryapi'), type=str,help='URL to POST transients to a database (default=%default)')
+        parser.add_argument('--photdataapi', default=config.get('main','photdataapi'), type=str,help='URL to POST transients to a database (default=%default)')
+        parser.add_argument('--hostphotometryapi', default=config.get('main','hostphotometryapi'), type=str,help='URL to POST transients to a database (default=%default)')
+        parser.add_argument('--hostphotdataapi', default=config.get('main','hostphotdataapi'), type=str,help='URL to POST transients to a database (default=%default)')
+        parser.add_argument('--obs_groupapi', default=config.get('main','obs_groupapi'), type=str,help='URL to POST group to a database (default=%default)')
+        parser.add_argument('--statusapi', default=config.get('main','statusapi'), type=str,help='URL to POST status to a database (default=%default)')
+        parser.add_argument('--instrumentapi', default=config.get('main','instrumentapi'), type=str,help='URL to POST instrument to a database (default=%default)')
+        parser.add_argument('--bandapi', default=config.get('main','bandapi'), type=str,help='URL to POST band to a database (default=%default)')
+        parser.add_argument('--observatoryapi', default=config.get('main','observatoryapi'), type=str,help='URL to POST observatory to a database (default=%default)')
+        parser.add_argument('--telescopeapi', default=config.get('main','telescopeapi'), type=str,help='URL to POST telescope to a database (default=%default)')
+        return(parser)
+
+    def get_transient_from_DB(self,fieldname,debug=False):
+        if debug: tstart = time.time()
+        tablename = 'transients'
+        auth = coreapi.auth.BasicAuthentication(username=self.dblogin,password=self.dbpassword)
+        client = coreapi.Client(auth=auth)
+        try:
+            schema = client.get('%s%s'%(self.dburl.replace('/api','/get_transient'),fieldname))
+        except:
+            raise RuntimeError('Error : couldn\'t get schema!')
+        if not schema['transient']:
+            return None
+        return(schema['transient']['url'])
+
+    def parsePhotHeaderData(self,args,tnsname,ra,dec):
+        transientdict = {'obs_group':args.obsgroup,'status':args.status,'name':tnsname,'ra':ra,'dec':dec,'groups':args.permissionsgroup}
+        photdict = {'instrument':args.instrument,'obs_group':args.obsgroup,'transient':tnsname,'groups':args.permissionsgroup}
+        return(transientdict,photdict)
+
+    def uploadatlasphotometry(self,args,tnsname,ra,dec,filt,MJDbinsize=None):
+        self.loadyselc(tnsname,0,filt,MJDbinsize=MJDbinsize)
+        # SET ANY NANS IN DM TO 5.0 BECAUSE NAN BREAKS IT
+        ix = self.lc.ix_null('dm')
+        self.lc.t.loc[ix,'dm'] = 5.0
+
+        transid = self.get_transient_from_DB(tnsname)
+
+        if args.onlyexisting and not transid:
+            raise RuntimeError('Object %s not found! Exiting...' % tnsname)
+        print('Uploading object %s...' % tnsname)
+        
+        transientdict,photdict = self.parsePhotHeaderData(args,tnsname,ra,dec)
+        PhotUploadAll = {'transient':transientdict,'photheader':photdict}
+
+        for mjd,flux,fluxerr,mag,magerr,flt,i in zip(self.lc.t['MJD'],self.lc.t[self.flux_colname],self.lc.t[self.dflux_colname],self.lc.t['m'],self.lc.t['dm'],self.lc.t['F'],range(len(self.lc.t['F']))):
+            obsdate = Time(mjd,format='mjd').isot
+            if flt == 'o': flt = 'orange-ATLAS'
+            elif flt == 'c': flt = 'cyan-ATLAS'
+            else: 
+                raise RuntimeError('Error converting filter %s' % flt)
+            
+            PhotUploadDict = {'obs_date':obsdate,'flux':flux,'flux_err':fluxerr,'forced':args.forcedphot,'diffim':args.diffim,'band':flt,'groups':[],'flux_zero_point':args.fluxzpt,'discovery_point':0,'data_quality':0}
+            if flux > 0:
+                PhotUploadDict['mag'] = mag
+                PhotUploadDict['mag_err'] = magerr
+            else:
+                PhotUploadDict['mag'] = None
+                PhotUploadDict['mag_err'] = None
+            PhotUploadAll['%s_%i'%(obsdate,i)] = PhotUploadDict
+            PhotUploadAll['header'] = {'clobber':args.clobber,'mjdmatchmin':args.mjdmatchmin}
+
+        url = '%s' % args.dburl.replace('/api','/add_transient_phot')
+        def myconverter(obj):
+            if obj is np.nan:
+                return None
+            elif isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, datetime.datetime):
+                return obj.__str__()
+        r = requests.post(url=url,data=json.dumps(PhotUploadAll,default=myconverter),auth=HTTPBasicAuth(args.dblogin,args.dbpassword))
+        print('YSE_PZ says: %s'%json.loads(r.text)['message'])
+
+    def yseupload(self,tnsname,ra,dec,filt,MJDbinsize=None,parser=None):
+        # load in args, parse config file, then load in db args with config file passed
+        parser = self.add_options(parser=parser)
+        args = parser.parse_args()
+        config = configparser.ConfigParser()
+        config.read(args.settingsfile)
+        parser = self.add_db_options(parser=parser,config=config)
+        args = parser.parse_args()
+
+        self.db_init_params(args)
+        self.uploadatlasphotometry(args,tnsname,ra,dec,filt,MJDbinsize)
 
     def YSE_list(self):
         all_cand = pd.read_csv(self.cfg.params['upltoyse']['yse_list'])
@@ -112,6 +256,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             self.lc.load_spacesep(filename,delim_whitespace=True,raiseError=True)
         return(0)
 
+    """
     def atlas2yseold(self,TNSname,outname,ra,dec,atlas_data_file,filt):
         t = ascii.read(atlas_data_file)
         
@@ -128,9 +273,9 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                 f.write('OBS: '+str(row['MJD'])+' '+filter_fict[row['F']]+' '+str(row[self.flux_colname])+' '+str(row[self.dflux_colname])+' '+str(row['m'])+' '+str(row['dm'])+' 0 \n')
         print("Converted ATLAS lc to YSE format: %s" % outname)
         return(outname)
+    """
 
     def atlas2yse(self,TNSname,outname,ra,dec,lc,filt):
-        #t = ascii.read(atlas_data_file)
         lc.t['dummy']='OBS: '
         ix_o =  lc.ix_equal('F','o')
         ix_c =  lc.ix_equal('F','c')
@@ -144,9 +289,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         ix = lc.ix_null('Mask')
         lc.t.loc[ix,'Mask']=int(0)
         lc.t['Mask']=lc.t['Mask'].astype(int)
-               
-        #lc.write(columns=['dummy','MJD','F',self.flux_colname,self.dflux_colname,'m','dm','Mask'])
-         
+        
         with open(outname, 'w+') as f:
             f.write('SNID: '+TNSname+' \nRA: '+str(ra)+'     \nDECL: '+str(dec)+' \n \nVARLIST:  MJD  FLT  FLUXCAL   FLUXCALERR MAG     MAGERR DQ \n')
             lines = lc.t.to_string(header=False, index=False,columns=['dummy','MJD','F',self.flux_colname,self.dflux_colname,'m','dm','Mask'])
@@ -154,7 +297,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         f.close()
         print("Converted ATLAS lc to YSE format: %s" % outname)
         return(outname)
-
 
     def uploadtoyse(self,filename):
         os.system('python %s/uploadTransientData.py -e -s %s/settings.ini -i %s --instrument ACAM1 --fluxzpt 23.9 --forcedphot 1 --diffim 1' % (self.sourcedir,self.sourcedir,filename))
@@ -200,8 +342,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
                     # query panstarrs for closest bright object and add to snlist.txt
                     if self.cfg.params['forcedphotpatterns']['closebright']['autosearch'] is True:
-                        print('Autosearch not functional yet!!')
-                        sys.exit(0)
+                        raise RuntimeError('Autosearch for closest bright object is not functional yet!')
                         """
                         results = self.autosearch(RA.degree, Dec.degree, 20)
                         print('Close bright objects found: \n',results)
@@ -432,11 +573,9 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         ix = self.averagelctable.ix_null('dm')
         self.averagelctable.t.loc[ix,'dm']=5.0
 
-        #self.averagelctable.write()
-
         self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite,MJDbinsize=MJDbinsize)
 
-    def uploadloop(self,args,TNSname,overwrite=True,skipdownload=False):
+    def uploadloop(self,args,TNSname,overwrite=True,skipdownload=False,parser=None):
         # GET RA AND DEC
         if args.tnsnamelist:
             # get ra and dec automatically
@@ -500,30 +639,17 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
             
             print('# single measurements for filter: ',filt)
-            outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
-            self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
-            self.uploadtoyse(outname)
+            #outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
+            #self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
+            #self.uploadtoyse(outname)
+            self.yseupload(TNSname,ra,dec,filt,parser=parser)
 
             if args.averagelc:
                 print('# average measurements for filter: ',filt)
-                outname = re.sub('lc\.txt','yse.csv',self.averagelctable.filename)
-                self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
-                self.uploadtoyse(outname)
-
-        # upload to YSE-PZ
-        #for filt in ['c','o']:
-        #    print('### FILTER SET: ',filt)
-        #    self.loadyselc(TNSname,0,filt=filt)
-        #    outname = re.sub('lc\.txt','yse.txt',self.lc.filename)
-        #    self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
-        #   self.uploadtoyse(outname)
-
-        #    if args.averagelc:
-#       #         self.loadyselc(TNSname,0,filt,args.MJDbinsize)
-        #        self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
-        #        outname = re.sub('lc\.txt','yse.txt',self.averagelctable.filename)
-        #        self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
-        #        self.uploadtoyse(outname)
+                #outname = re.sub('lc\.txt','yse.csv',self.averagelctable.filename)
+                #self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
+                #self.uploadtoyse(outname)
+                self.yseupload(TNSname,ra,dec,filt,MJDbinsize=args.MJDbinsize,parser=parser)
 
 if __name__ == '__main__':
     upltoyse = uploadtoyseclass()
@@ -605,7 +731,7 @@ if __name__ == '__main__':
     for index in range(0,len(upltoyse.TNSnamelist)):
         TNSname = upltoyse.TNSnamelist[index]
         print("\nUploading and/or downloading data for %s, TNSnamelist index %d/%d" % (TNSname,index+1,len(upltoyse.TNSnamelist)))
-        upltoyse.uploadloop(args,TNSname,overwrite=True,skipdownload=args.skipdownload)
+        upltoyse.uploadloop(args,TNSname,overwrite=True,skipdownload=args.skipdownload,parser=parser)
 
     if not(args.tnslistfilename is None):
         upltoyse.TNSlistfile.write(upltoyse.TNSlistfilename,overwrite=True)

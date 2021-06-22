@@ -71,7 +71,7 @@ class autoaddclass(SNloopclass):
 		ra = json_data['data']['reply']['ra']
 		dec = json_data['data']['reply']['dec']
 		print('In sexagesimal: RA: %s, Dec: %s' % (ra,dec))
-		print('In decimal: RA %0.6f Dec: %0.6f' % (RaInDeg(ra),DecInDeg(dec)))
+		print('In decimal: RA %0.8f Dec: %0.8f' % (RaInDeg(ra),DecInDeg(dec)))
 		return ra, dec
 
 	def getdisc_date(self,tnsname):
@@ -89,9 +89,9 @@ class autoaddclass(SNloopclass):
 
 	def addrow2snlist(self, tnsname, ra, dec, MJDpreSN, closebrightRA=None, closebrightDec=None):
 		if closebrightRA is None:
-			df = pd.DataFrame([['<NA>','<NA>','%0.6f'%RaInDeg(ra),'%0.6f'%DecInDeg(dec),'<NA>','NaN',tnsname,'<NA>','<NA>',disc_date]], columns=['atlasdesignation','otherdesignation','ra','dec','spectraltype','earliestmjd','tnsname','closebrightRA','closebrightDec','MJDpreSN'])
+			df = pd.DataFrame([['<NA>','<NA>','%0.8f'%RaInDeg(ra),'%0.8f'%DecInDeg(dec),'<NA>','NaN',tnsname,'<NA>','<NA>',disc_date]], columns=['atlasdesignation','otherdesignation','ra','dec','spectraltype','earliestmjd','tnsname','closebrightRA','closebrightDec','MJDpreSN'])
 		else: 
-			df = pd.DataFrame([['<NA>','<NA>','%0.6f'%RaInDeg(ra),'%0.6f'%DecInDeg(dec),'<NA>','NaN',tnsname,closebrightRA,closebrightDec,disc_date]], columns=['atlasdesignation','otherdesignation','ra','dec','spectraltype','earliestmjd','tnsname','closebrightRA','closebrightDec','MJDpreSN'])
+			df = pd.DataFrame([['<NA>','<NA>','%0.8f'%RaInDeg(ra),'%0.8f'%DecInDeg(dec),'<NA>','NaN',tnsname,closebrightRA,closebrightDec,disc_date]], columns=['atlasdesignation','otherdesignation','ra','dec','spectraltype','earliestmjd','tnsname','closebrightRA','closebrightDec','MJDpreSN'])
 		print('Adding row: \n',df)
 		self.snlist.t = self.snlist.t.append(df, ignore_index=True)
 		#print(self.snlist.t)

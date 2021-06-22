@@ -134,7 +134,6 @@ less than this, in the same filter/instrument are treated as the same data.     
                          'photheader':photdict}
         
         # upload the photometry
-        #print(sn.MJD,sn.FLUXCAL,sn.FLUXCALERR,sn.MAG,sn.MAGERR,sn.FLT,range(len(sn.FLT)))
         for mjd,flux,fluxerr,mag,magerr,flt,i in zip(
                 sn.MJD,sn.FLUXCAL,sn.FLUXCALERR,sn.MAG,sn.MAGERR,sn.FLT,range(len(sn.FLT))):
 
@@ -176,12 +175,13 @@ less than this, in the same filter/instrument are treated as the same data.     
             PhotUploadAll['%s_%i'%(obsdate,i)] = PhotUploadDict
             PhotUploadAll['header'] = {'clobber':self.options.clobber,
                                        'mjdmatchmin':self.options.mjdmatchmin}
+
+        print(PhotUploadAll)
         import requests
         from requests.auth import HTTPBasicAuth
         url = '%s'%db.dburl.replace('/api','/add_transient_phot')
 
         def myconverter(obj):
-#            print('BBBBBBBBBBB',obj)
             if obj is np.nan:
                 return None
             elif isinstance(obj, np.integer):
@@ -195,7 +195,6 @@ less than this, in the same filter/instrument are treated as the same data.     
 
         r = requests.post(url = url, data = json.dumps(PhotUploadAll,default=myconverter),
                           auth=HTTPBasicAuth(db.dblogin,db.dbpassword))
-        print(self.options.clobber)
 
         print('YSE_PZ says: %s'%json.loads(r.text)['message'])
             
@@ -295,7 +294,6 @@ def runDBcommand(cmd):
     except:
         import pdb; pdb.set_trace()
         raise RuntimeError('Error : cmd %s failed!!'%cmd)
-    
 
 class DBOps():
     def __init__(self):

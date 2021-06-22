@@ -82,11 +82,19 @@ class averagelcclass(SNloopclass):
             
             # No good measurements?
             if len(ix2)==0:
+                # average all 4 values anyway, then flag as day_bad
+                self.lc.calcaverage_sigmacutloop(self.flux_colname,noisecol=self.dflux_colname,indices=ix1,verbose=1,Nsigma=3.0,median_firstiteration=True)
+                fluxstatparams = deepcopy(self.lc.statparams)
+                self.lc.calcaverage_sigmacutloop('MJD',noisecol='duJy',indices=fluxstatparams['ix_good'],verbose=1,Nsigma=0,median_firstiteration=False)
+                averagemjd = self.lc.statparams['mean']
+                df = {'MJD':averagemjd,self.flux_colname:fluxstatparams['mean'],self.dflux_colname:fluxstatparams['mean_err'],'stdev':fluxstatparams['stdev'],'X2norm':fluxstatparams['X2norm'],'Nclip':fluxstatparams['Nclip'],'Ngood':fluxstatparams['Ngood'],'Mask':0}
+                self.averagelc.add2row(lcaverageindex,df)
+
                 flag_array = np.full(len(ix1),self.flag_day_bad)
                 self.lc.t.loc[ix1,'Mask'] = np.bitwise_or(self.lc.t.loc[ix1,'Mask'],flag_array)
                 self.averagelc.t.loc[lcaverageindex,'Mask'] = int(self.averagelc.t.loc[lcaverageindex,'Mask']) | self.flag_day_bad
                 if self.verbose>1: 
-                    print('Length of good and ok measurements = 0, no average flux values')
+                    print('Length of good and ok measurements = 0, averaging all 4 values and flagging as bad')
 
                 MJD += MJDbinsize
                 continue
@@ -110,8 +118,7 @@ class averagelcclass(SNloopclass):
                 continue
 
             # get average mjd
-            self.lc.calcaverage_sigmacutloop('MJD',noisecol='duJy',indices=fluxstatparams['ix_good'],
-                                            verbose=1,Nsigma=0,median_firstiteration=False)
+            self.lc.calcaverage_sigmacutloop('MJD',noisecol='duJy',indices=fluxstatparams['ix_good'],verbose=1,Nsigma=0,median_firstiteration=False)
             averagemjd = self.lc.statparams['mean']
             
             # add row to averagelc table

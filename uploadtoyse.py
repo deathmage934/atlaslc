@@ -150,23 +150,21 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         return(transientdict,photdict)
 
     def uploadatlasphotometry(self,args,tnsname,ra,dec,filt,MJDbinsize=None):
-        #self.loadyselc(tnsname,0,filt,MJDbinsize=MJDbinsize)
         filename = self.yselcfilename(TNSname,0,filt,MJDbinsize=MJDbinsize)
         self.lc.load_spacesep(filename,delim_whitespace=True,raiseError=True)
-        # SET ANY NANS IN DM TO 5.0 BECAUSE NAN BREAKS IT
+        
+        # SET ANY NANS IN DM TO NONE BECAUSE NAN BREAKS IT
         ix = self.lc.ix_null('dm')
-        self.lc.t.loc[ix,'dm'] = 5.0
+        self.lc.t.loc[ix,'dm'] = 'None'
 
         transid = self.get_transient_from_DB(tnsname)
-
         if args.onlyexisting and not transid:
             raise RuntimeError('Object %s not found! Exiting...' % tnsname)
         print('Uploading object %s...' % tnsname)
-        
         transientdict,photdict = self.parsePhotHeaderData(args,tnsname,ra,dec)
         PhotUploadAll = {'transient':transientdict,'photheader':photdict}
 
-        print(self.lc.t[['MJD','m']]) # delete me
+        #print(self.lc.t[['MJD','m','dm']]) # delete me
 
         for mjd,flux,fluxerr,mag,magerr,flt,i in zip(self.lc.t['MJD'],self.lc.t[self.flux_colname],self.lc.t[self.dflux_colname],self.lc.t['m'],self.lc.t['dm'],self.lc.t['F'],range(len(self.lc.t['F']))):
             obsdate = Time(mjd,format='mjd').isot
@@ -286,9 +284,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         lc.t.loc[ix_o,'F']='orange-ATLAS'
         lc.t.loc[ix_c,'F']='cyan-ATLAS'
         
-        # HACK ALERT!!! I set dm=5 mag, so that it loads to YSE! NaN breaks it
         ix = lc.ix_null('dm')
-        lc.t.loc[ix,'dm']=5.0
+        lc.t.loc[ix,'dm'] = np.nan
         
         ix = lc.ix_null('Mask')
         lc.t.loc[ix,'Mask']=int(0)
@@ -574,8 +571,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         self.averagelctable.t = self.averagelctable.t.drop(columns=['__tmp_SN'])
 
         # HACK ALERT!!! I set dm=5 mag, so that it loads to YSE! NaN breaks it
-        ix = self.averagelctable.ix_null('dm')
-        self.averagelctable.t.loc[ix,'dm']=5.0
+        #ix = self.averagelctable.ix_null('dm')
+        #self.averagelctable.t.loc[ix,'dm'] = None
 
         self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite,MJDbinsize=MJDbinsize)
 

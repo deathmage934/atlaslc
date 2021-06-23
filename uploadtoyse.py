@@ -150,7 +150,9 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         return(transientdict,photdict)
 
     def uploadatlasphotometry(self,args,tnsname,ra,dec,filt,MJDbinsize=None):
-        self.loadyselc(tnsname,0,filt,MJDbinsize=MJDbinsize)
+        #self.loadyselc(tnsname,0,filt,MJDbinsize=MJDbinsize)
+        filename = self.yselcfilename(TNSname,0,filt,MJDbinsize=MJDbinsize)
+        self.lc.load_spacesep(filename,delim_whitespace=True,raiseError=True)
         # SET ANY NANS IN DM TO 5.0 BECAUSE NAN BREAKS IT
         ix = self.lc.ix_null('dm')
         self.lc.t.loc[ix,'dm'] = 5.0
@@ -163,6 +165,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         
         transientdict,photdict = self.parsePhotHeaderData(args,tnsname,ra,dec)
         PhotUploadAll = {'transient':transientdict,'photheader':photdict}
+
+        print(self.lc.t[['MJD','m']]) # delete me
 
         for mjd,flux,fluxerr,mag,magerr,flt,i in zip(self.lc.t['MJD'],self.lc.t[self.flux_colname],self.lc.t[self.dflux_colname],self.lc.t['m'],self.lc.t['dm'],self.lc.t['F'],range(len(self.lc.t['F']))):
             obsdate = Time(mjd,format='mjd').isot
@@ -206,7 +210,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         args = parser.parse_args()
 
         self.db_init_params(args)
-        self.uploadatlasphotometry(args,tnsname,ra,dec,filt,MJDbinsize)
+        self.uploadatlasphotometry(args,tnsname,ra,dec,filt,MJDbinsize=MJDbinsize)
 
     def YSE_list(self):
         all_cand = pd.read_csv(self.cfg.params['upltoyse']['yse_list'])
@@ -249,7 +253,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
     def loadyselc(self,TNSname,controlindex,filt=None,MJDbinsize=None):
         if filt is None:
             filt = self.filt
-        filename = self.yselcfilename(TNSname,controlindex,filt,MJDbinsize)
+        filename = self.yselcfilename(TNSname,controlindex,filt,MJDbinsize=MJDbinsize)
         if not(MJDbinsize is None):
             self.averagelctable.load_spacesep(filename,delim_whitespace=True,raiseError=True)
         else:
@@ -636,7 +640,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             print('### FILTER SET: ',filt)
             self.loadRADECtable(args,TNSname)
             self.loadyselc(TNSname,0,filt)
-            if not len(self.lc.t)<1:
+            if len(self.lc.t)>0:
                 # load single measurement light curve, and calculate the average lc
                 # This also applies cut0 to single measurement light curve
                 self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)

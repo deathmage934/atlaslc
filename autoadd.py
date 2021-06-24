@@ -121,7 +121,6 @@ if __name__ == '__main__':
 		autoadd.snlistsurvey.load_spacesep(snlistfilename, delim_whitespace=True)
 
 		indexlist = autoadd.snlistsurvey.getindices()
-		#indexlist = range(len(autoadd.snlistsurvey.t))
 		for index in indexlist:
 			try: 
 				tnsname = autoadd.snlistsurvey.t.at[index,'tnsname']

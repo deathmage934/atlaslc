@@ -163,6 +163,8 @@ class averagelcclass(SNloopclass):
 
             MJD += MJDbinsize
 
+        self.averagelc.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
+
         for col in ['ControlID','Nclip','Ngood','Nexcluded','Mask']: 
             self.averagelc.t[col] = self.averagelc.t[col].astype(np.int32)
 

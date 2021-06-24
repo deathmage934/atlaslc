@@ -181,14 +181,14 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 						df = pd.DataFrame([[ControlID,PatternID,RAnew.degree,DECnew.degree,RAdistance.arcsec,DECoffset.arcsec,radius,0,0,0]],columns=['ControlID','PatternID','Ra','Dec','RaOffset','DecOffset','Radius','Ndet','Ndet_c','Ndet_o'])
 						self.RADECtable.t = self.RADECtable.t.append(df,ignore_index=True)
 
-						if self.verbose>1:
+						if self.verbose>2:
 							print('#\nAngle: %f deg' % angle.degree)
 							print('#RA center: %f deg' % RAcenter.degree)
 							print('#Dec center: %f deg' % Deccenter.degree)
 							print('#RA distance: %f arcsec' % RAdistance.arcsec)
 							print('#RA offset to be added to RA: %f arcsec' % RAoffset.arcsec)
 							print('#Dec offset: %f arcsec' % DECoffset.arcsec)
-						if self.verbose:
+						if self.verbose>1:
 							print('#Angle: %.1f, new RA and Dec: %f, %f' % (angle.degree, RAnew.degree, DECnew.degree))
 						ControlID += 1
 		else:

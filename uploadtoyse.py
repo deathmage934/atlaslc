@@ -155,7 +155,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         
         # SET ANY NANS IN DM TO NONE BECAUSE NAN BREAKS IT
         ix = self.lc.ix_null('dm')
-        self.lc.t.loc[ix,'dm'] = 'None'
+        self.lc.t.loc[ix,'dm'] = 5.0
 
         transid = self.get_transient_from_DB(tnsname)
         if args.onlyexisting and not transid:

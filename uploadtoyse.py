@@ -164,22 +164,24 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         transientdict,photdict = self.parsePhotHeaderData(args,tnsname,ra,dec)
         PhotUploadAll = {'transient':transientdict,'photheader':photdict}
 
-        #print(self.lc.t[['MJD','m','dm']]) # delete me
-
-        for mjd,flux,fluxerr,mag,magerr,flt,i in zip(self.lc.t['MJD'],self.lc.t[self.flux_colname],self.lc.t[self.dflux_colname],self.lc.t['m'],self.lc.t['dm'],self.lc.t['F'],range(len(self.lc.t['F']))):
+        for mjd,flux,fluxerr,mag,magerr,flt,i,mask in zip(self.lc.t['MJD'],self.lc.t[self.flux_colname],self.lc.t[self.dflux_colname],self.lc.t['m'],self.lc.t['dm'],self.lc.t['F'],range(len(self.lc.t['F'])),self.lc.t['Mask']):
             obsdate = Time(mjd,format='mjd').isot
             if flt == 'o': flt = 'orange-ATLAS'
             elif flt == 'c': flt = 'cyan-ATLAS'
             else: 
                 raise RuntimeError('Error converting filter %s' % flt)
             
-            PhotUploadDict = {'obs_date':obsdate,'flux':flux,'flux_err':fluxerr,'forced':args.forcedphot,'diffim':args.diffim,'band':flt,'groups':[],'flux_zero_point':args.fluxzpt,'discovery_point':0,'data_quality':0}
+            PhotUploadDict = {'obs_date':obsdate,'flux':flux,'flux_err':fluxerr,'forced':args.forcedphot,'diffim':args.diffim,'band':flt,'groups':[],'flux_zero_point':args.fluxzpt,'discovery_point':0}
             if flux > 0:
                 PhotUploadDict['mag'] = mag
                 PhotUploadDict['mag_err'] = magerr
             else:
                 PhotUploadDict['mag'] = None
                 PhotUploadDict['mag_err'] = None
+            if not(mask==0):
+                PhotUploadDict['data_quality'] = 1
+            else:
+                PhotUploadDict['data_quality'] = 0
             PhotUploadAll['%s_%i'%(obsdate,i)] = PhotUploadDict
             PhotUploadAll['header'] = {'clobber':args.clobber,'mjdmatchmin':args.mjdmatchmin}
 
@@ -195,6 +197,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                 return obj.tolist()
             elif isinstance(obj, datetime.datetime):
                 return obj.__str__()
+
         r = requests.post(url=url,data=json.dumps(PhotUploadAll,default=myconverter),auth=HTTPBasicAuth(args.dblogin,args.dbpassword))
         print('YSE_PZ says: %s'%json.loads(r.text)['message'])
 
@@ -543,7 +546,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
             if len(mjd_ix)>0:
                 # add row to averagelc table
-                df = {'MJDbin':MJD+0.5*MJDbinsize,'F':filt}
+                df = {'MJDbin':MJD+0.5*MJDbinsize,'F':filt,'Mask':0}
                 lcaverageindex = self.averagelctable.newrow(df)
 
             if len(mjd_ix)==0: 
@@ -564,15 +567,14 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                   'stdev':fluxstatparams['stdev'],'X2norm':fluxstatparams['X2norm'],'Nclipped':fluxstatparams['Nclip'],'Nused':fluxstatparams['Ngood']}
             self.averagelctable.add2row(lcaverageindex,df)
 
+            if fluxstatparams['mean'] is None or len(fluxstatparams['ix_good'])<1:
+                self.averagelctable.t.loc[lcaverageindex,'Mask'] = int(self.averagelc.t.loc[lcaverageindex,'Mask']) | self.flag_day_bad
+
             MJD += MJDbinsize
 
         # convert flux to magnitude
         self.averagelctable.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
         self.averagelctable.t = self.averagelctable.t.drop(columns=['__tmp_SN'])
-
-        # HACK ALERT!!! I set dm=5 mag, so that it loads to YSE! NaN breaks it
-        #ix = self.averagelctable.ix_null('dm')
-        #self.averagelctable.t.loc[ix,'dm'] = None
 
         self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite,MJDbinsize=MJDbinsize)
 

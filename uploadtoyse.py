@@ -220,7 +220,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         df['Name'] = all_cand['name'] 
         df['RA'] = all_cand['transient_RA']
         df['Dec'] = all_cand['transient_Dec']
-        df['Disc date'] = all_cand['disc_date']
+        df['Disc_date'] = all_cand['disc_date']
         print(df)
         return df
 
@@ -582,11 +582,20 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         # GET RA AND DEC
         if args.tnsnamelist:
             # get ra and dec automatically
-            ra, dec = self.getradec(TNSname)
+            if 'YSE' in TNSname:
+                self.YSEtable.t = upltoyse.YSE_list()
+                index = self.YSEtable.ix_equal('Name',val=TNSname)
+                if len(index)>0:
+                    ra = self.YSEtable.t.at[index[0],'RA']
+                    dec = self.YSEtable.t.at[index[0],'Dec']
+                else:
+                    raise RuntimeError('Something went wrong: TNSname does not exist!')
+            else:
+                ra, dec = self.getradec(TNSname)
         elif args.tnslistfilename:
             onTNSlistfile = self.checkTNSlistfile(TNSname)
             if onTNSlistfile is False:
-                # get ra and dec automatically, then append to TNSlistfile
+                # get ra and dec automatically from TNS, then append to TNSlistfile
                 ra, dec = self.getradec(TNSname)
                 df = pd.DataFrame([[TNSname,ra,dec]], columns=['TNSname','RA','Dec'])
                 self.TNSlistfile.t = self.TNSlistfile.t.append(df, ignore_index=True)

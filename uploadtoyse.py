@@ -25,6 +25,7 @@ from astropy.table import Table
 
 # from uploadTransientData.py
 import requests,json,urllib.request,urllib,ast,datetime,time,coreapi
+from requests.exceptions import MissingSchema
 from astropy.time import Time
 from requests.auth import HTTPBasicAuth
 
@@ -357,8 +358,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                         """
                     # use coordinates listed in snlist.txt
                     else:
-                        cbRA = Angle(RaInDeg(self.t.at[SNindex,'closebrightRA']),u.degree)
-                        cbDec = Angle(DecInDeg(self.t.at[SNindex,'closebrightDec']),u.degree)
+                        cbRA = Angle(RaInDeg(self.t.loc[SNindex,'closebrightRA']),u.degree)
+                        cbDec = Angle(DecInDeg(self.t.loc[SNindex,'closebrightDec']),u.degree)
 
                     # radius is distance between SN and bright object
                     c1 = SkyCoord(RA, Dec, frame='fk5')
@@ -432,7 +433,11 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             print('Connecting to API...')
             token_header = self.download_atlas_lc.connect_atlas(args.user,args.passwd)
             print('TOKEN HEADER: ',token_header)
-            self.lc.t = self.download_atlas_lc.get_result(RaInDeg(ra), DecInDeg(dec), token_header, lookbacktime_days=lookbacktime_days)
+            try:
+                self.lc.t = self.download_atlas_lc.get_result(RaInDeg(ra), DecInDeg(dec), token_header, lookbacktime_days=lookbacktime_days)
+            except MissingSchema:
+                print('WARNING: NO NEW DATA AVAILABLE. Skipping cleaning, averaging, and uploading of this light curve...')
+                return(1)
         else:
             print('Connecting to SSH...')
             self.download_atlas_lc.connect(args.atlasmachine,args.user,args.passwd)
@@ -463,6 +468,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             else: 
                 print('Saving light curve: %s' % filename)
                 self.lc.write(filename, index=False,indices=newindices,overwrite=args.overwrite,verbose=False)
+        return(0)
 
     def downloadYSEcontrollc(self,args,TNSname,ra,dec,pattern=None,lookbacktime_days=None):
         print('Offset status: ',args.forcedphot_offset)
@@ -471,34 +477,39 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
             for i in range(len(self.RADECtable.t)):
                 print(self.RADECtable.write(indices=i, columns=['ControlID', 'Ra', 'Dec']))
-                self.downloadyselc(args,ra,dec,i,lookbacktime_days=lookbacktime_days)
-                print('Length of lc: ',len(self.lc.t))
-
-                self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
-                ofilt = np.where(self.lc.t['F']=='o')
-                self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
-                cfilt = np.where(self.lc.t['F']=='c')
-                self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
-            
+                result = self.downloadyselc(args,ra,dec,i,lookbacktime_days=lookbacktime_days)
+                if result == 0:
+                    print('Length of lc: ',len(self.lc.t))
+                    self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
+                    ofilt = np.where(self.lc.t['F']=='o')
+                    self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
+                    cfilt = np.where(self.lc.t['F']=='c')
+                    self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+                else:
+                    return(1)
             self.saveRADECtable(args,TNSname,'c')
             self.saveRADECtable(args,TNSname,'o')
+            return(0)
         else:
             print('Skipping forcedphot offsets lc...')
             self.defineRADECtable(args,ra,dec,pattern=None)
 
             print(self.RADECtable.write(index=True,overwrite=False))
             for i in range(len(self.RADECtable.t)):
-                self.downloadyselc(args,ra,dec,i,lookbacktime_days=lookbacktime_days)
-                print('Length of lc: ',len(self.lc.t))
-
-                self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
-                ofilt = np.where(self.lc.t['F']=='o')
-                self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
-                cfilt = np.where(self.lc.t['F']=='c')
-                self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
-            
+                result = self.downloadyselc(args,ra,dec,i,lookbacktime_days=lookbacktime_days)
+                if result == 0:
+                    print('Length of lc: ',len(self.lc.t))
+                    self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
+                    ofilt = np.where(self.lc.t['F']=='o')
+                    self.RADECtable.t.loc[i,'Ndet_o']=len(ofilt[0])
+                    cfilt = np.where(self.lc.t['F']=='c')
+                    self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
+                else:
+                    return(1)
             self.saveRADECtable(args,TNSname,'c')
             self.saveRADECtable(args,TNSname,'o')
+            return(0)
+        return(result)
 
     def averageyselc(self,args,TNSname,filt,MJDbinsize=1.0):
         self.loadRADECtable(args,TNSname)
@@ -586,8 +597,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                 self.YSEtable.t = upltoyse.YSE_list()
                 index = self.YSEtable.ix_equal('Name',val=TNSname)
                 if len(index)>0:
-                    ra = self.YSEtable.t.at[index[0],'RA']
-                    dec = self.YSEtable.t.at[index[0],'Dec']
+                    ra = self.YSEtable.t.loc[index[0],'RA']
+                    dec = self.YSEtable.t.loc[index[0],'Dec']
                 else:
                     raise RuntimeError('Something went wrong: TNSname does not exist!')
             else:
@@ -603,16 +614,16 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                 # get ra and dec from TNSlistfile
                 index = self.TNSlistfile.ix_equal('TNSname',val=TNSname)
                 if len(index)>0:
-                    ra = self.TNSlistfile.t.at[index[0],'RA']
-                    dec = self.TNSlistfile.t.at[index[0],'Dec']
+                    ra = self.TNSlistfile.t.loc[index[0],'RA']
+                    dec = self.TNSlistfile.t.loc[index[0],'Dec']
                 else:
                     raise RuntimeError('Something went wrong: TNSname does not exist!')
         else:
             # get ra and dec from yse table
             index = self.YSEtable.ix_equal('Name',val=TNSname)
             if len(index)>0:
-                ra = self.YSEtable.t.at[index[0],'RA']
-                dec = self.YSEtable.t.at[index[0],'Dec']
+                ra = self.YSEtable.t.loc[index[0],'RA']
+                dec = self.YSEtable.t.loc[index[0],'Dec']
             else:
                 raise RuntimeError('Something went wrong: TNSname does not exist!')
 
@@ -641,33 +652,34 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             lookbacktime_days = 60
                
         if not skipdownload:
-            self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
+            result = self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
 
-        # upload to YSE-PZ
-        for filt in ['c','o']:
-            print('### FILTER SET: ',filt)
-            self.loadRADECtable(args,TNSname)
-            self.loadyselc(TNSname,0,filt)
-            if len(self.lc.t)>0:
-                # load single measurement light curve, and calculate the average lc
-                # This also applies cut0 to single measurement light curve
-                self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
-            
-                if not args.skipsingleupload:
-                    print('# single measurements for filter: ',filt)
-                    #outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
-                    #self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
-                    #self.uploadtoyse(outname)
-                    self.yseupload(TNSname,ra,dec,filt,parser=parser)
+        if result == 0:
+            # upload to YSE-PZ
+            for filt in ['c','o']:
+                print('### FILTER SET: ',filt)
+                self.loadRADECtable(args,TNSname)
+                self.loadyselc(TNSname,0,filt)
+                if len(self.lc.t)>0:
+                    # load single measurement light curve, and calculate the average lc
+                    # This also applies cut0 to single measurement light curve
+                    self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
+                
+                    if not args.skipsingleupload:
+                        print('# single measurements for filter: ',filt)
+                        #outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
+                        #self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
+                        #self.uploadtoyse(outname)
+                        self.yseupload(TNSname,ra,dec,filt,parser=parser)
 
-                if args.averagelc:
-                    print('# average measurements for filter: ',filt)
-                    #outname = re.sub('lc\.txt','yse.csv',self.averagelctable.filename)
-                    #self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
-                    #self.uploadtoyse(outname)
-                    self.yseupload(TNSname,ra,dec,filt,MJDbinsize=args.MJDbinsize,parser=parser)
-            else:
-                print('WARNING: empty light curve, skipping averaging and uploading...')
+                    if args.averagelc:
+                        print('# average measurements for filter: ',filt)
+                        #outname = re.sub('lc\.txt','yse.csv',self.averagelctable.filename)
+                        #self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
+                        #self.uploadtoyse(outname)
+                        self.yseupload(TNSname,ra,dec,filt,MJDbinsize=args.MJDbinsize,parser=parser)
+                else:
+                    print('WARNING: empty light curve, skipping averaging and uploading...')
 
 if __name__ == '__main__':
     upltoyse = uploadtoyseclass()

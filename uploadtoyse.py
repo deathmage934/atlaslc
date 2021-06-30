@@ -489,7 +489,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                     return(1)
             self.saveRADECtable(args,TNSname,'c')
             self.saveRADECtable(args,TNSname,'o')
-            return(0)
         else:
             print('Skipping forcedphot offsets lc...')
             self.defineRADECtable(args,ra,dec,pattern=None)
@@ -508,8 +507,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                     return(1)
             self.saveRADECtable(args,TNSname,'c')
             self.saveRADECtable(args,TNSname,'o')
-            return(0)
-        return(result)
+        return(0)
 
     def averageyselc(self,args,TNSname,filt,MJDbinsize=1.0):
         self.loadRADECtable(args,TNSname)

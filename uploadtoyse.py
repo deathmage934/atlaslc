@@ -217,13 +217,17 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         self.db_init_params(args)
         self.uploadatlasphotometry(args,tnsname,ra,dec,filt,MJDbinsize=MJDbinsize)
 
-    def YSE_list(self):
-        all_cand = pd.read_csv(self.cfg.params['upltoyse']['yse_list'])
+    def YSE_list(self,args):
+        yse_list = self.cfg.params['upltoyse']['yse_list']
+        if not(args.ysequery is None):
+            yse_list = 'https://ziggy.ucolick.org/yse/explorer/'+args.ysequery+'/download?format=csv'
+        all_cand = pd.read_csv(yse_list)
+        print(all_cand)
         all_cand = all_cand.drop_duplicates(subset='name')
         df = pd.DataFrame()
-        df['Name'] = all_cand['name'] 
-        df['RA'] = all_cand['transient_RA']
-        df['Dec'] = all_cand['transient_Dec']
+        df['Name'] = all_cand['name']
+        df['RA'] = all_cand['ra']
+        df['Dec'] = all_cand['dec']
         df['Disc_date'] = all_cand['disc_date']
         print(df)
         return df
@@ -607,7 +611,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         if args.tnsnamelist:
             # get ra and dec automatically
             if 'YSE' in TNSname:
-                self.YSEtable.t = upltoyse.YSE_list()
+                self.YSEtable.t = upltoyse.YSE_list(args)
                 index = self.YSEtable.ix_equal('Name',val=TNSname)
                 if len(index)>0:
                     ra = self.YSEtable.t.loc[index[0],'RA']
@@ -712,6 +716,7 @@ if __name__ == '__main__':
     parser.add_argument('--averagelc', default=False, help=('average lcs'))
     #parser.add_argument('--skipsingleupload', default=False, help=('skip uploading single-measurement light curves'))
     parser.add_argument('--skipdownload', default=False, help=('skip downloading'))
+    parser.add_argument('--ysequery', default=147, help=('enter the query number for the desired YSE list'))
     parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size'),type=float)
 
     # add config file and atlaslc arguments
@@ -753,7 +758,7 @@ if __name__ == '__main__':
         print("TNSnamelist from TNSlistfile: ",upltoyse.TNSnamelist)
         print("TNSlistfilename: ",upltoyse.TNSlistfilename)
     else:
-        upltoyse.YSEtable.t = upltoyse.YSE_list()
+        upltoyse.YSEtable.t = upltoyse.YSE_list(args)
         # TNSnamelist set to ojects in YSE list
         upltoyse.TNSnamelist = upltoyse.YSEtable.t['Name'].values
         print("TNSnamelist from YSE: ",upltoyse.TNSnamelist) # change me

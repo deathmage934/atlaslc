@@ -79,6 +79,9 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         self.api = False
         self.verbose = 0
 
+        #flags
+        self.flag_day_bad = 0x800000
+
     def add_options(self,parser=None,usage=None,config=None):
         if parser == None:
             parser = argparse.ArgumentParser(usage=usage,conflict_handler="resolve")
@@ -527,6 +530,11 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         self.averagelctable.t['Nused'] = pd.Series([], dtype=np.int64)
         self.averagelctable.t['Mask'] = pd.Series([], dtype=np.int64)
 
+        # set maximums for flagging
+        Nclip_max = self.cfg.params['upltoyse']['Nclip_max']
+        Ngood_min = self.cfg.params['upltoyse']['Ngood_min']
+        X2norm_max = self.cfg.params['upltoyse']['X2norm_max']
+
         # add masks to mask column by cleaning lc - x2norm and uncertainty masks
         self.lc.t['Mask'] = 0
         # drop old columns
@@ -568,16 +576,23 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             fluxstatparams = deepcopy(self.lc.statparams)
             if self.verbose>1: print('Nclip: {}, Ngood: {}, X2norm: {}'.format(fluxstatparams['Nclip'],fluxstatparams['Ngood'],fluxstatparams['X2norm']))
 
-            # get average mjd
-            self.lc.calcaverage_sigmacutloop('MJD',noisecol=self.dflux_colname,indices=fluxstatparams['ix_good'],verbose=1,Nsigma=0,median_firstiteration=False)
-                
-            # add row to averagelc table
-            df = {'MJD':self.lc.statparams['mean'],self.flux_colname:fluxstatparams['mean'],self.dflux_colname:fluxstatparams['mean_err'],
-                  'stdev':fluxstatparams['stdev'],'X2norm':fluxstatparams['X2norm'],'Nclipped':fluxstatparams['Nclip'],'Nused':fluxstatparams['Ngood']}
-            self.averagelctable.add2row(lcaverageindex,df)
-
             if fluxstatparams['mean'] is None or len(fluxstatparams['ix_good'])<1:
-                self.averagelctable.t.loc[lcaverageindex,'Mask'] = int(self.averagelc.t.loc[lcaverageindex,'Mask']) | self.flag_day_bad
+                if self.verbose>1: print('No measurements used, skipping MJD bin...')
+                self.averagelctable.t = self.averagelctable.t.drop(index=lcaverageindex)
+            else:
+                # get average mjd
+                self.lc.calcaverage_sigmacutloop('MJD',noisecol=self.dflux_colname,indices=fluxstatparams['ix_good'],verbose=1,Nsigma=0,median_firstiteration=False)
+                    
+                # add row to averagelc table
+                df = {'MJD':self.lc.statparams['mean'],self.flux_colname:fluxstatparams['mean'],self.dflux_colname:fluxstatparams['mean_err'],'stdev':fluxstatparams['stdev'],'X2norm':fluxstatparams['X2norm'],'Nclipped':fluxstatparams['Nclip'],'Nused':fluxstatparams['Ngood']}
+                self.averagelctable.add2row(lcaverageindex,df)
+
+                # if any of the badflags are true, flag as bad
+                badflag1 = fluxstatparams['Ngood'] < Ngood_min
+                badflag2 = fluxstatparams['Nclip'] > Nclip_max
+                badflag3 = not(fluxstatparams['X2norm'] is None) and (fluxstatparams['X2norm'] > X2norm_max)
+                if badflag1 or badflag2 or badflag3:
+                    self.averagelctable.t.loc[lcaverageindex,'Mask'] = int(self.averagelctable.t.loc[lcaverageindex,'Mask'])|self.flag_day_bad
 
             MJD += MJDbinsize
 
@@ -648,7 +663,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             lookbacktime_days = args.lookbacktime_days
         else:
             lookbacktime_days = 60
-               
+            
+        result = 0   
         if not skipdownload:
             result = self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
 
@@ -663,7 +679,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                     # This also applies cut0 to single measurement light curve
                     self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
                 
-                    if not args.skipsingleupload:
+                    if not args.averagelc:
                         print('# single measurements for filter: ',filt)
                         #outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
                         #self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
@@ -694,7 +710,7 @@ if __name__ == '__main__':
     parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
     parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
     parser.add_argument('--averagelc', default=False, help=('average lcs'))
-    parser.add_argument('--skipsingleupload', default=False, help=('skip uploading single-measurement light curves'))
+    #parser.add_argument('--skipsingleupload', default=False, help=('skip uploading single-measurement light curves'))
     parser.add_argument('--skipdownload', default=False, help=('skip downloading'))
     parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size'),type=float)
 

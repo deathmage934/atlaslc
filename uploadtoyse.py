@@ -220,9 +220,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
     def YSE_list(self,args):
         yse_list = self.cfg.params['upltoyse']['yse_list']
         if not(args.ysequery is None):
-            yse_list = 'https://ziggy.ucolick.org/yse/explorer/'+args.ysequery+'/download?format=csv'
+            yse_list = 'https://ziggy.ucolick.org/yse/explorer/'+str(args.ysequery)+'/download?format=csv'
         all_cand = pd.read_csv(yse_list)
-        print(all_cand)
         all_cand = all_cand.drop_duplicates(subset='name')
         df = pd.DataFrame()
         df['Name'] = all_cand['name']
@@ -609,25 +608,25 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
     def uploadloop(self,args,TNSname,overwrite=True,skipdownload=False,parser=None):
         # GET RA AND DEC
         if args.tnsnamelist:
-            # get ra and dec automatically
-            if 'YSE' in TNSname:
-                self.YSEtable.t = upltoyse.YSE_list(args)
-                index = self.YSEtable.ix_equal('Name',val=TNSname)
-                if len(index)>0:
-                    ra = self.YSEtable.t.loc[index[0],'RA']
-                    dec = self.YSEtable.t.loc[index[0],'Dec']
-                else:
-                    raise RuntimeError('Something went wrong: TNSname does not exist!')
-            else:
+            try:
+                # look in TNS
+                print('Obtaining RA and Dec from TNS...')
                 ra, dec = self.getradec(TNSname)
+            except KeyError:
+                # look in default YSE SQL query list
+                print(TNSname+' not found in TNS, loading default YSE list '+self.cfg.params['upltoyse']['yse_list']+' and searching for matching entry...')
+                self.YSEtable.t = upltoyse.YSE_list(args)
+                indices = self.YSEtable.ix_equal('Name',val=TNSname)
+                if len(indices) == 0:
+                    raise RuntimeError('Something went wrong: SN name '+TNSname+' not found in TNS or default YSE list!')
+                else:
+                    print('Entry or entries for SN name found in YSE list, obtaining RA and Dec from first index found...')
+                    ra = self.YSEtable.t.loc[indices[0],'RA']
+                    dec = self.YSEtable.t.loc[indices[0],'Dec']
         elif args.tnslistfilename:
             onTNSlistfile = self.checkTNSlistfile(TNSname)
-            if onTNSlistfile is False:
-                # get ra and dec automatically from TNS, then append to TNSlistfile
-                ra, dec = self.getradec(TNSname)
-                df = pd.DataFrame([[TNSname,ra,dec]], columns=['TNSname','RA','Dec'])
-                self.TNSlistfile.t = self.TNSlistfile.t.append(df, ignore_index=True)
-            else:
+            if onTNSlistfile:
+                print('Obtaining RA and Dec from given TNS list file...')
                 # get ra and dec from TNSlistfile
                 index = self.TNSlistfile.ix_equal('TNSname',val=TNSname)
                 if len(index)>0:
@@ -635,6 +634,24 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                     dec = self.TNSlistfile.t.loc[index[0],'Dec']
                 else:
                     raise RuntimeError('Something went wrong: TNSname does not exist!')
+            else: 
+                try:
+                    # get ra and dec automatically from TNS, then append to TNSlistfile
+                    print('Obtaining RA and Dec from TNS, then appending to given TNS list file...')
+                    ra, dec = self.getradec(TNSname)
+                    df = pd.DataFrame([[TNSname,ra,dec]], columns=['TNSname','RA','Dec'])
+                    self.TNSlistfile.t = self.TNSlistfile.t.append(df, ignore_index=True)
+                except KeyError:
+                    # look in default YSE SQL query list
+                    print(TNSname+' not found in TNS, loading default YSE list '+self.cfg.params['upltoyse']['yse_list']+' and searching for matching entry...')
+                    self.YSEtable.t = upltoyse.YSE_list(args)
+                    indices = self.YSEtable.ix_equal('Name',val=TNSname)
+                    if len(indices) == 0:
+                        raise RuntimeError('Something went wrong: SN name '+TNSname+' not found in TNS or default YSE list!')
+                    else:
+                        print('Entry or entries for SN name found in YSE list, obtaining RA and Dec from first index found...')
+                        ra = self.YSEtable.t.loc[indices[0],'RA']
+                        dec = self.YSEtable.t.loc[indices[0],'Dec']
         else:
             # get ra and dec from yse table
             index = self.YSEtable.ix_equal('Name',val=TNSname)

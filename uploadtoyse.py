@@ -221,6 +221,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         yse_list = self.cfg.params['upltoyse']['yse_list']
         if not(args.ysequery is None):
             yse_list = 'https://ziggy.ucolick.org/yse/explorer/'+str(args.ysequery)+'/download?format=csv'
+        print('Obtaining YSE list from '+yse_list+'...')
         all_cand = pd.read_csv(yse_list)
         all_cand = all_cand.drop_duplicates(subset='name')
         df = pd.DataFrame()
@@ -614,7 +615,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                 ra, dec = self.getradec(TNSname)
             except KeyError:
                 # look in default YSE SQL query list
-                print(TNSname+' not found in TNS, loading default YSE list '+self.cfg.params['upltoyse']['yse_list']+' and searching for matching entry...')
+                print(TNSname+' not found in TNS, loading YSE list and searching for matching entry...')
                 self.YSEtable.t = upltoyse.YSE_list(args)
                 indices = self.YSEtable.ix_equal('Name',val=TNSname)
                 if len(indices) == 0:
@@ -643,7 +644,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                     self.TNSlistfile.t = self.TNSlistfile.t.append(df, ignore_index=True)
                 except KeyError:
                     # look in default YSE SQL query list
-                    print(TNSname+' not found in TNS, loading default YSE list '+self.cfg.params['upltoyse']['yse_list']+' and searching for matching entry...')
+                    print(TNSname+' not found in TNS, loading YSE list and searching for matching entry...')
                     self.YSEtable.t = upltoyse.YSE_list(args)
                     indices = self.YSEtable.ix_equal('Name',val=TNSname)
                     if len(indices) == 0:

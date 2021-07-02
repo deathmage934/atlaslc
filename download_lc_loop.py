@@ -199,7 +199,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 
 	def downloadcontrollc(self, args, SNindex, username, password, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, pattern=None):
 		print('Control LC status: ',forcedphot_offset)
-		if forcedphot_offset == 'True':
+		if forcedphot_offset is True:
 			# get control lc data
 
 			RA = self.t.at[SNindex,'ra']
@@ -209,7 +209,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 				self.defineRADEClist(RA,Dec,SNindex,pattern=pattern)
 			else: 
 				self.loadRADEClist(args,SNindex)
-			print(self.RADECtable.write(index=True,overwrite=False))
+			self.RADECtable.write(index=True,overwrite=False)
 			
 			if self.api:
 				print('Connecting to API...')
@@ -234,8 +234,8 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 					print('sleeping...')
 					time.sleep(20)
 					print('done')
-				
-			if savelc:
+			
+			if savelc and args.radeclist is None:
 				self.saveRADEClist(SNindex,filt='c')
 				self.saveRADEClist(SNindex,filt='o')
 		else:
@@ -244,9 +244,11 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
 
-			self.defineRADEClist(RA,Dec,SNindex,pattern=None)
-			if self.verbose>1:
-				print(self.RADECtable.write(index=True,overwrite=False))
+			if args.radeclist is None:
+				self.defineRADEClist(RA,Dec,SNindex,pattern=None)
+			else: 
+				self.loadRADEClist(args,SNindex)
+			self.RADECtable.write(index=True,overwrite=False)
 
 			if self.api:
 				print('Connecting to API...')
@@ -269,7 +271,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 				cfilt = np.where(self.lc.t['F']=='c')
 				self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
 
-			if savelc:
+			if savelc and args.radeclist is None:
 				self.saveRADEClist(SNindex,filt='c')
 				self.saveRADEClist(SNindex,filt='o')
 

@@ -107,7 +107,7 @@ if __name__ == '__main__':
 	parser.add_argument('--ra', help="RA position", default=None, type=str)
 	parser.add_argument('--dec', help="Dec position", default=None, type=str)
 	parser.add_argument('--disc_date', help="Discovery date of SN", default=None, type=float)
-	parser.add_argument('--autosearch',help="Search automatically for the closest bright object",default=False)
+	parser.add_argument('--autosearch', action="store_true", help="Search automatically for the closest bright object",default=False)
 	args = parser.parse_args()
 
 	cfgfile=autoadd.defineoptions()

@@ -115,7 +115,7 @@ class lightlcclass(SNloopclass):
 
 		fig = plt.figure()
 		sp = matlib.subplot(111)
-		self.loadRADEClist(SNindex)
+		self.loadRADEClist(args,SNindex)
 		for controlindex in range(len(self.RADECtable.t)-1,-1,-1):
 			self.load_lc(SNindex,filt=self.filt,controlindex=self.RADECtable.t.at[controlindex,'ControlID'],MJDbinsize=MJDbinsize)
 			goodix = self.getgoodindices()
@@ -237,7 +237,7 @@ class lightlcclass(SNloopclass):
 		fig = plt.figure()
 		plt.clf()
 		sp = matlib.subplot(111)
-		self.loadRADEClist(SNindex)
+		self.loadRADEClist(args,SNindex)
 		# load c band
 		self.load_lc(SNindex,filt='c',controlindex=0,MJDbinsize=None)
 		goodix = self.getgoodindices()
@@ -302,7 +302,7 @@ class lightlcclass(SNloopclass):
 			# baseline plot 
 			fig = plt.figure()
 			sp = matlib.subplot(111)
-			self.loadRADEClist(SNindex)
+			self.loadRADEClist(args,SNindex)
 			for controlindex in range(len(self.RADECtable.t)-1,-1,-1):
 				self.load_lc(SNindex,filt=self.filt,controlindex=self.RADECtable.t.at[controlindex,'ControlID'])
 				goodix = self.getgoodindices()
@@ -369,7 +369,7 @@ if __name__ == '__main__':
 		for filt in filtlist:
 			lightlc.filt = filt
 			print('### FILT SET: ',lightlc.filt)
-			lightlc.loadRADEClist(SNindex,filt=lightlc.filt)
+			lightlc.loadRADEClist(args,SNindex,filt=lightlc.filt)
 			lightlc.savelightweight()
 			lightlc.addflagdescriptions()
 		lightlc.plotloop(args,SNindex)

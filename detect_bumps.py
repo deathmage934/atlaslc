@@ -378,7 +378,7 @@ if __name__ == '__main__':
 				simparams=None
 				for SNindex in SNindexlist:
 					print('Detecting bumps for ',detectbumps.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(detectbumps.t)))
-					detectbumps.loadRADEClist(SNindex)
+					detectbumps.loadRADEClist(args,SNindex)
 					detectbumps.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=simparams)
 			else:
 				if ',' in args.sim_gaussian[1]:
@@ -392,7 +392,7 @@ if __name__ == '__main__':
 					simparams = {'sim_peakMJD':args.sim_gaussian[0],'sim_appmag':float(appmag),'sim_sigma_minus':float(args.sim_gaussian[2]),'sim_sigma_plus':float(args.sim_gaussian[2])}
 					for SNindex in SNindexlist:
 						print('Detecting bumps for ',detectbumps.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(detectbumps.t)))
-						detectbumps.loadRADEClist(SNindex)
+						detectbumps.loadRADEClist(args,SNindex)
 						detectbumps.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=simparams)
 			print('Finished with filter %s!' % filt)
 	else:
@@ -402,7 +402,7 @@ if __name__ == '__main__':
 			simparams=None
 			for SNindex in SNindexlist:
 				print('Detecting bumps for ',detectbumps.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(detectbumps.t)))
-				detectbumps.loadRADEClist(SNindex)
+				detectbumps.loadRADEClist(args,SNindex)
 				detectbumps.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=simparams)
 		else:
 			if ',' in args.sim_gaussian[1]:
@@ -416,5 +416,5 @@ if __name__ == '__main__':
 				simparams = {'sim_peakMJD':args.sim_gaussian[0],'sim_appmag':float(appmag),'sim_sigma_minus':float(args.sim_gaussian[2]),'sim_sigma_plus':float(args.sim_gaussian[2])}
 				for SNindex in SNindexlist:
 					print('Detecting bumps for ',detectbumps.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(detectbumps.t)))
-					detectbumps.loadRADEClist(SNindex)
+					detectbumps.loadRADEClist(args,SNindex)
 					detectbumps.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=simparams)

@@ -208,7 +208,7 @@ if __name__ == '__main__':
             averagelc.filt = filt
             for SNindex in SNindexlist:
                 print('Averaging lc for ',averagelc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(averagelc.t)))
-                averagelc.loadRADEClist(SNindex,filt=averagelc.filt)
+                averagelc.loadRADEClist(args,SNindex,filt=averagelc.filt)
                 averagelc.averagelcloop(SNindex,MJDbinsize=args.MJDbinsize)
             print('Finished with filter %s!' % filt)
     else:
@@ -216,5 +216,5 @@ if __name__ == '__main__':
         averagelc.filt = args.filt
         for SNindex in SNindexlist:
             print('Averaging lc for ',averagelc.t.at[SNindex,'tnsname'],', index %i/%i' % (SNindex,len(averagelc.t)))
-            averagelc.loadRADEClist(SNindex,filt=averagelc.filt)
+            averagelc.loadRADEClist(args,SNindex,filt=averagelc.filt)
             averagelc.averagelcloop(SNindex,MJDbinsize=args.MJDbinsize)

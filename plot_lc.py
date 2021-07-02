@@ -48,7 +48,7 @@ class plotlcclass(SNloopclass):
 			plt.figure()
 			plt.clf()
 			sp = matlib.subplot(111)
-			self.loadRADEClist(SNindex)
+			self.loadRADEClist(args,SNindex)
 			if binsize4avg is None:
 				print('Plotting original SN lc and control lc...')
 			else:

@@ -205,7 +205,10 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 			RA = self.t.at[SNindex,'ra']
 			Dec = self.t.at[SNindex,'dec']
 			
-			self.defineRADEClist(RA,Dec,SNindex,pattern=pattern)
+			if args.radeclist is None:
+				self.defineRADEClist(RA,Dec,SNindex,pattern=pattern)
+			else: 
+				self.loadRADEClist(args,SNindex)
 			print(self.RADECtable.write(index=True,overwrite=False))
 			
 			if self.api:
@@ -311,12 +314,12 @@ if __name__ == '__main__':
 			for filt in filtlist:
 				print('### FILTER SET: %s' % filt)
 				downloadlc.filt = filt
-				downloadlc.loadRADEClist(SNindex, filt=downloadlc.filt)
+				downloadlc.loadRADEClist(args,SNindex,filt=downloadlc.filt)
 				downloadlc.verifyMJD(SNindex)
 				downloadlc.cleanuplcloop(args,SNindex)
 				if (args.forcedphot_offset) and (args.averagelc): 
 					downloadlc.averagelcloop(SNindex,MJDbinsize=args.MJDbinsize)
-				if args.plot: 
+				if args.plotlc: 
 					downloadlc.plotlcloop(args,SNindex)
 				if args.detectbumps:
 					downloadlc.detectbumpsloop(SNindex,MJDbinsize=args.MJDbinsize,simparams=None)

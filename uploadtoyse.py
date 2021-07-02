@@ -31,20 +31,20 @@ from requests.auth import HTTPBasicAuth
 
 """
 get & upload original ATLAS light curves from daily YSE list: 
-    uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api True
+    uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api
 get & upload specific original ATLAS light curves: 
-    uploadtoyse.py -t 2020lse 2019vxm --user USERNAME --passwd 'PASSWORD' --api True
+    uploadtoyse.py -t 2020lse 2019vxm --user USERNAME --passwd 'PASSWORD' --api
 get & upload original ATLAS light curves from user-made table of TNS names, RA, and Dec: 
-    uploadtoyse.py -n tnslist.txt --user USERNAME --passwd 'PASSWORD' --api True
+    uploadtoyse.py -n tnslist.txt --user USERNAME --passwd 'PASSWORD' --api
 get & upload original ATLAS light curves AND averaged light curves: 
-    add --averagelc True to the command
-        uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api True --averagelc True
+    add --averagelc to the command
+        uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api --averagelc
     change the MJD bin size to 0.04 days instead of the default 1.00 day when averaging:
-        add --MJDbinsize 0.04 to the command (must be averaging light curve with the command --averagelc True)
-            uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api True --averagelc True --MJDbinsize 0.04
+        add --MJDbinsize 0.04 to the command (must be averaging light curve with the command --averagelc)
+            uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api --averagelc --MJDbinsize 0.04
 set the lookback time in days to 500 instead of the default 60:
     add -l 500 to the command
-        uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api True -l 500
+        uploadtoyse.py --user USERNAME --passwd 'PASSWORD' --api -l 500
 
 you must specify source directory, output root directory (has tnslist.txt if you want to use it), and output subdirectory (has all the downloaded data).
 you can specify these in the commandline using --sourcedir, --outrootdir, and --outsubdir
@@ -728,12 +728,12 @@ if __name__ == '__main__':
     parser.add_argument('--sourcedir', default=None, help='source code directory')
     parser.add_argument('--outrootdir', default=None, help='output root directory')
     parser.add_argument('--outsubdir', default=None, help='output subdirectory')
-    parser.add_argument('--api', default=False, help=('use API instead of SSH to get light curves from ATLAS'))
-    parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
+    parser.add_argument('--api', default=False, action="store_true", help=('use API instead of SSH to get light curves from ATLAS'))
+    parser.add_argument('--forcedphot_offset', default=False, action="store_true", help=("download offsets (settings in config file)"))
     parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
-    parser.add_argument('--averagelc', default=False, help=('average lcs'))
-    #parser.add_argument('--skipsingleupload', default=False, help=('skip uploading single-measurement light curves'))
-    parser.add_argument('--skipdownload', default=False, help=('skip downloading'))
+    parser.add_argument('--averagelc', default=False, action="store_true", help=('average lcs'))
+    #parser.add_argument('--skipsingleupload', default=False, action="store_true", help=('skip uploading single-measurement light curves'))
+    parser.add_argument('--skipdownload', default=False, action="store_true", help=('skip downloading'))
     parser.add_argument('--ysequery', default=147, help=('enter the query number for the desired YSE list'))
     parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size'),type=float)
 

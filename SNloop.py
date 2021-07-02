@@ -48,7 +48,6 @@ class SNloopclass(pdastroclass):
         self.flag_c0_X2norm      = 0x1 
         self.flag_c0_uncertainty = 0x2
         
-        #self.flag_c1_good = 0x20 
         self.flag_c1_X2norm      = 0x10
         self.flag_c1_absnormmean = 0x20
         
@@ -60,13 +59,9 @@ class SNloopclass(pdastroclass):
         self.flag_daysigma       = 0x1000
         self.flag_daysmallnumber = 0x2000
 
-        #self.flag_c0_good = 0x10000
-        #self.flag_c1_good        = 0x20000
-        #self.flag_c2_good        = 0x40000
         self.flag_c2_ok          = 0x80000
 
         self.flag_c0_bad         = 0x100000
-        #self.flag_c1_bad    = 0x200000
         self.flag_c2_bad         = 0x400000
         self.flag_day_bad        = 0x800000
 
@@ -103,22 +98,23 @@ class SNloopclass(pdastroclass):
         parser.add_argument('SNlist', nargs='+')
         parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify default filter'))
         parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size for averaging lcs'),type=float)
-        parser.add_argument('--forcedphot_offset', default=False, help=("download offsets (settings in config file)"))
-        parser.add_argument('--api', default=False, help=('use API instead of SSH to get light curves from ATLAS'))
-        parser.add_argument('--plot', default=False, help=('plot lcs'))
+        parser.add_argument('--forcedphot_offset', default=False, action="store_true", help=("download offsets (settings in config file)"))
+        parser.add_argument('--api', default=False, action="store_true", help=('use API instead of SSH to get light curves from ATLAS'))
+        parser.add_argument('--plotlc', default=False, action="store_true", help=('plot lcs'))
         #parser.add_argument('--plot_avg', default=False, help=('plot average lcs'))
         parser.add_argument('--xlim_lower', default=None, type=float, help=('set lower x limit when plotting'))
         parser.add_argument('--xlim_upper', default=None, type=float, help=('set upper x limit when plotting'))
         parser.add_argument('--ylim_lower', default=None, type=float, help=('set lower y limit when plotting'))
         parser.add_argument('--ylim_upper', default=None, type=float, help=('set upper y limit when plotting'))
-        parser.add_argument('--averagelc', default=False, help=('average lcs'))
-        parser.add_argument('--detectbumps', default=False, help=('detect bumps in lcs'))
+        parser.add_argument('--averagelc', default=False, action="store_true", help=('average lcs'))
+        parser.add_argument('--detectbumps', default=False, action="store_true", help=('detect bumps in lcs'))
         parser.add_argument('-v','--verbose', default=0, action='count')
         parser.add_argument('-d', '--debug', action='count', help="debug")
         parser.add_argument('--snlistfilename', default=None, help=('filename of SN list (default=%(default)s)'))
         parser.add_argument('-s','--savelc', default=False, action="store_true", help=("save lc"))
         parser.add_argument('--outrootdir', default=outrootdir, help=('output root directory.''(default=%(default)s)'))
         parser.add_argument('--outsubdir', default=None, help=('subdir added to the output root directory (and filename) (default=%(default)s)'))
+        parser.add_argument('--radeclist', default=None, type=str, help=('use a different RA and Dec list of coordinates for control light curves'))
         parser.add_argument('-c', '--cfgfile', default=cfgfile, help='main config file. (default=%(default)s)')
         parser.add_argument('-e', '--extracfgfile', default=None, action='append', help=('additional config file. These cfg files do not need to have all parameters. They overwrite the parameters in the main cfg file.'))
         parser.add_argument('-p', '--params', default=None, action='append', nargs=2, help=('"param val": change parameter in config file (not in section, only ''main part) (default=%(default)s)'))
@@ -232,15 +228,18 @@ class SNloopclass(pdastroclass):
         self.RADECtable.write(RADEClistfilename,overwrite=True,verbose=True)
         return(0)
 
-    def loadRADEClist(self, SNindex, filt=None):
-        # get RADEClist from alreadt existing file
-        RADEClistfilename = self.lcbasename(SNindex=SNindex,filt=filt)+'.RADEClist.txt'
-        if self.verbose>1: print('Loading RADEClist %s' % RADEClistfilename)
+    def loadRADEClist(self, args, SNindex, filt=None):
+        if args.radeclist is None:
+            RADEClistfilename = self.lcbasename(SNindex=SNindex,filt=filt)+'.RADEClist.txt'
+        else:
+            RADEClistfilename = '%s/%s/%s'%(self.outrootdir,self.t['tnsname'][SNindex],args.radeclist)
+        print('Loading RADEClist %s' % RADEClistfilename)
         self.RADECtable.load_spacesep(RADEClistfilename, delim_whitespace=True)
-        
+            
         # temporary fix to move OffsetID to ControlID
         if 'OffsetID' in self.RADECtable.t.columns:
-            if 'ControlID' in self.RADECtable.t.columns: self.RADECtable.t.drop(columns=['ControlID'])
+            if 'ControlID' in self.RADECtable.t.columns: 
+                self.RADECtable.t.drop(columns=['ControlID'])
             self.RADECtable.t = self.RADECtable.t.rename(columns={'OffsetID':'ControlID'})
         
         if self.verbose>2:

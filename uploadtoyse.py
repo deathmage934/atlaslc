@@ -313,7 +313,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
     def uploadtoyse(self,filename):
         os.system('python %s/uploadTransientData.py -e -s %s/settings.ini -i %s --instrument ACAM1 --fluxzpt 23.9 --forcedphot 1 --diffim 1' % (self.sourcedir,self.sourcedir,filename))
 
-    def saveRADECtable(self,args,TNSname,filt):
+    def saveRADECtable(self,args,TNSname):
         RADECtablefilename = '%s/%s/%s/%s.RADECtable.txt' % (self.outrootdir,self.outsubdir,TNSname,TNSname)
         print('Saving RADECtable: %s' % RADECtablefilename)
         self.RADECtable.write(RADECtablefilename,overwrite=args.overwrite,verbose=True)
@@ -407,7 +407,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                         # check to see if offset location is within mindist arcsec from SN
                         if pattern=='closebright':
                             c1 = SkyCoord(RA, Dec, frame='fk5')
-                            #print(RAnew,DECnew) # delete me
                             c2 = SkyCoord(RAnew, DECnew, frame='fk5')
                             offset_sep = c1.separation(c2)
                             offset_sep = offset_sep.arcsecond
@@ -469,7 +468,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             fileformat = self.cfg.params['output']['fileformat']
             detections4filt=np.where(self.lc.t['F']==filt)
             newindices = AandB(indices,detections4filt)
-            if len(detections4filt[0]) is 0:
+            if len(detections4filt[0]) == 0:
                 print('Saving blank light curve: %s' % filename)
                 self.lc.write(filename,index=False,indices=newindices,overwrite=args.overwrite,verbose=False,columns=['MJD','m','dm',self.flux_colname,self.dflux_colname,'F','err','chi/N','RA','Dec','x','y','maj','min','phi','apfit','Sky','ZP','Obs','Mask'])
             else: 
@@ -494,8 +493,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                     self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
                 else:
                     return(1)
-            self.saveRADECtable(args,TNSname,'c')
-            self.saveRADECtable(args,TNSname,'o')
+            self.saveRADECtable(args,TNSname)
         else:
             print('Skipping forcedphot offsets lc...')
             self.defineRADECtable(args,ra,dec,pattern=None)
@@ -512,14 +510,10 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                     self.RADECtable.t.loc[i,'Ndet_c']=len(cfilt[0])
                 else:
                     return(1)
-            self.saveRADECtable(args,TNSname,'c')
-            self.saveRADECtable(args,TNSname,'o')
+            self.saveRADECtable(args,TNSname)
         return(0)
 
     def averageyselc(self,args,TNSname,filt,MJDbinsize=1.0):
-        self.loadRADECtable(args,TNSname)
-        self.loadyselc(TNSname,0,filt)
-
         # clear averagelctable and set columns
         self.averagelctable.t = self.averagelctable.t.iloc[0:0]
         self.averagelctable.t['MJD'] = pd.Series([], dtype=np.float64)
@@ -534,13 +528,6 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         self.averagelctable.t['Nused'] = pd.Series([], dtype=np.int64)
         self.averagelctable.t['Mask'] = pd.Series([], dtype=np.int64)
 
-        # set maximums for flagging
-        Nclip_max = self.cfg.params['upltoyse']['Nclip_max']
-        Ngood_min = self.cfg.params['upltoyse']['Ngood_min']
-        X2norm_max = self.cfg.params['upltoyse']['X2norm_max']
-
-        # add masks to mask column by cleaning lc - x2norm and uncertainty masks
-        self.lc.t['Mask'] = 0
         # drop old columns
         dropcols=[]
         if 'Noffsetlc' in self.lc.t.columns: dropcols.append('Noffsetlc')
@@ -548,12 +535,18 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             if re.search('^c\d_',col): dropcols.append(col)
             if re.search('^o\d_',col): dropcols.append(col)
         if len(dropcols)>0: self.lc.t.drop(columns=dropcols,inplace=True)
-        # masks
+        
+        # first flag measurements using uncertainty and x2norm cuts (cut0)
+        self.lc.t['Mask'] = 0
         self.c0_PSF_uncertainty_cut(self.cfg.params['cleanlc']['cut0']['N_dflux_max'])
         self.c0_PSF_X2norm_cut(self.cfg.params['cleanlc']['cut0']['PSF_X2norm_max'])
 
-        #self.lc.write()
         self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite)
+
+        # set maximums for flagging
+        Nclip_max = self.cfg.params['upltoyse']['Nclip_max']
+        Ngood_min = self.cfg.params['upltoyse']['Ngood_min']
+        X2norm_max = self.cfg.params['upltoyse']['X2norm_max']
 
         # average light curve add points to new averaged df
         MJD = int(np.amin(self.lc.t['MJD']))
@@ -602,7 +595,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
         # convert flux to magnitude
         self.averagelctable.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
-        self.averagelctable.t = self.averagelctable.t.drop(columns=['__tmp_SN'])
+        if '__tmp_SN' in self.averagelctable.t.columns:
+            self.averagelctable.t = self.averagelctable.t.drop(columns=['__tmp_SN'])
 
         self.saveyselc(TNSname,0,filt=filt,overwrite=args.overwrite,MJDbinsize=MJDbinsize)
 
@@ -662,30 +656,17 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             else:
                 raise RuntimeError('Something went wrong: TNSname does not exist!')
 
-        """
-        print('Overwrite status: ',args.overwrite)
-        if args.overwrite is False:
-            for filt in ['c','o']:
-                filename = self.yselcfilename(TNSname,0,filt)
-                if os.path.exists(filename):
-                    print("Data for %s with filter %s already exists" % (TNSname,filt))
-                    self.existflag = True
-                else:
-                    print("Found no data for %s with filter %s, downloading full lc..." % (TNSname,filt))
-                    self.existflag = False
-        """
-
-        # set offset pattern
+        # set offset pattern and lookback time in days
         if not(args.pattern is None):
             pattern = args.pattern
         else:
             pattern = self.cfg.params['forcedphotpatterns']['patterns_to_use']
-        # download lc and, if forcedphot_offset, offset lcs
         if args.lookbacktime_days:
             lookbacktime_days = args.lookbacktime_days
         else:
             lookbacktime_days = 60
-            
+        
+        # download lc and, if forcedphot_offset, offset lcs
         result = 0   
         if not skipdownload:
             result = self.downloadYSEcontrollc(args,TNSname,ra,dec,pattern=pattern,lookbacktime_days=lookbacktime_days)
@@ -697,25 +678,19 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                 self.loadRADECtable(args,TNSname)
                 self.loadyselc(TNSname,0,filt)
                 if len(self.lc.t)>0:
-                    # load single measurement light curve, and calculate the average lc
-                    # This also applies cut0 to single measurement light curve
+                    # load single measurement light curve and calculate the average lc; also applies cut0 to single measurement light curve
                     self.averageyselc(args,TNSname,filt,MJDbinsize=args.MJDbinsize)
-                
-                    if not args.averagelc:
-                        print('# single measurements for filter: ',filt)
-                        #outname = re.sub('lc\.txt','yse.csv',self.lc.filename)
-                        #self.atlas2yse(TNSname,outname,ra,dec,self.lc,filt)
-                        #self.uploadtoyse(outname)
-                        self.yseupload(TNSname,ra,dec,filt,parser=parser)
-
                     if args.averagelc:
-                        print('# average measurements for filter: ',filt)
-                        #outname = re.sub('lc\.txt','yse.csv',self.averagelctable.filename)
-                        #self.atlas2yse(TNSname,outname,ra,dec,self.averagelctable,filt)
-                        #self.uploadtoyse(outname)
-                        self.yseupload(TNSname,ra,dec,filt,MJDbinsize=args.MJDbinsize,parser=parser)
+                        if len(self.averagelctable.t)==0:
+                            print('### No good averaged measurements, skipping uploading...')
+                        else:
+                            print('### Uploading averaged measurements for filter ',filt)
+                            self.yseupload(TNSname,ra,dec,filt,MJDbinsize=args.MJDbinsize,parser=parser)
+                    else:
+                        print('### Uploading single measurements for filter ',filt)
+                        self.yseupload(TNSname,ra,dec,filt,parser=parser)
                 else:
-                    print('WARNING: empty light curve, skipping averaging and uploading...')
+                    print('### WARNING: empty light curve, skipping averaging and uploading...')
 
 if __name__ == '__main__':
     upltoyse = uploadtoyseclass()

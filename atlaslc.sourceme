@@ -5,8 +5,8 @@ if [[ $HOSTNAME =~ arminmac* ]]; then
 elif [[ $HOSTNAME =~ plhstproc1.stsci.edu ]] || [[ $HOSTNAME =~ plhstproc2.stsci.edu ]]; then
    export PIPE_BATCH_SYSTEM=Condor
 elif [[ $HOSTNAME =~ ^PHA-AREST1* ]]; then
-   export ATLASLC_SOURCEDIR=/Users/AdminDelete/Desktop/Supernovae/atlaslc
-   export ATLASLC_DATA=/Users/AdminDelete/Desktop/Supernovae/data
+   export ATLASLC_SOURCEDIR=/Users/sofiarest/Desktop/Supernovae/atlaslc
+   export ATLASLC_DATA=/Users/sofiarest/Desktop/Supernovae/data
    export PIPE_BATCH_SYSTEM=NONE
 elif [[ $HOSTNAME =~ example_hostname ]]; then
    export ATLASLC_SOURCEDIR=/example/atlaslc

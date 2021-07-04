@@ -18,7 +18,7 @@ from tools import DecInDeg
 from download_atlas_lc import download_atlas_lc_class
 import sigmacut
 from pdastro import pdastroclass, pdastrostatsclass, AnotB
-import mastcasjobs
+#import mastcasjobs
 import pylab
 import json
 import getpass

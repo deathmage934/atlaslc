@@ -161,6 +161,10 @@ class download_atlas_lc_class:
 			#lookbacktime_days = '  '+str(list(con.execute("select julianday('"+today.strftime("%Y-%m-%d")+"')"))[0][0]-lookbacktime_days-2400000)
 		else:
 			lookbacktime_days = int(Time.now().mjd - 1890)
+		if not(mjd_max) is None:
+			mjd_max = int(Time.now().mjd - mjd_max)
+
+		print('MJD min: ',lookbacktime_days,'. MJD max: ',mjd_max)
 
 		task_url = None
 		while not task_url:

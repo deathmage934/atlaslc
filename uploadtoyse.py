@@ -13,20 +13,17 @@ from tools import RaInDeg,DecInDeg
 
 import pandas as pd
 import numpy as np
-import sys,socket,os,re,io
+import sys,socket,os,re,io,math
 import optparse,configparser,argparse
-import math
 from copy import deepcopy
 from astropy.io import ascii
 from astropy import units as u
 from astropy.coordinates import Angle
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
-
-# from uploadTransientData.py
+from astropy.time import Time
 import requests,json,urllib.request,urllib,ast,datetime,time,coreapi
 from requests.exceptions import MissingSchema
-from astropy.time import Time
 from requests.auth import HTTPBasicAuth
 
 """
@@ -440,7 +437,8 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             token_header = self.download_atlas_lc.connect_atlas(args.user,args.passwd)
             print('TOKEN HEADER: ',token_header)
             try:
-                self.lc.t = self.download_atlas_lc.get_result(RaInDeg(ra), DecInDeg(dec), token_header, lookbacktime_days=lookbacktime_days)
+                print('Lookbacktime in days: ',lookbacktime_days,'. Maximum lookbacktime in days: ',args.lookbacktime_days_max)
+                self.lc.t = self.download_atlas_lc.get_result(RaInDeg(ra), DecInDeg(dec), token_header, lookbacktime_days=lookbacktime_days, mjd_max=args.lookbacktime_days_max) # HERE
             except MissingSchema:
                 print('WARNING: NO NEW DATA AVAILABLE. Skipping cleaning, averaging, and uploading of this light curve...')
                 return(1)
@@ -700,6 +698,7 @@ if __name__ == '__main__':
     parser.add_argument('-t','--tnsnamelist', default=None, nargs='+', help='name of transients to download and upload')
     parser.add_argument('-n','--tnslistfilename', default=None, help='address of file containing TNS names, ra, and dec')
     parser.add_argument('-o','--overwrite',default=True,help='overwrite existing files')
+    parser.add_argument('-i','--index', default=0, type=int, help='start at a certain index of the TNSnamelist')
     parser.add_argument('--sourcedir', default=None, help='source code directory')
     parser.add_argument('--outrootdir', default=None, help='output root directory')
     parser.add_argument('--outsubdir', default=None, help='output subdirectory')
@@ -707,10 +706,11 @@ if __name__ == '__main__':
     parser.add_argument('--forcedphot_offset', default=False, action="store_true", help=("download offsets (settings in config file)"))
     parser.add_argument('--pattern', choices=['circle','box','closebright'], help=('offset pattern, defined in the config file; options are circle, box, or closebright'))
     parser.add_argument('--averagelc', default=False, action="store_true", help=('average lcs'))
+    parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size'),type=float)
     #parser.add_argument('--skipsingleupload', default=False, action="store_true", help=('skip uploading single-measurement light curves'))
     parser.add_argument('--skipdownload', default=False, action="store_true", help=('skip downloading'))
     parser.add_argument('--ysequery', default=147, help=('enter the query number for the desired YSE list'))
-    parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size'),type=float)
+    parser.add_argument('--lookbacktime_days_max',default=None, type=int, help='enter maximum lookbacktime in days for forced photometry')
 
     # add config file and atlaslc arguments
     cfgfile = upltoyse.defineoptions()
@@ -738,7 +738,7 @@ if __name__ == '__main__':
     if not(args.tnsnamelist is None):
         # TNSnamelist set to objects put in command line
         upltoyse.TNSnamelist = args.tnsnamelist
-        print("TNSnamelist from command: ",upltoyse.TNSnamelist)
+        print("TNSnamelist from command: \n",upltoyse.TNSnamelist)
     elif not(args.tnslistfilename is None):
         upltoyse.TNSlistfilename = '%s/%s' % (upltoyse.outrootdir,args.tnslistfilename)
         # check if TNSlistfilename exists; if not, make TNSlistfile
@@ -748,13 +748,13 @@ if __name__ == '__main__':
             raise RuntimeError("%s does not exist! Please create a file with the headers 'TNSname', 'RA', and 'Dec', then try again.")
         # TNSnamelist set to objects in TNSlistfilename
         upltoyse.TNSnamelist = upltoyse.TNSlistfile.t['TNSname'].values
-        print("TNSnamelist from TNSlistfile: ",upltoyse.TNSnamelist)
-        print("TNSlistfilename: ",upltoyse.TNSlistfilename)
+        print("TNSnamelist from TNSlistfile: \n",upltoyse.TNSnamelist)
+        print("TNSlistfilename: \n",upltoyse.TNSlistfilename)
     else:
         upltoyse.YSEtable.t = upltoyse.YSE_list(args)
         # TNSnamelist set to ojects in YSE list
         upltoyse.TNSnamelist = upltoyse.YSEtable.t['Name'].values
-        print("TNSnamelist from YSE: ",upltoyse.TNSnamelist) # change me
+        print("TNSnamelist from YSE: \n",upltoyse.TNSnamelist) # change me
 
     # set up tables
     upltoyse.flux_colname = upltoyse.cfg.params['flux_colname']
@@ -771,9 +771,9 @@ if __name__ == '__main__':
         upltoyse.api = True
 
     #for TNSname in upltoyse.TNSnamelist:
-    for index in range(0,len(upltoyse.TNSnamelist)):
+    for index in range(args.index,len(upltoyse.TNSnamelist)):
         TNSname = upltoyse.TNSnamelist[index]
-        print("\nUploading and/or downloading data for %s, TNSnamelist index %d/%d" % (TNSname,index+1,len(upltoyse.TNSnamelist)))
+        print("\nUploading and/or downloading data for %s, index %d out of %d in TNSnamelist" % (TNSname,index,len(upltoyse.TNSnamelist)-1))
         upltoyse.uploadloop(args,TNSname,overwrite=True,skipdownload=args.skipdownload,parser=parser)
 
     if not(args.tnslistfilename is None):

@@ -47,6 +47,7 @@ class SNloopclass(pdastroclass):
         # FLAGS
         self.flag_c0_X2norm      = 0x1 
         self.flag_c0_uncertainty = 0x2
+        self.flag_c0_X2norm_dynamic = 0x4
         
         self.flag_c1_X2norm      = 0x10
         self.flag_c1_absnormmean = 0x20
@@ -98,6 +99,7 @@ class SNloopclass(pdastroclass):
         parser.add_argument('SNlist', nargs='+')
         parser.add_argument('-f','--filt', default=None, choices=['c','o'], help=('specify default filter'))
         parser.add_argument('-m','--MJDbinsize', default=1.0, help=('specify MJD bin size for averaging lcs'),type=float)
+        parser.add_argument('--skipdownload', default=False, action="store_true", help=('skip downloading'))
         parser.add_argument('--forcedphot_offset', default=False, action="store_true", help=("download offsets (settings in config file)"))
         parser.add_argument('--api', default=False, action="store_true", help=('use API instead of SSH to get light curves from ATLAS'))
         parser.add_argument('--plotlc', default=False, action="store_true", help=('plot lcs'))

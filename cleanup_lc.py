@@ -12,6 +12,7 @@ import sys,re
 import numpy as np
 import pandas as pd
 from pdastro import pdastrostatsclass, AorB
+from scipy.interpolate import interp1d
 
 class cleanuplcclass(SNloopclass):
     def __init__(self):
@@ -42,29 +43,71 @@ class cleanuplcclass(SNloopclass):
         return(0)
         
     def c0_PSF_X2norm_cut(self,X2norm_max):
-        if X2norm_max is None:
-            if self.verbose>1: print('No cut on the X2norm...')
-            return(0)
-        
-        print('Flagging all measurements with chi/N bigger than %f...' % X2norm_max)
-        
-        # get indices
-        a_indices = self.lc.ix_inrange('chi/N',X2norm_max,None)
-        
-        if len(a_indices)>0:
-            print('# chi/N above %f: %i/%i' % (X2norm_max,len(a_indices),len(self.lc.getindices())))
-        else:
-            print('# No measurements flagged!')
-            return(0)
+        if self.cfg.params['cleanlc']['cut0']['dynamic_X2_cut'] is False:
+            print('Using static chi-square cut instead of dynamic...')
+            if X2norm_max is None:
+                if self.verbose>1: print('No cut on the X2norm...')
+                return(0)
+            
+            print('Flagging all measurements with chi/N bigger than %f...' % X2norm_max)
+            a_indices = self.lc.ix_inrange('chi/N',X2norm_max,None)
+            if len(a_indices)>0:
+                print('# chi/N above %f: %i/%i' % (X2norm_max,len(a_indices),len(self.lc.getindices())))
+            else:
+                print('# No measurements flagged!')
+                return(0)
 
-        # update mask column
-        flag_c0_X2norm = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_c0_X2norm|self.flag_c0_bad)
-        
-        ### CHANGE ME BACK!!!!!
-        #flag_c0_X2norm = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_c0_X2norm|self.flag_daysigma)
-        
-        self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_c0_X2norm)
-        return(0)
+            # update mask column
+            flag_c0_X2norm = np.full(self.lc.t.loc[a_indices,'Mask'].shape, self.flag_c0_X2norm|self.flag_c0_bad)
+            
+            self.lc.t.loc[a_indices,'Mask'] = np.bitwise_or(self.lc.t.loc[a_indices,'Mask'], flag_c0_X2norm)
+            return(0)
+        else:
+            print('Using dynamic chi-square cut instead of static...')
+            table_type = self.cfg.params['cleanlc']['cut0']['table_type']
+            table_type_options = ['flux_dflux','flux_median']
+            if table_type in table_type_options:
+                print('Valid table type chosen: '+table_type)
+                self.table_type = table_type
+            else:
+                raise RuntimeError('Table type entered is not a valid option. Please select a table type of the following options: ',table_type_options)
+            
+            # get table
+            filename = self.outrootdir+'/'+table_type+'_table.txt'
+            reftable = pdastroclass()
+            reftable.load_spacesep(filename,delim_whitespace=True)
+
+            # make spline
+            f = interp1d(reftable.t['center_bin'],reftable.t['upper_limit'],kind='cubic') # specify edges
+            # use spline function to get chi-square upper limit for a given input flux/dflux or flux median array
+            if table_type == 'flux_dflux':
+                self.lc.t['upper_limit'] = f(self.lc.t['uJy']/self.lc.t['duJy']) # fluxdflux or fluxmedian
+            else:
+                # calculate flux median
+                MJD = int(np.amin(self.lc.t['MJD']))
+                MJDmax = int(np.amax(self.lc.t['MJD']))+1
+                MJDbinsize = 1
+                self.lc.t['uJy_median'] = np.nan
+                while MJD <= MJDmax:
+                    # get MJD range for the bin size of 1 day
+                    ix_mjds = self.lc.ix_inrange(colnames=['MJD'],lowlim=MJD,uplim=MJD+MJDbinsize,exclude_uplim=True)
+                    if len(ix_mjds) < 1:
+                        MJD += MJDbinsize
+                        continue
+                    # calculate median uJy for that day
+                    uJy_median = np.median(self.lc.t.loc[ix_mjds,'uJy'])
+                    # add uJy_median to new column
+                    self.lc.t.loc[ix_mjds,'uJy_median'] = uJy_median
+                    MJD += MJDbinsize
+                # spline
+                self.lc.t['upper_limit'] = f(self.lc.t['uJy_median'])
+            
+            # cut light curve according to chi-square upper limit
+            ix = np.where(self.lc.t['chi/N'].ge(self.lc.t['upper_limit']))
+            
+            # update mask column
+            flag_c0_X2norm_dynamic = np.full(self.lc.t.loc[ix,'Mask'].shape, self.flag_c0_X2norm_dynamic|self.flag_c0_bad)
+            self.lc.t.loc[ix,'Mask'] = np.bitwise_or(self.lc.t.loc[ix,'Mask'], flag_c0_X2norm_dynamic)
     
     def make_c0_cuts(self, SNindex, prepare_c1c2_cuts=False):
         if prepare_c1c2_cuts:

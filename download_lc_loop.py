@@ -222,7 +222,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 				token_header = None
 			
 			for i in range(len(self.RADECtable.t)):
-				if self.verbose: print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
+				print(self.RADECtable.write(indices=i, columns=['ControlID','Ra','Dec']))
 				self.downloadlc(SNindex,lookbacktime_days=lookbacktime_days,savelc=savelc,overwrite=overwrite,fileformat=fileformat,controlindex=i,token_header=token_header)
 				print('Length of lc: ',len(self.lc.t))
 				self.RADECtable.t.loc[i,'Ndet']=len(self.lc.t)
@@ -307,7 +307,10 @@ if __name__ == '__main__':
 		if not(isinstance(downloadlc.t.at[SNindex,'tnsname'],str)):
 			print('\nnan detected, skipping...')
 		else:
-			downloadlc.downloadcontrollc(args,SNindex,username,password,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
+			if args.skipdownload:
+				print('Skipping download...')
+			else:
+				downloadlc.downloadcontrollc(args,SNindex,username,password,lookbacktime_days=args.lookbacktime_days,savelc=args.savelc,overwrite=args.overwrite,fileformat=args.fileformat,pattern=pattern,forcedphot_offset=args.forcedphot_offset)
 			if args.filt is None:
 				filtlist = ['o','c']
 				print('Looping through c and o filters...')
@@ -319,7 +322,8 @@ if __name__ == '__main__':
 				downloadlc.loadRADEClist(args,SNindex,filt=downloadlc.filt)
 				downloadlc.verifyMJD(SNindex)
 				downloadlc.cleanuplcloop(args,SNindex)
-				if (args.forcedphot_offset) and (args.averagelc): 
+				#if (args.forcedphot_offset) and (args.averagelc): 
+				if args.averagelc:
 					downloadlc.averagelcloop(SNindex,MJDbinsize=args.MJDbinsize)
 				if args.plotlc: 
 					downloadlc.plotlcloop(args,SNindex)

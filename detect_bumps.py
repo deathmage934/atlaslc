@@ -29,15 +29,12 @@ class detectbumpsclass(SNloopclass):
 		parser.add_argument('--sim_gaussian', nargs=3, default=None, help=('Comma-separated peakMJD list, peak_appmag, gaussian_sigma: add a Gaussian at peakMJD with a peak apparent magnitude of peak_appmag and a sigma of gaussian_sigma in days.'))
 		return(parser)
 
-	def applyrolling_gaussian(self,SNindex,controlindex=0,MJDbinsize=1.0,gaussian_sigma_days=30.0,
-							  simparams=None):
-		
+	def applyrolling_gaussian(self,SNindex,controlindex=0,MJDbinsize=1.0,gaussian_sigma_days=30.0,simparams=None):
 		self.load_lc(SNindex,controlindex=controlindex,MJDbinsize=MJDbinsize)
 
 		indices = self.lc.ix_unmasked('Mask',self.flag_day_bad)
-		#badindices = self.lc.ix_masked('Mask',self.flag_day_bad)
 		
-		# make sure there are no lingering simulations!
+		# make sure there are no lingering simulations
 		dropcols=[]
 		for col in ['uJysim','SNRsim','simLC','SNRsimsum']:
 			if col in self.t.columns:
@@ -51,10 +48,9 @@ class detectbumpsclass(SNloopclass):
 		title = self.t.loc[SNindex,'tnsname']
 		if not(simparams is None):
 			peakMJDs = simparams['sim_peakMJD'].split(',')
-			print('bbbb',peakMJDs,simparams['sim_peakMJD'])
+			print(peakMJDs,simparams['sim_peakMJD'])
 			
 			title = 'SIM Gaussian: mag: %.2f sigma-+:(%.1f,%.1f) peak MJDs:' % (simparams['sim_appmag'],simparams['sim_sigma_minus'],simparams['sim_sigma_plus'])
-
 
 			# get teh simulated gaussian
 			mjds = self.lc.t.loc[indices,'MJD']
@@ -117,38 +113,6 @@ class detectbumpsclass(SNloopclass):
 			if args.savelc is True:
 				print('Saving ',outbasefilename)
 				self.save_lc(SNindex=SNindex,controlindex=controlindex,filt=self.filt,MJDbinsize=MJDbinsize,overwrite=True)
-
-		"""
-		plt.close("all")
-		if not(simparams is None):
-			ax1 = self.lc.plot( x='MJDbin',y='uJysim',yerr='duJy',kind='scatter',color='cyan',legend=True,title=title)
-		else:
-			ax1 = self.lc.plot(x='MJDbin',y='uJy',yerr='duJy',kind='scatter',color='red')
-		if not(simparams is None):
-			self.lc.plot(x='MJDbin',y='simLC',color='cyan',ax=ax1)
-		if not(simparams is None):
-			outfile='%s.simLC.png' % outbasefilename
-		else:
-			outfile='%s.LC.png' % outbasefilename
-		print('Saving ',outfile)
-		plt.savefig(outfile)
-
-		if not(simparams is None):
-			ax2 =  self.lc.plot(indices=indices,x='MJDbin',y='SNRsim',kind='scatter',color='cyan',title=title)
-		else:
-			ax2 = self.lc.plot(indices=indices,x='MJDbin',y='SNR',kind='scatter',color='red')
-		if not(simparams is None):
-			self.lc.plot(x='MJDbin',y='SNRsimsum',ax=ax2,color='cyan')
-		self.lc.plot(x='MJDbin',y='SNRsum',ax=ax2,color='red')
-		if not(simparams is None):
-			outfile='%s.simSNR.png' % outbasefilename
-		else:
-			outfile='%s.SNR.png' % outbasefilename
-		print('Saving ',outfile)
-		plt.savefig(outfile)
-		"""
-
-		# Updated version by Sofia
 		
 		# plot og lc with simulated bumps (if added)
 		fig = plt.figure()

@@ -154,9 +154,12 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         filename = self.yselcfilename(TNSname,0,filt,MJDbinsize=MJDbinsize)
         self.lc.load_spacesep(filename,delim_whitespace=True,raiseError=True)
         
-        # SET ANY NANS IN DM TO NONE BECAUSE NAN BREAKS IT
-        ix = self.lc.ix_null('dm')
-        self.lc.t.loc[ix,'dm'] = 5.0
+        # SET ANY NANS IN DM AND MJD TO NONE BECAUSE NAN BREAKS IT
+        ix_dm = self.lc.ix_null(colnames=['dm'])
+        self.lc.t.loc[ix_dm,'dm'] = 5.0
+        # remove any nans in the MJD column
+        ix_notmjd = AnotB(self.lc.getindices(),self.lc.ix_null(colnames=['MJD']))
+        self.lc.t = self.lc.t.loc[ix_notmjd]
 
         transid = self.get_transient_from_DB(tnsname)
         if args.onlyexisting and not transid:
@@ -166,6 +169,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         PhotUploadAll = {'transient':transientdict,'photheader':photdict}
 
         for mjd,flux,fluxerr,mag,magerr,flt,i,mask in zip(self.lc.t['MJD'],self.lc.t[self.flux_colname],self.lc.t[self.dflux_colname],self.lc.t['m'],self.lc.t['dm'],self.lc.t['F'],range(len(self.lc.t['F'])),self.lc.t['Mask']):
+            print(mjd)
             obsdate = Time(mjd,format='mjd').isot
             if flt == 'o': flt = 'orange-ATLAS'
             elif flt == 'c': flt = 'cyan-ATLAS'

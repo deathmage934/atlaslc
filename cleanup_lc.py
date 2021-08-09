@@ -4,6 +4,7 @@
 '''
 
 from SNloop import SNloopclass
+from pdastro import pdastroclass
 from statistics import median
 from astropy.table import Table, Column, MaskedColumn
 from copy import deepcopy
@@ -68,7 +69,6 @@ class cleanuplcclass(SNloopclass):
             table_type_options = ['flux_dflux','flux_median']
             if table_type in table_type_options:
                 print('Valid table type chosen: '+table_type)
-                self.table_type = table_type
             else:
                 raise RuntimeError('Table type entered is not a valid option. Please select a table type of the following options: ',table_type_options)
             
@@ -81,7 +81,9 @@ class cleanuplcclass(SNloopclass):
             f = interp1d(reftable.t['center_bin'],reftable.t['upper_limit'],kind='cubic') # specify edges
             # use spline function to get chi-square upper limit for a given input flux/dflux or flux median array
             if table_type == 'flux_dflux':
-                self.lc.t['upper_limit'] = f(self.lc.t['uJy']/self.lc.t['duJy']) # fluxdflux or fluxmedian
+                self.lc.t['upper_limit'] = np.nan
+                notnans = self.lc.ix_remove_null(colnames=['uJy','duJy'])
+                self.lc.t.loc[notnans,'upper_limit'] = f(self.lc.t.loc[notnans,'uJy']/self.lc.t.loc[notnans,'duJy']) # fluxdflux or fluxmedian
             else:
                 # calculate flux median
                 MJD = int(np.amin(self.lc.t['MJD']))
@@ -103,11 +105,13 @@ class cleanuplcclass(SNloopclass):
                 self.lc.t['upper_limit'] = f(self.lc.t['uJy_median'])
             
             # cut light curve according to chi-square upper limit
-            ix = np.where(self.lc.t['chi/N'].ge(self.lc.t['upper_limit']))
+            ix = np.where(self.lc.t['chi/N'].ge(self.lc.t['upper_limit']))[0]
             
             # update mask column
             flag_c0_X2norm_dynamic = np.full(self.lc.t.loc[ix,'Mask'].shape, self.flag_c0_X2norm_dynamic|self.flag_c0_bad)
             self.lc.t.loc[ix,'Mask'] = np.bitwise_or(self.lc.t.loc[ix,'Mask'], flag_c0_X2norm_dynamic)
+
+            sys.exit(0)
     
     def make_c0_cuts(self, SNindex, prepare_c1c2_cuts=False):
         if prepare_c1c2_cuts:

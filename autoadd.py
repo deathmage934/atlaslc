@@ -3,7 +3,7 @@
 @author: S. Rest
 '''
 
-import argparse
+import argparse,requests,sys,os,time,json
 import numpy as np
 from astropy.time import Time
 from pdastro import pdastroclass
@@ -13,9 +13,6 @@ from tools import RaInDeg
 from tools import DecInDeg
 import pandas as pd
 from lxml import html
-import requests
-import sys,os
-import json
 from collections import OrderedDict
 
 class autoaddclass(SNloopclass):
@@ -68,11 +65,15 @@ class autoaddclass(SNloopclass):
 
 	def getradec(self,tnsname):
 		json_data = self.getdata(tnsname)
-		ra = json_data['data']['reply']['ra']
-		dec = json_data['data']['reply']['dec']
-		print('In sexagesimal: RA: %s, Dec: %s' % (ra,dec))
-		print('In decimal: RA %0.8f Dec: %0.8f' % (RaInDeg(ra),DecInDeg(dec)))
-		return ra, dec
+		try:
+			ra = json_data['data']['reply']['ra']
+			dec = json_data['data']['reply']['dec']
+			print('In sexagesimal: RA: %s, Dec: %s' % (ra,dec))
+			print('In decimal: RA %0.8f Dec: %0.8f' % (RaInDeg(ra),DecInDeg(dec)))
+			return ra, dec
+		except KeyError:
+			print('No results found, skipping...')
+			return np.nan, np.nan
 
 	def getdisc_date(self,tnsname):
 		json_data = self.getdata(tnsname)
@@ -103,7 +104,7 @@ if __name__ == '__main__':
 	autoadd = autoaddclass()
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('tnsname', help="TNS name; type 'survey' for survey MJDpreSN", type=str)
+	parser.add_argument('tnsname', nargs='+', help="TNS name; type 'survey' for survey MJDpreSN", type=str)
 	parser.add_argument('--ra', help="RA position", default=None, type=str)
 	parser.add_argument('--dec', help="Dec position", default=None, type=str)
 	parser.add_argument('--disc_date', help="Discovery date of SN", default=None, type=float)
@@ -139,42 +140,57 @@ if __name__ == '__main__':
 	
 	# regular procedure
 	else:
-		if not args.ra:
-			print(args.tnsname)
-			ra, dec = autoadd.getradec(args.tnsname)
-			#print(ra,dec)
-			if not args.disc_date:
-				disc_date = autoadd.getdisc_date(args.tnsname)
+		print(len(args.tnsname))
+		for i in range(0,len(args.tnsname)):
+			tnsname = args.tnsname[i]
+			if not args.ra:
+				print('Searching for '+tnsname+', index %d/%d' % (i,len(args.tnsname)-1))
+				ra, dec = autoadd.getradec(tnsname)
+				if isinstance(ra,str): #not(np.isnan(ra)):
+					if not args.disc_date:
+						disc_date = autoadd.getdisc_date(tnsname)
+					else:
+						disc_date = args.disc_date
+				else:
+					disc_date = np.nan
 			else:
-				disc_date = args.disc_date
-		else:
-			ra=args.ra
-			dec=args.dec
-			if not args.disc_date:
-				disc_date = autoadd.getdisc_date(args.tnsname)
+				ra=args.ra
+				dec=args.dec
+				if not args.disc_date:
+					disc_date = autoadd.getdisc_date(tnsname)
+				else:
+					disc_date = args.disc_date
+			
+			if isinstance(disc_date,str):
+				deltat = autoadd.cfg.params['deltat']
+				disc_date = disc_date.astype(float) - deltat
+
+			snlistfilename = autoadd.cfg.params['snlistfilename']
+			if os.path.exists(snlistfilename):
+				autoadd.snlist.load_spacesep(snlistfilename, delim_whitespace=True)
+			else: 
+				autoadd.snlist.t = pd.DataFrame({'atlasdesignation':[],'otherdesignation':[],'ra':[],'dec':[],'spectraltype':[],'earliestmjd':[],'tnsname':[],'closebrightRA':[],'closebrightDec':[],'MJDpreSN':[]})
+
+			if args.autosearch:
+				print('Running autosearch for nearest close bright object\nObject will be within 20 arcsec, brighter than 18 mag, and could be a star or galaxy')
+				results = autoadd.autosearch(RaInDeg(ra), DecInDeg(dec), 20)
+				print('Close bright objects found: \n',results)
+				print(RaInDeg('19:58:26.6356'),DecInDeg('+62:08:05.497')) # delete me
+				closebrightRA = results['182562996106752735']['raMean']
+				closebrightDec = results['182562996106752735']['decMean']
+				print(closebrightRA,closebrightDec)
+				if isinstance(ra,str):
+					autoadd.addrow2snlist(tnsname=tnsname,ra=ra,dec=dec,MJDpreSN=disc_date,closebrightRA=closebrightRA,closebrightDec=closebrightDec)
 			else:
-				disc_date = args.disc_date
-		
-		deltat = autoadd.cfg.params['deltat']
-		disc_date = disc_date.astype(float) - deltat
+				if isinstance(ra,str):
+					autoadd.addrow2snlist(tnsname=tnsname,ra=ra,dec=dec,MJDpreSN=disc_date)
+			
+			autoadd.snlist.write(snlistfilename,overwrite=True,verbose=True)
+			
+			if isinstance(ra,str):
+				autoadd.getcmd(tnsname=tnsname)
 
-		snlistfilename = autoadd.cfg.params['snlistfilename']
-		if os.path.exists(snlistfilename):
-			autoadd.snlist.load_spacesep(snlistfilename, delim_whitespace=True)
-		else: 
-			autoadd.snlist.t = pd.DataFrame({'atlasdesignation':[],'otherdesignation':[],'ra':[],'dec':[],'spectraltype':[],'earliestmjd':[],'tnsname':[],'closebrightRA':[],'closebrightDec':[],'MJDpreSN':[]})
+			print('sleeping...')
+			time.sleep(20)
+			print('done')
 
-		if args.autosearch:
-			print('Running autosearch for nearest close bright object\nObject will be within 20 arcsec, brighter than 18 mag, and could be a star or galaxy')
-			results = autoadd.autosearch(RaInDeg(ra), DecInDeg(dec), 20)
-			print('Close bright objects found: \n',results)
-			print(RaInDeg('19:58:26.6356'),DecInDeg('+62:08:05.497')) # delete me
-			closebrightRA = results['182562996106752735']['raMean']
-			closebrightDec = results['182562996106752735']['decMean']
-			print(closebrightRA,closebrightDec)
-			autoadd.addrow2snlist(tnsname=args.tnsname,ra=ra,dec=dec,MJDpreSN=disc_date,closebrightRA=closebrightRA,closebrightDec=closebrightDec)
-		else:
-			autoadd.addrow2snlist(tnsname=args.tnsname,ra=ra,dec=dec,MJDpreSN=disc_date)
-		
-		autoadd.snlist.write(snlistfilename,overwrite=True,verbose=True)
-		autoadd.getcmd(tnsname=args.tnsname)

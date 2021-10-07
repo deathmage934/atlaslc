@@ -604,7 +604,10 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
 
     def uploadloop(self,args,TNSname,overwrite=True,skipdownload=False,parser=None):
         # GET RA AND DEC
-        if args.tnsnamelist:
+        if args.ra and args.dec:
+            ra = args.ra
+            dec = args.dec
+        elif args.tnsnamelist:
             try:
                 # look in TNS
                 print('Obtaining RA and Dec from TNS...')
@@ -715,6 +718,8 @@ if __name__ == '__main__':
     parser.add_argument('--skipdownload', default=False, action="store_true", help=('skip downloading'))
     parser.add_argument('--ysequery', default=147, help=('enter the query number for the desired YSE list'))
     parser.add_argument('--lookbacktime_days_max',default=None, type=int, help='enter maximum lookbacktime in days for forced photometry')
+    parser.add_argument('--ra', help="RA position", default=None, type=str)
+    parser.add_argument('--dec', help="Dec position", default=None, type=str)
 
     # add config file and atlaslc arguments
     cfgfile = upltoyse.defineoptions()

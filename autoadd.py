@@ -65,6 +65,12 @@ class autoaddclass(SNloopclass):
 
 	def getradec(self,tnsname):
 		json_data = self.getdata(tnsname)
+		ra = json_data['data']['reply']['ra']
+		dec = json_data['data']['reply']['dec']
+		print('In sexagesimal: RA: %s, Dec: %s' % (ra,dec))
+		print('In decimal: RA %0.8f Dec: %0.8f' % (RaInDeg(ra),DecInDeg(dec)))
+		return ra, dec
+		"""
 		try:
 			ra = json_data['data']['reply']['ra']
 			dec = json_data['data']['reply']['dec']
@@ -74,6 +80,7 @@ class autoaddclass(SNloopclass):
 		except KeyError:
 			print('No results found, skipping...')
 			return np.nan, np.nan
+		"""
 
 	def getdisc_date(self,tnsname):
 		json_data = self.getdata(tnsname)
@@ -145,7 +152,12 @@ if __name__ == '__main__':
 			tnsname = args.tnsname[i]
 			if not args.ra:
 				print('Searching for '+tnsname+', index %d/%d' % (i,len(args.tnsname)-1))
-				ra, dec = autoadd.getradec(tnsname)
+				try:
+					ra, dec = autoadd.getradec(tnsname)
+				except KeyError:
+					print('No results found, skipping...')
+					ra = np.nan 
+					dec = np.nan 
 				if isinstance(ra,str): #not(np.isnan(ra)):
 					if not args.disc_date:
 						disc_date = autoadd.getdisc_date(tnsname)

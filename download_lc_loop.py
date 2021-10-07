@@ -304,6 +304,7 @@ if __name__ == '__main__':
 		downloadlc.api = True
 
 	for SNindex in SNindexlist:
+		print('\nDownloading %s...'%downloadlc.t.at[SNindex,'tnsname'])
 		if not(isinstance(downloadlc.t.at[SNindex,'tnsname'],str)):
 			print('\nnan detected, skipping...')
 		else:

@@ -39,11 +39,13 @@ class plotlcclass(SNloopclass):
 		SNloopclass.__init__(self)
 
 	def plot_lc(self,args,SNindex,sp=None):
-		for testavg in [True,False]:
-			if testavg is False:
-				binsize4avg = None
-			else:
-				binsize4avg = args.MJDbinsize
+		for testavg in [False,True]:
+			binsize4avg = None
+			if testavg:
+				if args.averagelc:
+					binsize4avg = args.MJDbinsize
+				else:
+					break;
 			print('BINSIZEAVG:',binsize4avg)
 			plt.figure()
 			plt.clf()

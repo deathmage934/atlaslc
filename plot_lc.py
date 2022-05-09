@@ -31,7 +31,7 @@ def dataPlot(x, y, dx=None, dy=None, sp=None, label=None, fmt='bo', ecolor='k', 
 			sp.set_yscale("log", nonposx='clip')
 		if logx:
 			sp.set_xscale("log", nonposx='clip')
-		plot, dplot,dummy = sp.errorbar(x, y, xerr=dx, yerr=dy, label=label, fmt=fmt, ecolor=ecolor, elinewidth=elinewidth, capsize=capsize, barsabove=barsabove, zorder=zorder)
+		plot, dplot, dummy = sp.errorbar(x, y, xerr=dx, yerr=dy, label=label, fmt=fmt, ecolor=ecolor, elinewidth=elinewidth, capsize=capsize, barsabove=barsabove, zorder=zorder)
 		return sp, plot, dplot
 
 class plotlcclass(SNloopclass):

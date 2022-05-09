@@ -10,6 +10,9 @@ from pdastro import AnotB
 from matplotlib.backends.backend_pdf import PdfPages
 import argparse
 
+plt.rcParams['font.family'] = 'Times New Roman'
+plt.rcParams['legend.fontsize'] = 'small'
+
 def dataPlot(x, y, dx=None, dy=None, sp=None, label=None, fmt='bo', ecolor='k', elinewidth=None, barsabove = False, capsize=1, logx=False, logy=False, zorder=None):
 	if sp == None:
 		sp = matlib.subplot(111)
@@ -47,7 +50,7 @@ class lightlcclass(SNloopclass):
 			self.lc.t = self.lc.t.drop(columns=['__tmp_SN'])
 		if 'c1_mean' in self.lc.t.columns:
 			self.lc.t = self.lc.t.drop(columns=['c1_mean','c1_mean_err','c1_stdev','c1_stdev_err','c1_X2norm','c1_Nvalid','c1_Nnan','c2_mean','c2_mean_err','c2_stdev','c2_stdev_err','c2_X2norm','c2_Ngood','c2_Nclip','c2_Nmask','c2_Nnan'])
-		basename = '%s/%s/lightweight/%s.%s' % (self.outrootdir,self.t['tnsname'][SNindex],self.t['tnsname'][SNindex],self.filt)
+		basename = '%s/%s/%s/%s.%s' % (self.outrootdir,self.t['tnsname'][SNindex],self.t['tnsname'][SNindex],self.t['tnsname'][SNindex],self.filt)
 		filename = basename + '.txt'
 		print('Saving original light curve: ',filename)
 		self.lc.write(filename,overwrite=True)
@@ -76,7 +79,7 @@ class lightlcclass(SNloopclass):
 		self.lc.write(filename,indices=indices,overwrite=True)
 
 	def addflagdescriptions(self):
-		basename = '%s/%s/lightweight' % (self.outrootdir,self.t['tnsname'][SNindex])
+		basename = '%s/%s/%s' % (self.outrootdir,self.t['tnsname'][SNindex],self.t['tnsname'][SNindex])
 		f = open(basename+"/flagdescriptions.txt","w+")
 		f.write("We've put flags in the mask column that will tell you which measurements to use. Measurements were classified as bad, questionable, or good based on a variety of factors, including PSF statistics and statistics garnered from control light curve data.")
 		f.write("\n\n- The measurements to exclude in the single-measurement original light curve will have one or more of the following flags: 0x100000 (based on PSF statistics) 0x400000 (based on control light curve statistics), and 0x800000 (based on statistics of a measurement's 1-day epoch). If the flag 0x80000 is set, measurements in its 1-day epoch were excluded in the daily averaging, so this measurement is classified as questionable but usable.")
@@ -97,9 +100,9 @@ class lightlcclass(SNloopclass):
 		if ylims is True:
 			ylim_lower, ylim_upper = plt.ylim()
 			if not(maxlc is None):
-				ylim_upper = maxlc
+				ylim_upper = 1.1*maxlc
 			if not(minlc is None):
-				ylim_lower = minlc
+				ylim_lower = 1.1*minlc
 			if not(args.ylim_lower is None): 
 				ylim_lower = args.ylim_lower
 			if not(args.xlim_upper is None):
@@ -155,11 +158,11 @@ class lightlcclass(SNloopclass):
 				filename += '.%ddays' % int(args.MJDbinsize)
 			else:
 				filename += '.%.2fdays' % args.MJDbinsize
-		filename += '.light.txt'
-		title = 'SN %s ' % self.t.at[SNindex,'tnsname']
+		filename += '.txt'
+		title = 'SN %s, %s-band' % (self.t.at[SNindex,'tnsname'], self.filt)
 		if self.lctype == 'avg': 
-			title += 'Averaged '
-		title += 'All Detections %s-band \nFilename: %s' % (self.filt,filename)
+			title += ', Averaged'
+		title += '\nFilename: %s' % (filename)
 		plt.title(title)
 		print('Adding plot to PDF: "%s"' % title)
 		plt.axhline(linewidth=1,color='k')
@@ -202,17 +205,17 @@ class lightlcclass(SNloopclass):
 			else:
 				controlLClabel = '%d Total Control LCs' % (len(self.RADECtable.t)-1)
 		plt.legend((plotSN,plotControlLC),('SN %s %s-band'%(self.t.at[SNindex,'tnsname'],self.filt),controlLClabel+' %s-band'%self.filt))
-		title = 'SN %s ' % self.t.at[SNindex,'tnsname']
+		title = 'SN %s, %s-band' % (self.t.at[SNindex,'tnsname'], self.filt)
 		if self.lctype == 'avg': 
-			title += 'Averaged '
+			title += ', Averaged'
 		filename = '%s.%s' % (self.t['tnsname'][SNindex],self.filt)
 		if not(MJDbinsize is None):
 			if int(args.MJDbinsize) == args.MJDbinsize:
 				filename += '.%ddays' % int(args.MJDbinsize)
 			else:
 				filename += '.%.2fdays' % args.MJDbinsize
-		filename += '.light.clean.txt'
-		title += 'Good Detections Only\nFilename: %s' % filename
+		filename += '.clean.txt'
+		title += ', Good Detections Only\nFilename: %s' % filename
 		plt.title(title)
 		print('Adding plot to PDF: "%s"' % title)
 		plt.axhline(linewidth=1,color='k')
@@ -231,7 +234,7 @@ class lightlcclass(SNloopclass):
 		return pdf
 
 	def plotloop(self,args,SNindex):
-		pdf = PdfPages('%s/%s/lightweight/%s_plots.pdf' % (self.outrootdir,self.t['tnsname'][SNindex],self.t.at[SNindex,'tnsname']))
+		pdf = PdfPages('%s/%s/%s/%s_plots.pdf' % (self.outrootdir,self.t['tnsname'][SNindex],self.t['tnsname'][SNindex],self.t.at[SNindex,'tnsname']))
 
 		# summary plot: not clean, both c and o
 		fig = plt.figure()
@@ -240,47 +243,67 @@ class lightlcclass(SNloopclass):
 		self.loadRADEClist(args,SNindex)
 		# load c band
 		self.load_lc(SNindex,filt='c',controlindex=0,MJDbinsize=None)
-		goodix = self.getgoodindices()
 		sp,plotc,dplot = dataPlot(self.lc.t['MJD'],self.lc.t[self.flux_colname],dy=self.lc.t[self.dflux_colname],sp=sp)
 		matlib.setp(plotc,ms=4,color='cyan')
-		maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
-		minlc = min(self.lc.t.loc[goodix,self.flux_colname])
 		# load o band
 		self.load_lc(SNindex,filt='o',controlindex=0,MJDbinsize=None)
-		goodix = self.getgoodindices()
 		sp,ploto,dplot = dataPlot(self.lc.t['MJD'],self.lc.t[self.flux_colname],dy=self.lc.t[self.dflux_colname],sp=sp)
 		matlib.setp(ploto,ms=4,color='orange')
-		goodix = self.getgoodindices()
 		# set x and y lims
+		goodix = self.getgoodindices()
+		maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
+		minlc = min(self.lc.t.loc[goodix,self.flux_colname])
 		if max(self.lc.t.loc[goodix,self.flux_colname]) > maxlc:
 			maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
 		if min(self.lc.t.loc[goodix,self.flux_colname]) < minlc:
 			minlc = min(self.lc.t.loc[goodix,self.flux_colname])
 		self.setplotlims(args,maxlc=maxlc,minlc=minlc)
-		"""
+		plt.ylim(1.1*minlc,1.1*maxlc)
+		# rest of plot
+		plt.title('SN %s, c- and o-band' % self.t.at[SNindex,'tnsname'])
+		plt.axhline(linewidth=1,color='k')
+		plt.xlabel('MJD')
+		plt.ylabel(self.flux_colname)
+		plt.legend((plotc,ploto),('c-band','o-band'))
+		print('Adding summary plot to PDF: "SN %s, c- and o-band"' % self.t.at[SNindex,'tnsname'])
+		pdf.savefig(fig)
+		plt.clf()
+
+		# summary plot 2: avg sn lc: o good, o bad, c good, c bad
+		fig = plt.figure()
+		sp = matlib.subplot(111)
+		legend_vars = ()
 		for filt in ['c','o']:
 			self.load_lc(SNindex,filt=filt,controlindex=0,MJDbinsize=args.MJDbinsize)
 			goodix = self.getgoodindices()
-			allix = self.lc.getindices()
-			badix = AnotB(allix,goodix)
+			badix = AnotB(self.lc.getindices(),goodix)
 			if filt == 'c':
 				color = 'cyan'
 			else:
 				color = 'orange'
 			sp, plotbad, dplotbad = dataPlot(self.lc.t.loc[badix,'MJD'],self.lc.t.loc[badix,self.flux_colname],dy=self.lc.t.loc[badix,self.dflux_colname],sp=sp)
 			matlib.setp(plotbad,mfc='white',ms=4,color=color)
-			sp, plotSN, dplotSN = dataPlot(self.lc.t.loc[goodix,'MJD'],self.lc.t.loc[goodix,self.flux_colname],dy=self.lc.t.loc[goodix,self.dflux_colname],sp=sp)
-			matlib.setp(plotSN,ms=4,color=color)
+			sp, plotgood, dplotgood = dataPlot(self.lc.t.loc[goodix,'MJD'],self.lc.t.loc[goodix,self.flux_colname],dy=self.lc.t.loc[goodix,self.dflux_colname],sp=sp)
+			matlib.setp(plotgood,ms=4,color=color)
 			sp,plot,dplot = dataPlot(self.lc.t['MJD'],self.lc.t[self.flux_colname],dy=self.lc.t[self.dflux_colname],sp=sp)
 			matlib.setp(plot,ms=4,color=color)
-			#maxlc = max(self.lc.t[self.flux_colname])
-			#minlc = min(self.lc.t[self.flux_colname])
-		"""
-		plt.title('SN %s, c- and o-band' % self.t.at[SNindex,'tnsname'])
+			legend_vars += (plotbad, plotgood)
+		# set x and y lims
+		goodix = self.getgoodindices()
+		maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
+		minlc = min(self.lc.t.loc[goodix,self.flux_colname])
+		if max(self.lc.t.loc[goodix,self.flux_colname]) > maxlc:
+			maxlc = max(self.lc.t.loc[goodix,self.flux_colname])
+		if min(self.lc.t.loc[goodix,self.flux_colname]) < minlc:
+			minlc = min(self.lc.t.loc[goodix,self.flux_colname])
+		self.setplotlims(args,maxlc=maxlc,minlc=minlc)
+		plt.ylim(1.1*minlc,1.1*maxlc)
+		# rest of plot
+		plt.title('SN %s, c- and o-band, Averaged' % self.t.at[SNindex,'tnsname'])
 		plt.axhline(linewidth=1,color='k')
 		plt.xlabel('MJD')
 		plt.ylabel(self.flux_colname)
-		plt.legend((plotc,ploto),('c-band','o-band'))
+		plt.legend(legend_vars,('c-band Bad Data','c-band Good Data','o-band Bad Data','o-band Good Data'))
 		print('Adding summary plot to PDF: "SN %s, c- and o-band"' % self.t.at[SNindex,'tnsname'])
 		pdf.savefig(fig)
 		plt.clf()
@@ -336,8 +359,8 @@ class lightlcclass(SNloopclass):
 				else:
 					controlLClabel = '%d Total Control LCs' % (len(self.RADECtable.t)-1)
 			plt.legend((plotSN,plotbad,plotControlLC,plotControlLCBad),('SN %s %s-band Good Data' % (self.t.at[SNindex,'tnsname'],self.filt),'SN %s %s-band Bad Data' % (self.t.at[SNindex,'tnsname'],self.filt),controlLClabel+' %s-band Good Data' % self.filt,controlLClabel+' %s-band Bad Data' % self.filt))
-			plt.title('SN %s All Detections: Zoomed to Baseline' % self.t.at[SNindex,'tnsname'])
-			print('Adding plot to PDF: "SN %s All Detections: Zoomed to Baseline"' % self.t.at[SNindex,'tnsname'])
+			plt.title('SN %s, %s-band, Zoomed to Baseline' % (self.t.at[SNindex,'tnsname'], self.filt))
+			print('Adding plot to PDF: "SN %s, %s-band, Zoomed to Baseline"' % (self.t.at[SNindex,'tnsname'], self.filt))
 			plt.axhline(linewidth=1,color='k')
 			plt.xlabel('MJD')
 			plt.ylabel(self.flux_colname)
@@ -345,6 +368,7 @@ class lightlcclass(SNloopclass):
 			plt.ylim(-200,200)
 			pdf.savefig(fig)
 			plt.clf()
+
 
 		pdf.close()
 

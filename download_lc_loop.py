@@ -15,13 +15,11 @@ import argparse
 from tools import rmfile
 from tools import RaInDeg
 from tools import DecInDeg
-#from astrotable import astrotableclass
 from download_atlas_lc import download_atlas_lc_class
 from SNloop import SNloopclass
 from cleanup_lc import cleanuplcclass
 from plot_lc import plotlcclass, dataPlot
 from verifyMJD import verifyMJDclass
-#from average_lc import averagelcclass
 from averageLC import averagelcclass
 import sigmacut
 from pdastro import pdastroclass, AandB
@@ -252,7 +250,6 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 
 			if self.api:
 				print('Connecting to API...')
-				# API IMPLEMENTATION IS A WORK IN PROGRESS AND IS NOT FUNCTIONAL YET
 				token_header = self.download_atlas_lc.connect_atlas(username,password)
 				print('TOKEN HEADER: ',token_header)
 			else:

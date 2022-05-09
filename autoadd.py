@@ -105,7 +105,7 @@ class autoaddclass(SNloopclass):
 		#print(self.snlist.t)
 
 	def getcmd(self, tnsname):
-		print('Your command is: download_lc_loop.py %s -v -o -s --forcedphot_offset True --plot True --user %s --passwd "X"' % (tnsname, self.cfg.params['username']))
+		print('Your command is: download_lc_loop.py %s -v -o -s --api --forcedphot_offset --plot --user %s --passwd "X"' % (tnsname, self.cfg.params['username']))
 
 if __name__ == '__main__':
 	autoadd = autoaddclass()

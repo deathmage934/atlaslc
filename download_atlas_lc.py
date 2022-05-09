@@ -170,7 +170,7 @@ class download_atlas_lc_class:
 		while not task_url:
 			with requests.Session() as s:
 				resp = s.post(f"{self.baseurl}/queue/",headers=headers,data={'ra':ra,'dec':dec,'send_email':False,"mjd_min":lookbacktime_days,"mjd_max":mjd_max})
-				if resp.status_code == 201:  # success
+				if resp.status_code == 201:  # successfully queued
 					task_url = resp.json()['url']
 					print(f'The task URL is {task_url}')
 				elif resp.status_code == 429:  # throttled
@@ -188,10 +188,11 @@ class download_atlas_lc_class:
 					time.sleep(waittime)
 				else:
 					print(f'ERROR {resp.status_code}')
-					print(resp.json())
+					print(resp.text)
 					sys.exit()
 		result_url = None
 		
+		"""		
 		while not result_url:
 			with requests.Session() as s:
 				resp = s.get(task_url, headers=headers)
@@ -208,6 +209,27 @@ class download_atlas_lc_class:
 				else:
 					print(f'ERROR {resp.status_code}')
 					print(resp.json())
+					sys.exit()
+		"""
+		taskstarted_printed = False
+		while not result_url:
+			with requests.Session() as s:
+				resp = s.get(task_url, headers=headers)
+				if resp.status_code == 200:  # HTTP OK
+					if resp.json()['finishtimestamp']:
+						result_url = resp.json()['result_url']
+						print(f"Task is complete with results available at {result_url}")
+					elif resp.json()['starttimestamp']:
+						if not taskstarted_printed:
+							print(f"Task is running (started at {resp.json()['starttimestamp']})")
+							taskstarted_printed = True
+						time.sleep(2)
+					else:
+						print(f"Waiting for job to start (queued at {resp.json()['timestamp']})")
+						time.sleep(4)
+				else:
+					print(f'ERROR {resp.status_code}')
+					print(resp.text)
 					sys.exit()
 		
 		with requests.Session() as s:

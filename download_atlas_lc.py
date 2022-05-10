@@ -132,14 +132,6 @@ class download_atlas_lc_class:
 	def save_lc(self, filename, overwrite=False, fileformat='fixed_width_two_line'):
 		self.lc.write(filename, format=fileformat, overwrite=overwrite, verbose=(self.verbose>0))
 
-	"""
-	def connect_api(self,username,password):
-		#ra, dec, name = sys.argv[1:]
-		token_header = connect_atlas(username,password)
-		data = get_result(ra, dec, token_header)
-		#ascii.write(data, name + '.csv', format = 'csv', overwrite = True)
-	"""
-
 	def connect_atlas(self,username,password):
 		resp = requests.post(url=f"{self.baseurl}/api-token-auth/",data={'username':username,'password':password})
 		if resp.status_code == 200:
@@ -158,10 +150,9 @@ class download_atlas_lc_class:
 
 		if not(lookbacktime_days is None):
 			lookbacktime_days = int(Time.now().mjd - lookbacktime_days)
-			#lookbacktime_days = '  '+str(list(con.execute("select julianday('"+today.strftime("%Y-%m-%d")+"')"))[0][0]-lookbacktime_days-2400000)
 		else:
 			lookbacktime_days = int(Time.now().mjd - 1890)
-		if not(mjd_max) is None:
+		if not(mjd_max is None):
 			mjd_max = int(Time.now().mjd - mjd_max)
 
 		print('MJD min: ',lookbacktime_days,'. MJD max: ',mjd_max)
@@ -191,26 +182,6 @@ class download_atlas_lc_class:
 					print(resp.text)
 					sys.exit()
 		result_url = None
-		
-		"""		
-		while not result_url:
-			with requests.Session() as s:
-				resp = s.get(task_url, headers=headers)
-				if resp.status_code == 200:  # HTTP OK
-					if resp.json()['finishtimestamp']:
-						result_url = resp.json()['result_url']
-						print(f"Task is complete with results available at {result_url}")
-						break
-					elif resp.json()['starttimestamp']:
-						print(f"Task is running (started at {resp.json()['starttimestamp']})")
-					else:
-						print("Waiting for job to start. Checking again in 10 seconds...")
-					time.sleep(10)
-				else:
-					print(f'ERROR {resp.status_code}')
-					print(resp.json())
-					sys.exit()
-		"""
 		taskstarted_printed = False
 		while not result_url:
 			with requests.Session() as s:
@@ -237,24 +208,3 @@ class download_atlas_lc_class:
 		
 		dfresult = pd.read_csv(io.StringIO(result.replace("###", "")), delim_whitespace=True)
 		return dfresult
-
-# don't need the following main:
-"""
-if __name__ == "__main__":
-	download_atlas_lc = download_atlas_lc_class()
-	parser = download_atlas_lc.define_args()
-	parser = download_atlas_lc.define_optional_args(parser=parser)
-	args = parser.parse_args()
-
-	download_atlas_lc.verbose = args.verbose
-	download_atlas_lc.debug = args.debug
-	
-	download_atlas_lc.connect(args.atlasmachine,args.user,args.passwd)
-	download_atlas_lc.get_lc(args.RA,args.Dec,
-							lookbacktime_days=args.lookbacktime_days,
-							overwrite=args.overwrite,
-							fileformat=args.fileformat)
-	
-	if not(args.savefile is None):
-		download_atlas_lc.save_lc(args.savelc, overwrite=args.overwrite, fileformat=args.fileformat)
-"""

@@ -191,6 +191,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             PhotUploadAll['header'] = {'clobber':args.clobber,'mjdmatchmin':args.mjdmatchmin}
 
         url = '%s' % args.dburl.replace('/api','/add_transient_phot')
+        
         def myconverter(obj):
             if obj is np.nan:
                 return None
@@ -779,7 +780,6 @@ if __name__ == '__main__':
     if args.api: 
         upltoyse.api = True
 
-    #for TNSname in upltoyse.TNSnamelist:
     for index in range(args.index,len(upltoyse.TNSnamelist)):
         TNSname = upltoyse.TNSnamelist[index]
         print("\nUploading and/or downloading data for %s, index %d out of %d in TNSnamelist" % (TNSname,index,len(upltoyse.TNSnamelist)-1))
@@ -787,4 +787,3 @@ if __name__ == '__main__':
 
     if not(args.tnslistfilename is None):
         upltoyse.TNSlistfile.write(upltoyse.TNSlistfilename,overwrite=True)
-

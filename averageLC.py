@@ -163,7 +163,7 @@ class averagelcclass(SNloopclass):
 
             MJD += MJDbinsize
 
-        self.averagelc.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
+        self.averagelc.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=self.cfg.params['flux2mag_sigmalimit'])
 
         for col in ['ControlID','Nclip','Ngood','Nexcluded','Mask']: 
             self.averagelc.t[col] = self.averagelc.t[col].astype(np.int32)
@@ -181,6 +181,7 @@ class averagelcclass(SNloopclass):
         print('###################################\nAveraging LCs...\n###################################')
 
         print('MJD bin size set to ',MJDbinsize)
+        print('m and dm sigma limit: ',self.cfg.params['flux2mag_sigmalimit'])
         
         # loop through SN and control lcs
         for controlindex in range(0,len(self.RADECtable.t)):    

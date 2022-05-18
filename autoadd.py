@@ -118,7 +118,7 @@ if __name__ == '__main__':
 	parser.add_argument('--autosearch', action="store_true", help="Search automatically for the closest bright object",default=False)
 	args = parser.parse_args()
 
-	cfgfile=autoadd.defineoptions()
+	cfgfile = autoadd.defineoptions()
 	autoadd.loadcfgfile(cfgfile)
 	autoadd.setoutputdir()
 

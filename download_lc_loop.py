@@ -55,7 +55,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 		self.lc.t['m'] = np.nan
 		self.lc.t['dm'] = np.nan
 		# flux2mag
-		self.lc.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=3)
+		self.lc.flux2mag(self.flux_colname,self.dflux_colname,'m','dm',zpt=23.9,upperlim_Nsigma=self.cfg.params['flux2mag_sigmalimit'])
 		
 		# sort data by mjd
 		self.lc.t = self.lc.t.sort_values(by=['MJD'],ignore_index=True)
@@ -197,6 +197,7 @@ class downloadlcloopclass(cleanuplcclass,plotlcclass,averagelcclass,verifyMJDcla
 
 	def downloadcontrollc(self, args, SNindex, username, password, forcedphot_offset=False, lookbacktime_days=None, savelc=False, overwrite=False, fileformat=None, pattern=None):
 		print('Control LC status: ',forcedphot_offset)
+		print('m and dm sigma limit: ',self.cfg.params['flux2mag_sigmalimit'])
 		if forcedphot_offset is True:
 			# get control lc data
 

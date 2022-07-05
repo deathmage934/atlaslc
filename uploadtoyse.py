@@ -169,7 +169,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
         PhotUploadAll = {'transient':transientdict,'photheader':photdict}
 
         for mjd,flux,fluxerr,mag,magerr,flt,i,mask in zip(self.lc.t['MJD'],self.lc.t[self.flux_colname],self.lc.t[self.dflux_colname],self.lc.t['m'],self.lc.t['dm'],self.lc.t['F'],range(len(self.lc.t['F'])),self.lc.t['Mask']):
-            print(mjd)
+            #print(mjd)
             obsdate = Time(mjd,format='mjd').isot
             if flt == 'o': flt = 'orange-ATLAS'
             elif flt == 'c': flt = 'cyan-ATLAS'
@@ -183,12 +183,14 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
             else:
                 PhotUploadDict['mag'] = None
                 PhotUploadDict['mag_err'] = None
-            if not(mask==0):
-                PhotUploadDict['data_quality'] = 1
-            else:
-                PhotUploadDict['data_quality'] = 0
+            #if not(mask==0):
+                #PhotUploadDict['data_quality'] = 1
+            #else:
+            PhotUploadDict['data_quality'] = 0
             PhotUploadAll['%s_%i'%(obsdate,i)] = PhotUploadDict
             PhotUploadAll['header'] = {'clobber':args.clobber,'mjdmatchmin':args.mjdmatchmin}
+
+            #print(PhotUploadDict)
 
         url = '%s' % args.dburl.replace('/api','/add_transient_phot')
         
@@ -205,6 +207,7 @@ class uploadtoyseclass(downloadlcloopclass,autoaddclass):
                 return obj.__str__()
 
         r = requests.post(url=url,data=json.dumps(PhotUploadAll,default=myconverter),auth=HTTPBasicAuth(args.dblogin,args.dbpassword))
+        #print(r.text)
         print('YSE_PZ says: %s'%json.loads(r.text)['message'])
 
     def yseupload(self,tnsname,ra,dec,filt,MJDbinsize=None,parser=None):
